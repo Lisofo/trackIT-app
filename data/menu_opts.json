@@ -1,0 +1,59 @@
+{
+    "nombreApp" : "sedel_maqueta",
+    "rutas" : [
+        {
+            "ruta" : "/ptosInspeccion",
+            "icon" : "approval",
+            "texto": "Ptos de Inspeccion",
+            "tipoOrden": "N"
+        },
+        {
+            "ruta" : "/tareas",
+            "icon" : "task",
+            "texto": "Tareas Realizadas",
+            "tipoOrden": "N"
+        },
+        {
+            "ruta" : "/plagas",
+            "icon" : "bug_report",
+            "texto": "Plagas",
+            "tipoOrden": "ND"
+        },
+        {
+            "ruta" : "/materiales",
+            "icon" : "assignment",
+            "texto": "Materiales utilizados",
+            "tipoOrden": "N"
+        },
+        {
+            "ruta" : "/materialesDiagnostico",
+            "icon" : "assignment",
+            "texto": "Materiales",
+            "tipoOrden": "D"
+        },
+        {
+            "ruta" : "/cuestionario",
+            "icon" : "grading",
+            "texto": "Cuestionario",
+            "tipoOrden": "C"
+        },
+        {
+            "ruta" : "/validacion",
+            "icon" : "grading",
+            "texto": "Validacion",
+            "tipoOrden": "C"
+        },
+        {
+            "ruta" : "/observaciones",
+            "icon" : "paste_outlined",
+            "texto": "Observaciones",
+            "tipoOrden": "NCD"
+        },
+        {
+            "ruta" : "/firmas",
+            "icon" : "edit_note",
+            "texto": "Firmas",
+            "tipoOrden": "NCD"
+        }
+    ]
+}

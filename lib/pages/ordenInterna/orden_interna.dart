@@ -1,0 +1,476 @@
+// ignore_for_file: use_build_context_synchronously, avoid_print
+
+import 'package:app_track_it/models/ubicacion.dart';
+import 'package:app_track_it/services/orden_services.dart';
+import 'package:app_track_it/services/revision_services.dart';
+import 'package:app_track_it/services/ubicacion_services.dart';
+import 'package:app_track_it/widgets/custom_button.dart';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:app_track_it/config/router/router.dart';
+import 'package:app_track_it/models/orden.dart';
+import 'package:app_track_it/providers/menu_providers.dart';
+import 'package:app_track_it/providers/orden_provider.dart';
+import 'package:app_track_it/widgets/icons.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class OrdenInterna extends StatefulWidget {
+  const OrdenInterna({super.key});
+
+  @override
+  State<OrdenInterna> createState() => _OrdenInternaState();
+}
+
+class _OrdenInternaState extends State<OrdenInterna> {
+  late Orden orden;
+  late int marcaId = 0;
+  late String _currentPosition = '';
+  late Ubicacion ubicacion = Ubicacion.empty();
+  bool ejecutando = false;
+  String token = '';
+
+  @override
+  void initState() {
+    super.initState();
+    orden = context.read<OrdenProvider>().orden;
+    marcaId = context.read<OrdenProvider>().marcaId;
+    token = context.read<OrdenProvider>().token;
+  }
+
+  void _mostrarDialogoConfirmacion(String accion) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          surfaceTintColor: Colors.white,
+          title: const Text('Confirmación'),
+          content: Text('¿Estás seguro que deseas $accion la orden?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop(context);
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  if (accion == 'iniciar') {
+                    cambiarEstado('EN PROCESO');
+                  } else {
+                    cambiarEstado('FINALIZADA');
+                  }
+                });
+                router.pop(context);
+              },
+              child: const Text('Confirmar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade200,
+        appBar: AppBar(
+          iconTheme: const IconThemeData(color: Colors.white),
+          backgroundColor: colors.primary,
+          title: Text(
+            'Orden ${orden.ordenTrabajoId}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          actions: [
+            IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.arrow_back_ios_new),
+              color: Colors.white,
+            )
+          ],
+        ),
+        drawer: Drawer(
+          surfaceTintColor: Colors.white,
+          child: Column(
+            children: [
+              Image.asset('images/trackit.jpg'),
+              const SizedBox(
+                height: 25,
+              ),
+              Expanded(child: _listaItems())
+            ],
+          ),
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(5)),
+                  height: 30,
+                  child: const Center(
+                    child: Text(
+                      'Detalle',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const Text(
+                  'Nombre del cliente: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  orden.cliente.nombre,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Codigo del cliente: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  orden.cliente.codCliente,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Fecha de la orden: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  DateFormat('EEEEEE d, MMMM yyyy', 'es')
+                      .format(orden.fechaOrdenTrabajo),
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Direccion del cliente: ',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    IconButton(onPressed: (){
+                      _launchMaps(orden.cliente.coordenadas);
+                    }, icon: Icon(Icons.person_pin, color: colors.primary))
+                  ],
+                ),
+                Text(
+                  orden.cliente.direccion,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Telefono del cliente: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  orden.cliente.telefono1,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Estado: ',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      orden.estado,
+                      style: const TextStyle(fontSize: 16),
+                    )
+                  ],
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Tipo de Orden: ',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    Text(orden.tipoOrden.descripcion,
+                        style: const TextStyle(fontSize: 16))
+                  ],
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Servicios: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                for (var i = 0; i < orden.servicio.length; i++) ...[
+                  Text(
+                    orden.servicio[i].descripcion,
+                    style: const TextStyle(fontSize: 16),
+                  )
+                ],
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Notas del cliente: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: colors.primary,
+                          width: 2),
+                      borderRadius: BorderRadius.circular(5)),
+                  child: TextFormField(
+                    enabled: false,
+                    minLines: 1,
+                    maxLines: 100,
+                    initialValue: orden.cliente.notas,
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        fillColor: Colors.white,
+                        filled: true),
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Instrucciones: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: colors.primary,
+                          width: 2),
+                      borderRadius: BorderRadius.circular(5)),
+                  child: TextFormField(
+                    enabled: false,
+                    minLines: 1,
+                    maxLines: 100,
+                    initialValue: orden.instrucciones,
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        fillColor: Colors.white,
+                        filled: true),
+                  ),
+                ),
+                const SizedBox(
+                  height: 15,
+                ),
+              ],
+            ),
+          ),
+        ),
+        bottomNavigationBar: BottomAppBar(
+          notchMargin: 10,
+          elevation: 0,
+          shape: const CircularNotchedRectangle(),
+          color: Colors.grey.shade200,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CustomButton(
+                clip: Clip.antiAlias,
+                onPressed: marcaId != 0 && orden.estado != 'EN PROCESO'
+                    ? () => _mostrarDialogoConfirmacion('iniciar')
+                    : null,
+                text: 'Iniciar',
+                tamano: 18,
+                disabled: !(marcaId != 0 && orden.estado == 'PENDIENTE'),
+              ),
+              CustomButton(
+                clip: Clip.antiAlias,
+                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO'
+                    ? () => _mostrarDialogoConfirmacion('finalizar')
+                    : null,
+                text: 'Finalizar',
+                tamano: 18,
+                disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
+              ),
+              IconButton(
+                  onPressed: marcaId != 0 && orden.estado == 'EN PROCESO'
+                      ? () => volverAPendiente(orden)
+                      : null,
+                  icon: Icon(Icons.backspace,
+                      color: marcaId != 0 && orden.estado == 'EN PROCESO'
+                          ? colors.primary
+                          : Colors.grey)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _listaItems() {
+    final String tipoOrden = orden.tipoOrden.codTipoOrden;
+    return FutureBuilder(
+      future: menuProvider.cargarData(tipoOrden),
+      initialData: const [],
+      builder: (context, snapshot) {
+        return ListView(
+          children: _listaItemsDrawer(snapshot.data, context),
+        );
+      },
+    );
+  }
+
+  List<Widget> _listaItemsDrawer(data, BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final List<Widget> opciones = [];
+    data.forEach((opt) {
+      final widgetTemp = ListTile(
+        title: Text(opt['texto']),
+        leading: getIcon(opt['icon'], context),
+        trailing: Icon(
+          Icons.keyboard_arrow_right,
+          color: colors.secondary,
+        ),
+        onTap: () {
+          router.push(opt['ruta']);
+        },
+      );
+
+      opciones
+        ..add(widgetTemp)
+        ..add(const Divider());
+    });
+    return opciones;
+  }
+
+  cambiarEstado(String estado) async {
+    if (!ejecutando) {
+      ejecutando = true;
+
+      await obtenerUbicacion();
+      int ubicacionId = ubicacion.ubicacionId;
+      int uId = context.read<OrdenProvider>().uId;
+
+      String token = context.read<OrdenProvider>().token;
+
+      await OrdenServices().patchOrden(context, orden, estado, ubicacionId, token);
+      if (estado == 'EN PROCESO') {
+        await RevisionServices().postRevision(uId, orden, token);
+      }
+      setState(() {});
+
+      print('hola entrada');
+      ejecutando = false;
+    }
+  }
+
+  obtenerUbicacion() async {
+    await getLocation();
+    int uId = context.read<OrdenProvider>().uId;
+    ubicacion.fecha = DateTime.now();
+    ubicacion.usuarioId = uId;
+    ubicacion.ubicacion = _currentPosition;
+
+    String token = context.read<OrdenProvider>().token;
+
+    await UbicacionServices().postUbicacion(context, ubicacion, token);
+  }
+
+  Future<void> getLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _currentPosition = '${position.latitude}, ${position.longitude}';
+        print('${position.latitude}, ${position.longitude}');
+      });
+    } catch (e) {
+      setState(() {
+        _currentPosition = 'Error al obtener la ubicación: $e';
+      });
+    }
+  }
+
+  Future<void> volverAPendiente(Orden orden) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          surfaceTintColor: Colors.white,
+          title: const Text('ADVERTENCIA'),
+          content: Text(
+            'Todos los datos que hubiera cargado para esta Orden se perderan, Desea pasar a PENDIENTE la Orden ${orden.ordenTrabajoId}?',
+            style: const TextStyle(fontSize: 20),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => GoRouter.of(context).pop(),
+              child: const Text('Cerrar')
+            ),
+            TextButton(
+              onPressed: () async {
+                if (!ejecutando) {
+                  ejecutando = true;
+                  await obtenerUbicacion();
+                  int ubicacionId = ubicacion.ubicacionId;
+                  await OrdenServices().patchOrden(context, orden, 'PENDIENTE', ubicacionId, token);
+                  setState(() {});
+                  ejecutando = false;
+                }
+                await OrdenServices.showDialogs(context, 'Estado cambiado a Pendiente', true, true);
+                setState(() {});
+              },
+              child: const Text('Confirmar')
+            )
+          ],
+        );
+      }
+    );
+  }
+
+   _launchMaps(String coordenadas) async {
+    // Coordenadas a abrir en el mapa
+    var coords = coordenadas.split(',');
+    String latitude = coords[0]; // Latitud de ejemplo
+    String longitude = coords[1]; // Longitud de ejemplo
+
+    // URI con las coordenadas
+    final Uri toLaunch = Uri(
+        scheme: 'https',
+        host: 'www.google.com',
+        path: 'maps/search/',
+        query: 'api=1&query=$latitude,$longitude');
+
+    if (await launchUrl(toLaunch)) {
+    } else {
+      throw 'No se pudo abrir la url';
+    }
+  }
+
+}
