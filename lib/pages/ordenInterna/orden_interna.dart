@@ -161,7 +161,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  DateFormat('EEEEEE d, MMMM yyyy', 'es')
+                  DateFormat('EEEE d, MMMM yyyy', 'es')
                       .format(orden.fechaOrdenTrabajo),
                   style: const TextStyle(fontSize: 16),
                 ),

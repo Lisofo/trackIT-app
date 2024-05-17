@@ -214,7 +214,7 @@ class _ListaOrdenesState extends State<ListaOrdenes> {
                                     width: 10,
                                   ),
                                   Text(
-                                    DateFormat('EEEEEE d, MMMM yyyy', 'es').format(ordenesFiltradas[i].fechaOrdenTrabajo),
+                                    DateFormat('EEEE d, MMMM yyyy', 'es').format(ordenesFiltradas[i].fechaOrdenTrabajo),
                                   ),
                                   const Expanded(child: Text('')),
                                   Text(ordenesFiltradas[i].tipoOrden.descripcion),

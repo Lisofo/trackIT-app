@@ -168,8 +168,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                         color: colors.primary),
                     borderRadius: BorderRadius.circular(5)),
                 child: DropdownButtonFormField(
-                  decoration:
-                      const InputDecoration(border: InputBorder.none),
+                  decoration: const InputDecoration(border: InputBorder.none),
                   hint: const Padding(
                     padding: EdgeInsets.only(left: 8.0),
                     child: Text('Ptos de Inspeccion'),
@@ -180,7 +179,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                       child: SizedBox(
                         width: double.infinity,
                         child: Text(
-                          e.descripcion,
+                          nombreYCantidad(e),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -195,6 +194,9 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                       selectAll = false;
                       for (var i = 0; i < ptosFiltrados.length; i++) {
                         ptosFiltrados[i].seleccionado = false;
+                      }
+                      for (var ptos in context.read<OrdenProvider>().puntosSeleccionados) {
+                        ptos.seleccionado = false;
                       }
                     });
                   },
@@ -280,6 +282,13 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
         ),
       ),
     );
+  }
+
+  String nombreYCantidad(TipoPtosInspeccion e) { 
+    String retorno = '';
+    String cantidad = ptosInspeccion.where((pto) => pto.tipoPuntoInspeccionId == e.tipoPuntoInspeccionId).toList().length.toString();
+    retorno = '${e.descripcion} ($cantidad)';
+    return retorno;
   }
 
   listaDePuntos() {
