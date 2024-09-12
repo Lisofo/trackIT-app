@@ -106,7 +106,10 @@ class _OrdenInternaState extends State<OrdenInterna> {
           surfaceTintColor: Colors.white,
           child: Column(
             children: [
-              Image.asset('images/banner.jpg'),
+              Container(
+                color: colors.primary,
+                child: Image.asset('images/banner.jpg')
+              ),
               const SizedBox(
                 height: 25,
               ),

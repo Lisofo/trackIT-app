@@ -196,9 +196,10 @@ class ContainerTituloPIRevision extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 90, 163, 101),
+        color: colors.primary,
         borderRadius: BorderRadius.circular(5)
       ),
       height: 30,
