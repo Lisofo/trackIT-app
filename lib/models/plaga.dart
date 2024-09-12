@@ -1,10 +1,8 @@
 import 'dart:convert';
 
-List<Plaga> plagaFromMap(String str) =>
-    List<Plaga>.from(json.decode(str).map((x) => Plaga.fromJson(x)));
+List<Plaga> plagaFromMap(String str) => List<Plaga>.from(json.decode(str).map((x) => Plaga.fromJson(x)));
 
-String plagaToMap(List<Plaga> data) =>
-    json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
+String plagaToMap(List<Plaga> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 class Plaga {
   late int plagaId;

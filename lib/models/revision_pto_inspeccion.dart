@@ -1,10 +1,8 @@
 import 'dart:convert';
 
-RevisionPtoInspeccion revisionPtoInspeccionFromMap(String str) =>
-    RevisionPtoInspeccion.fromJson(json.decode(str));
+RevisionPtoInspeccion revisionPtoInspeccionFromMap(String str) => RevisionPtoInspeccion.fromJson(json.decode(str));
 
-String revisionPtoInspeccionToMap(RevisionPtoInspeccion data) =>
-    json.encode(data.toMap());
+String revisionPtoInspeccionToMap(RevisionPtoInspeccion data) => json.encode(data.toMap());
 
 class RevisionPtoInspeccion {
   late int? otPuntoInspeccionId;
@@ -78,14 +76,10 @@ class RevisionPtoInspeccion {
         codAccion: json["codAccion"] as String? ?? '',
         descPiAccion: json["desPIAccion"] as String? ?? '',
         comentario: json["comentario"] as String? ?? '',
-        materiales: List<PtoMaterial>.from(
-            json["materiales"].map((x) => PtoMaterial.fromMap(x))),
-        plagas:
-            List<PtoPlaga>.from(json["plagas"].map((x) => PtoPlaga.fromMap(x))),
-        tareas:
-            List<PtoTarea>.from(json["tareas"].map((x) => PtoTarea.fromMap(x))),
-        trasladoNuevo: List<TrasladoNuevo>.from(
-            json["trasladoNuevo"].map((x) => TrasladoNuevo.fromMap(x))),
+        materiales: List<PtoMaterial>.from(json["materiales"].map((x) => PtoMaterial.fromMap(x))),
+        plagas: List<PtoPlaga>.from(json["plagas"].map((x) => PtoPlaga.fromMap(x))),
+        tareas: List<PtoTarea>.from(json["tareas"].map((x) => PtoTarea.fromMap(x))),
+        trasladoNuevo: List<TrasladoNuevo>.from(json["trasladoNuevo"].map((x) => TrasladoNuevo.fromMap(x))),
         seleccionado: false,
       );
 
@@ -110,8 +104,7 @@ class RevisionPtoInspeccion {
         "materiales": List<dynamic>.from(materiales.map((x) => x.toMap())),
         "plagas": List<dynamic>.from(plagas.map((x) => x.toMap())),
         "tareas": List<dynamic>.from(tareas.map((x) => x.toMap())),
-        "trasladoNuevo":
-            List<dynamic>.from(trasladoNuevo.map((x) => x.toMap())),
+        "trasladoNuevo": List<dynamic>.from(trasladoNuevo.map((x) => x.toMap())),
         "seleccionado": false,
       };
 
@@ -217,7 +210,7 @@ class PtoPlaga {
   late int plagaId;
   late String codPlaga;
   late String descPlaga;
-  late int cantidad;
+  late int? cantidad;
 
   PtoPlaga({
     required this.otPiPlagaId,
@@ -234,7 +227,7 @@ class PtoPlaga {
         plagaId: json["plagaId"] as int? ?? 0,
         codPlaga: json["codPlaga"] as String? ?? '',
         descPlaga: json["descPlaga"] as String? ?? '',
-        cantidad: json["cantidad"] as int? ?? 0,
+        cantidad: json["cantidad"], // si a futuro no anda es culpa de Horacio
       );
 
   Map<String, dynamic> toMap() => {
@@ -388,15 +381,16 @@ class PtoAccion {
   });
 
   factory PtoAccion.fromMap(Map<String, dynamic> json) => PtoAccion(
-      piAccionId: json["piAccionId"] as int? ?? 0,
-      codAccion: json["codAccion"] as String? ?? '',
-      descPiAccion: json["desPIAccion"] as String? ?? '');
+    piAccionId: json["piAccionId"] as int? ?? 0,
+    codAccion: json["codAccion"] as String? ?? '',
+    descPiAccion: json["desPIAccion"] as String? ?? ''
+  );
 
   Map<String, dynamic> toMap() => {
-        "piAccionId": piAccionId,
-        "codAccion": codAccion,
-        "desPIAccion": descPiAccion
-      };
+    "piAccionId": piAccionId,
+    "codAccion": codAccion,
+    "desPIAccion": descPiAccion
+  };
 
   PtoAccion.empty() {
     piAccionId = 0;

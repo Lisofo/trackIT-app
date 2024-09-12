@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'package:app_track_it/pages/pages.dart';
+import 'package:app_tec_sedel/pages/pages.dart';
 
 final router = GoRouter(initialLocation: '/', routes: [
   GoRoute(path: '/', builder: (context, state) => const Login()),
@@ -17,4 +17,5 @@ final router = GoRouter(initialLocation: '/', routes: [
   GoRoute(path: '/plagas', builder: (context, state) => const PlagasPage()),
   GoRoute(path: '/tareas', builder: (context, state) => const TareasPage()),
   GoRoute(path: '/validacion', builder: (context, state) => const ValidacionPage()),
+  GoRoute(path: '/resumenOrden', builder: (context, state) => const ResumenOrden()),
 ]);

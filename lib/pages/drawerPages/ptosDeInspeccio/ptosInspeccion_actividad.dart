@@ -1,26 +1,25 @@
-// ignore_for_file: file_names, avoid_print, use_build_context_synchronously, non_constant_identifier_names
+  // ignore_for_file: file_names, avoid_print, use_build_context_synchronously, non_constant_identifier_names
 
-import 'package:app_track_it/models/materialesTPI.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/models/plagaXTPI.dart';
-import 'package:app_track_it/models/revision_materiales.dart';
-import 'package:app_track_it/models/revision_pto_inspeccion.dart';
-import 'package:app_track_it/models/tareaXtpi.dart';
-import 'package:app_track_it/models/tipos_ptos_inspeccion.dart';
-import 'package:app_track_it/services/materiales_services.dart';
-import 'package:app_track_it/services/plagas_services.dart';
-import 'package:app_track_it/services/ptos_services.dart';
-import 'package:app_track_it/services/tareas_services.dart';
+import 'package:app_tec_sedel/models/materialesTPI.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/plagaXTPI.dart';
+import 'package:app_tec_sedel/models/revision_materiales.dart';
+import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
+import 'package:app_tec_sedel/models/tareaXtpi.dart';
+import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/services/materiales_services.dart';
+import 'package:app_tec_sedel/services/plagas_services.dart';
+import 'package:app_tec_sedel/services/ptos_services.dart';
+import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 
 class PtosInspeccionActividad extends StatefulWidget {
   const PtosInspeccionActividad({super.key});
 
   @override
-  State<PtosInspeccionActividad> createState() =>
-      _PtosInspeccionActividadState();
+  State<PtosInspeccionActividad> createState() => _PtosInspeccionActividadState();
 }
 
 class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
@@ -30,19 +29,14 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
   bool isReadOnly = true;
   late TipoPtosInspeccion tPISeleccionado = TipoPtosInspeccion.empty();
   late List<RevisionPtoInspeccion> ptoInspeccionSeleccionados = [];
-
   List<TareaXtpi> tareas = [];
-
   List<PlagaXtpi> plagas = [];
   List<PtoPlaga> plagasSeleccionadas = [];
   late PlagaXtpi plagaSeleccionada = PlagaXtpi.empty();
-
   List<Lote> lotesVencimientos = [];
-
   TextEditingController cantidadController = TextEditingController();
   TextEditingController cantidadControllerMateriales = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
   MaterialXtpi? materialSeleccionado;
   Lote? loteSeleccionado;
   late String menu = context.read<OrdenProvider>().menu;
@@ -50,6 +44,14 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
   List<PtoMaterial> materialesSeleccionados = [];
   bool subiendoAcciones = false;
   late RevisionPtoInspeccion nuevaRevisionPtoInspeccion = RevisionPtoInspeccion.empty();
+  bool cargoDatosCorrectamente = false;
+  bool cargando = true;
+  final _ptosInspeccionServices = PtosInspeccionServices();
+  final _tareasServices = TareasServices();
+  final _materialesServices = MaterialesServices();
+  int? statusCodeRevision;
+  int? statusCodeTareas;
+  int? statusCodeMateriales;
 
   @override
   void initState() {
@@ -65,27 +67,41 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
 
   cargarDatos() async {
     token = context.read<OrdenProvider>().token;
-    orden = context.read<OrdenProvider>().orden;
-    marcaId = context.read<OrdenProvider>().marcaId;
-    final String modo = context.read<OrdenProvider>().modo;
-    tPISeleccionado = context.read<OrdenProvider>().tipoPtosInspeccion;
-    ptoInspeccionSeleccionados = context.read<OrdenProvider>().puntosSeleccionados;
-    tareas = await TareasServices().getTareasXTPI(tPISeleccionado, modo, token);
-    materiales = await MaterialesServices().getMaterialesXTPI(tPISeleccionado, token);
-    
-    if (orden.estado == "EN PROCESO" && marcaId != 0) {
-      isReadOnly = false;
-    }
-    int accion = menu == "Actividad" ? 2 : 3;
-    bool modificando = ptoInspeccionSeleccionados.length == 1 && ptoInspeccionSeleccionados[0].piAccionId == accion;
-    if (modificando) {
-      for (var tarea in tareas) {
-        tarea.selected = ptoInspeccionSeleccionados[0].tareas
-          .any((asignada) => asignada.tareaId == tarea.tareaId);
+    try {
+      orden = context.read<OrdenProvider>().orden;
+      marcaId = context.read<OrdenProvider>().marcaId;
+      final String modo = context.read<OrdenProvider>().modo;
+      tPISeleccionado = context.read<OrdenProvider>().tipoPtosInspeccion;
+      ptoInspeccionSeleccionados = context.read<OrdenProvider>().puntosSeleccionados;
+      tareas = await _tareasServices.getTareasXTPI(context, tPISeleccionado, modo, token);
+      statusCodeTareas = await _tareasServices.getStatusCode();
+      await _tareasServices.resetStatusCode();
+      materiales = await _materialesServices.getMaterialesXTPI(context, tPISeleccionado, token);
+      statusCodeMateriales = await _materialesServices.getStatusCode();
+      await _materialesServices.resetStatusCode();
+
+      if (orden.estado == "EN PROCESO" && marcaId != 0) {
+        isReadOnly = false;
       }
-      materialesSeleccionados = ptoInspeccionSeleccionados[0].materiales;
-      plagasSeleccionadas = ptoInspeccionSeleccionados[0].plagas;
+      int accion = menu == "Actividad" ? 2 : 3;
+      bool modificando = ptoInspeccionSeleccionados.length == 1 && ptoInspeccionSeleccionados[0].piAccionId == accion;
+      if (modificando) {
+        for (var tarea in tareas) {
+          tarea.selected = ptoInspeccionSeleccionados[0].tareas.any((asignada) => asignada.tareaId == tarea.tareaId);
+        }
+        materialesSeleccionados = ptoInspeccionSeleccionados[0].materiales;
+        plagasSeleccionadas = ptoInspeccionSeleccionados[0].plagas;
+      }
+      if (statusCodeMateriales == 1 && statusCodeTareas == 1){
+        cargoDatosCorrectamente = true;
+        statusCodeMateriales = null;
+        statusCodeTareas = null;
+      }
+      cargando = false;
+    }catch (e) {
+      cargando = false;
     }
+    
     setState(() {});
   }
 
@@ -95,7 +111,6 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          iconTheme: const IconThemeData(color: Colors.white),
           title: Text(
             '${orden.ordenTrabajoId} - $menu',
             style: const TextStyle(color: Colors.white),
@@ -103,7 +118,25 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
           backgroundColor: colors.primary,
         ),
         backgroundColor: Colors.grey.shade200,
-        body: SingleChildScrollView(
+        body: cargando ? const Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            Text('Cargando, por favor espere...')
+          ],
+        ),
+      ) : !cargoDatosCorrectamente ? 
+      Center(
+        child: TextButton.icon(
+          onPressed: () async {
+            await cargarDatos();
+          }, 
+          icon: const Icon(Icons.replay_outlined),
+          label: const Text('Recargar'),
+        ),
+      ) : SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -229,8 +262,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
                               setState(() {
                                 plagasSeleccionadas.removeAt(i);
                               });
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text('$plaga borrado'),
                               ));
                             },
@@ -246,7 +278,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
                             ),
                             child: ListTile(
                               title: Text(plaga.descPlaga),
-                              trailing: Text(plaga.cantidad.toString()),
+                              trailing: Text(plaga.cantidad == null ? '' : plaga.cantidad.toString()),
                             ),
                           );
                         }),
@@ -300,7 +332,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
                       setState(() {
                         materialSeleccionado = value;
                       });
-                      mostrarPopupCantidadMateriales();
+                      mostrarPopupCantidadMateriales(materialSeleccionado!);
                     },
                     value: materialSeleccionado,
                   ),
@@ -366,9 +398,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
                           ),
                           child: ListTile(
                             title: Text(material.descripcion),
-                            subtitle: Text(material.lote == ''
-                                ? "No hay lote disponible"
-                                : material.lote.toString()),
+                            subtitle: Text(material.lote == '' ? "No hay lote disponible" : material.lote.toString()),
                             trailing: Text(material.cantidad.toString()),
                           ),
                         );
@@ -386,9 +416,9 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
           child: ElevatedButton(
               clipBehavior: Clip.antiAlias,
               style: const ButtonStyle(
-                  backgroundColor: MaterialStatePropertyAll(Colors.white),
-                  elevation: MaterialStatePropertyAll(10),
-                  shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+                  backgroundColor: WidgetStatePropertyAll(Colors.white),
+                  elevation: WidgetStatePropertyAll(10),
+                  shape: WidgetStatePropertyAll(RoundedRectangleBorder(
                       borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(50),
                           right: Radius.circular(50))))),
@@ -417,34 +447,8 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
   Future marcarPIActividad(int idPIAccion, String comentario) async {
     List<PtoTarea> agregarTareas = [];
     agregarTareas = agregarTareasSeleccionadas(agregarTareas, tareas);
-    List<RevisionPtoInspeccion> nuevosObjetos = [];
 
     for (var i = 0; i < ptoInspeccionSeleccionados.length; i++) {
-      RevisionPtoInspeccion nuevaRevisionPtoInspeccion = RevisionPtoInspeccion(
-        otPuntoInspeccionId: ptoInspeccionSeleccionados[i].otPuntoInspeccionId,
-        ordenTrabajoId: orden.ordenTrabajoId,
-        otRevisionId: orden.otRevisionId,
-        puntoInspeccionId: ptoInspeccionSeleccionados[i].puntoInspeccionId,
-        planoId: ptoInspeccionSeleccionados[i].planoId,
-        tipoPuntoInspeccionId: ptoInspeccionSeleccionados[i].tipoPuntoInspeccionId,
-        codTipoPuntoInspeccion: ptoInspeccionSeleccionados[i].codTipoPuntoInspeccion,
-        descTipoPuntoInspeccion: ptoInspeccionSeleccionados[i].descTipoPuntoInspeccion,
-        plagaObjetivoId: ptoInspeccionSeleccionados[i].plagaObjetivoId,
-        codPuntoInspeccion: ptoInspeccionSeleccionados[i].codPuntoInspeccion,
-        codigoBarra: ptoInspeccionSeleccionados[i].codigoBarra,
-        zona: ptoInspeccionSeleccionados[i].zona,
-        sector: ptoInspeccionSeleccionados[i].sector,
-        idPIAccion: idPIAccion,
-        piAccionId: idPIAccion,
-        codAccion: idPIAccion.toString(),
-        descPiAccion: ptoInspeccionSeleccionados[i].descPiAccion,
-        comentario: comentario,
-        materiales: materialesSeleccionados,
-        plagas: plagasSeleccionadas,
-        tareas: agregarTareas,
-        trasladoNuevo: [],
-        seleccionado: ptoInspeccionSeleccionados[i].seleccionado
-      );
       ptoInspeccionSeleccionados[i].codAccion = idPIAccion == 2 ? 'ACTIVIDAD' : 'MANTENIMIENTO';
       ptoInspeccionSeleccionados[i].idPIAccion = idPIAccion;
       ptoInspeccionSeleccionados[i].piAccionId = idPIAccion;
@@ -453,22 +457,26 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
       ptoInspeccionSeleccionados[i].materiales = List<PtoMaterial>.from(materialesSeleccionados);
       ptoInspeccionSeleccionados[i].tareas = List<PtoTarea>.from(agregarTareas);
       ptoInspeccionSeleccionados[i].trasladoNuevo = [];
-      nuevosObjetos.add(nuevaRevisionPtoInspeccion);
       Provider.of<OrdenProvider>(context, listen: false).actualizarPunto(i, ptoInspeccionSeleccionados[i]);
     }
-    await postAcciones(nuevosObjetos);
+    await postAcciones(ptoInspeccionSeleccionados);
+    statusCodeRevision = null;
     subiendoAcciones = false;
   }
 
   Future postAcciones(List<RevisionPtoInspeccion> acciones) async {
-    await PtosInspeccionServices().postAcciones(context, orden, acciones, token);
-    await PtosInspeccionServices.showDialogs(context, acciones.length == 1 ? 'Accion creada' : 'Acciones creadas', true, true);
+    await _ptosInspeccionServices.postAcciones(context, orden, acciones, token);
+    statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+    await _ptosInspeccionServices.resetStatusCode();
+    if(statusCodeRevision == 1) {
+      await PtosInspeccionServices.showDialogs(context, acciones.length == 1 ? 'Accion creada' : 'Acciones creadas', true, true);
+    }
   }
 
   Widget PopUpPlagas(BuildContext context) {
     return InkWell(
       onTap: () async {
-        plagas = await PlagaServices().getPlagasXTPI(tPISeleccionado, token);
+        plagas = await PlagaServices().getPlagasXTPI(context, tPISeleccionado, token);
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -520,15 +528,15 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
                     TextButton(
                       onPressed: () {
                         late PtoPlaga nuevaPlaga = PtoPlaga(
-                            otPiPlagaId: 0,
-                            otPuntoInspeccionId: 0,
-                            plagaId: nuevaPlagaSeleccionada!.plagaId,
-                            codPlaga: nuevaPlagaSeleccionada!.codPlaga,
-                            descPlaga: nuevaPlagaSeleccionada!.descripcion,
-                            cantidad: int.parse(nuevaCantidad));
+                          otPiPlagaId: 0,
+                          otPuntoInspeccionId: 0,
+                          plagaId: nuevaPlagaSeleccionada!.plagaId,
+                          codPlaga: nuevaPlagaSeleccionada!.codPlaga,
+                          descPlaga: nuevaPlagaSeleccionada!.descripcion,
+                          cantidad: nuevaCantidad == '' ? null : int.parse(nuevaCantidad)
+                        );
 
-                        if (nuevaPlagaSeleccionada != null &&
-                            nuevaCantidad.isNotEmpty) {
+                        if (nuevaPlagaSeleccionada != null) {
                           plagasSeleccionadas.add(nuevaPlaga);
                           Navigator.of(context).pop();
                           setState(() {
@@ -549,7 +557,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
     );
   }
 
-  mostrarPopupCantidadMateriales() async {
+  mostrarPopupCantidadMateriales(MaterialXtpi material) async {
     await cargarLotes();
 
     showDialog(
@@ -559,8 +567,10 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
           surfaceTintColor: Colors.white,
           title: const Text('Cantidad de materiales'),
           content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text('Unidad: ${material.unidad}'),
               TextField(
                 controller: cantidadControllerMateriales,
                 keyboardType: TextInputType.number,
@@ -635,7 +645,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
   }
 
   Future<void> cargarLotes() async {
-    lotesVencimientos = await MaterialesServices().getLotes(materialSeleccionado!.materialId, token);
+    lotesVencimientos = await MaterialesServices().getLotes(context, materialSeleccionado!.materialId, token);
     setState(() {});
   }
 

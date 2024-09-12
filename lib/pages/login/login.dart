@@ -1,10 +1,10 @@
 // ignore_for_file: prefer_typing_uninitialized_variables, use_build_context_synchronously, avoid_print
 
-import 'package:app_track_it/widgets/custom_button.dart';
+import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:app_track_it/services/login_service.dart';
-import 'package:app_track_it/widgets/custom_form_field.dart';
+import 'package:app_tec_sedel/services/login_service.dart';
+import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class Login extends StatefulWidget {
@@ -43,16 +43,16 @@ class _LoginState extends State<Login> {
     final colors = Theme.of(context).colorScheme;
     return SafeArea(
         child: Scaffold(
-      backgroundColor:  colors.background,
+      backgroundColor:  colors.primary,
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('images/trackit.jpg'),
+            Image.asset('images/banner.jpg'),
             const SizedBox(height: 40),
             const CircleAvatar(
                 radius: 70.5,
-                backgroundImage: AssetImage('images/trackitLogo.jpg')),
+                backgroundImage: AssetImage('images/logo.jpg')),
             const SizedBox(
               height: 40,
             ),
@@ -153,14 +153,14 @@ class _LoginState extends State<Login> {
       ),
       bottomNavigationBar: Container(
         width: MediaQuery.of(context).size.width,
-        color: Colors.grey,
+        color: Colors.white,
         child: const Padding(
           padding:
               EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
           child: Text(
             'info@integralsoft.com.uy | 099113500',
             style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          )
         ),
       ),
     ));
@@ -175,10 +175,17 @@ class _LoginState extends State<Login> {
 
     if (_formKey.currentState?.validate() == true) {
       var statusCode = await _loginServices.getStatusCode();
-
-      if (statusCode == 200) {
+      await _loginServices.resetStatusCode();
+      if (statusCode == 1) {
         context.pushReplacement('/entradaSalida');
       } else if (statusCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Revise su conexión'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else if (statusCode >= 400 && statusCode < 500){
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Credenciales inválidas. Intente nuevamente.'),

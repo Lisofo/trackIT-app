@@ -2,17 +2,17 @@
 
 import 'dart:convert';
 
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/widgets/custom_button.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:app_track_it/config/router/router.dart';
-import 'package:app_track_it/models/marcas.dart';
-import 'package:app_track_it/models/ubicacion.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
-import 'package:app_track_it/services/marcas_services.dart';
-import 'package:app_track_it/services/ubicacion_services.dart';
+import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/marcas.dart';
+import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/marcas_services.dart';
+import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,6 +30,12 @@ class _EntradSalidaState extends State<EntradSalida> {
   late String nombreUsuario = '';
   bool ejecutandoEntrada = false;
   bool ejecutandoSalida = false;
+  late int tecnicoId = 0;
+  late String token = '';
+  final _marcasServices = MarcasServices();
+  final _ubicacionServices = UbicacionServices();
+  int? statusCode;
+  bool marcando = false;
 
   @override
   void initState() {
@@ -39,7 +45,8 @@ class _EntradSalidaState extends State<EntradSalida> {
 
   cargarDatos() async {
     nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
-
+    tecnicoId = context.read<OrdenProvider>().tecnicoId;
+    token = context.read<OrdenProvider>().token;
     await obtenerObjeto();
   }
 
@@ -68,11 +75,11 @@ class _EntradSalidaState extends State<EntradSalida> {
       },
       child: SafeArea(
         child: Scaffold(
-          backgroundColor: colors.background,
+          backgroundColor: colors.primary,
           body: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('images/trackit.jpg'),
+              Image.asset('images/banner.jpg'),
               const SizedBox(height: 20),
               CircleAvatar(
                 backgroundColor: Colors.grey.shade800,
@@ -89,46 +96,55 @@ class _EntradSalidaState extends State<EntradSalida> {
               Text(
                 nombreUsuario,
                 style: const TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 35,
                     fontWeight: FontWeight.bold),
               ),
               if (marca.marcaId != 0) ...[
                 Text(
                   'Tiene una entrada iniciada a la hora ${marca.desde}',
-                  style: const TextStyle(color: Colors.black),
+                  style: const TextStyle(color: Colors.white),
                   textAlign: TextAlign.center,
                 )
               ] else ...[
                 const Text(
                   'No marcó entrada aún',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(color: Colors.white),
                 )
               ],
               const SizedBox(
                 height: 20,
               ),
               CustomButton(
-                onPressed: marca.marcaId == 0 ? () => marcarEntrada() : null,
+                onPressed: marca.marcaId == 0 ? () {
+                  marcando = true;
+                  setState(() {});
+                  marcarEntrada();
+                } : null,
                 text: 'Marcar entrada',
-                disabled: marca.marcaId != 0,
+                disabled: marca.marcaId != 0 || marcando,
               ),
               const SizedBox(
                 height: 20,
               ),
               CustomButton(
-                onPressed: marca.marcaId != 0 ? () => marcarSalida() : null,
+                onPressed: marca.marcaId != 0 ? () {
+                  marcando = true;
+                  setState(() {});
+                  marcarSalida();
+                } : null,
                 text: 'Marcar Salida',
-                disabled: marca.marcaId == 0,
+                disabled: marca.marcaId == 0 || marcando,
               ),
               const SizedBox(
                 height: 30,
               ),
               CustomButton(
-                onPressed: () {
+                onPressed: !marcando ? () {
                   router.push('/listaOrdenes');
-                },
+                } : null ,
                 text: 'Revisar Ordenes',
+                disabled: marcando,
               ),
               const SizedBox(
                 height: 100,
@@ -140,7 +156,7 @@ class _EntradSalidaState extends State<EntradSalida> {
                   if (snapshot.hasData) {
                     return Text(
                       'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
-                      style: const TextStyle(color: Colors.black),
+                      style: const TextStyle(color: Colors.white),
                     );
                   } else {
                     return const Text('Cargando la app...');
@@ -152,7 +168,7 @@ class _EntradSalidaState extends State<EntradSalida> {
           ),
           bottomNavigationBar: Container(
             width: MediaQuery.of(context).size.width,
-            color: Colors.grey,
+            color: Colors.white,
             child: const Padding(
               padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
               child: Text(
@@ -172,10 +188,9 @@ class _EntradSalidaState extends State<EntradSalida> {
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
-
-    String token = context.read<OrdenProvider>().token;
-
-    await UbicacionServices().postUbicacion(context, ubicacion, token);
+    await _ubicacionServices.postUbicacion(context, ubicacion, token);
+    statusCode = await _ubicacionServices.getStatusCode();
+    await _ubicacionServices.resetStatusCode();
   }
 
   marcarEntrada() async {
@@ -183,29 +198,35 @@ class _EntradSalidaState extends State<EntradSalida> {
       ejecutandoEntrada = true;
       if (marca.marcaId == 0) {
         await obtenerUbicacion();
-        int ubicacionId = ubicacion.ubicacionId;
-        marca = Marca.empty();
-        marca.tecnicoId = context.read<OrdenProvider>().tecnicoId;
-        marca.desde = DateTime.now();
-        marca.ubicacionId = ubicacionId;
-        String token = context.read<OrdenProvider>().token;
-
-        await MarcasServices().postMarca(context, marca, token);
-        guardarObjeto(marca);
+        if (statusCode == 1){
+          int ubicacionId = ubicacion.ubicacionId;
+          if(ubicacionId != 0){
+            marca = Marca.empty();
+            marca.tecnicoId = tecnicoId;
+            marca.desde = DateTime.now();
+            marca.ubicacionId = ubicacionId;
+            await _marcasServices.postMarca(context, marca, token);
+            statusCode = await _marcasServices.getStatusCode();
+            await _marcasServices.getStatusCode();
+            if (statusCode == 1){
+              guardarObjeto(marca);
+            }
+          }
+        }
+        statusCode = null;
         setState(() {});
       } else {
-        MarcasServices.showDialogs(
-            context, 'Ya tiene una entrada inciada', false, false);
+        MarcasServices.showDialogs(context, 'Ya tiene una entrada inciada', false, false);
+        statusCode = null;
       }
       print('hola entrada');
       ejecutandoEntrada = false;
     }
+    marcando = false;
   }
 
   marcarSalida() async {
-    List<Orden> ordenesEnProceso =
-        context.read<OrdenProvider>().ordenesEnProceso;
-
+    List<Orden> ordenesEnProceso = context.read<OrdenProvider>().ordenesEnProceso;
     if (!ejecutandoSalida) {
       ejecutandoSalida = true;
       if (marca.marcaId != 0) {
@@ -219,9 +240,10 @@ class _EntradSalidaState extends State<EntradSalida> {
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
+                    marcando = false;
                     Navigator.of(context).pop(false);
                   },
-                  child: const Text('Cerrar'),
+                  child: const Text('Cancelar'),
                 ),
                 TextButton(
                   onPressed: () {
@@ -233,52 +255,62 @@ class _EntradSalidaState extends State<EntradSalida> {
             );
           },
         );
-        ordenesEnProceso = ordenesEnProceso
-            .where((orden) => orden.estado == 'EN PROCESO')
-            .toList();
+        ordenesEnProceso = ordenesEnProceso.where((orden) => orden.estado == 'EN PROCESO').toList();
         if (ordenesEnProceso.isEmpty && confirmacion == true) {
           await obtenerUbicacion();
-          int ubicacionId = ubicacion.ubicacionId;
-          marca.hasta = DateTime.now();
-          marca.ubicacionIdHasta = ubicacionId;
-          String token = context.read<OrdenProvider>().token;
-
-          await MarcasServices().putMarca(context, marca, token);
-          Provider.of<OrdenProvider>(context, listen: false).setMarca(0);
-          _borrarIdLocal();
-          setState(() {});
-        } else {
+          if (statusCode == 1){
+            int ubicacionId = ubicacion.ubicacionId;
+            marca.hasta = DateTime.now();
+            marca.ubicacionIdHasta = ubicacionId;
+            await _marcasServices.putMarca(context, marca, token);
+            statusCode = await _marcasServices.getStatusCode();
+            _marcasServices.resetStatusCode();
+            if (statusCode == 1) {
+              Provider.of<OrdenProvider>(context, listen: false).setMarca(0);
+              _borrarIdLocal();
+            }
+            statusCode = null;
+            setState(() {});
+          }
+        } else if(ordenesEnProceso.isNotEmpty){
           showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  surfaceTintColor: Colors.white,
-                  title: const Text('Advertencia'),
-                  content: const Text(
-                      'Revise las ordenes que le quedaron en proceso'),
-                  actions: [
-                    TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Cerrar'))
-                  ],
-                );
-              });
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                surfaceTintColor: Colors.white,
+                title: const Text('Advertencia'),
+                content: const Text('Revise las ordenes que le quedaron en proceso'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      marcando = false;
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('OK')
+                  )
+                ],
+              );
+            }
+          );
+        } else {
+          marcando = false;
+          setState(() {});
         }
       } else {
-        MarcasServices.showDialogs(
-            context, 'Marque entrada para luego marcar salida', false, false);
+        MarcasServices.showDialogs(context, 'Marque entrada para luego marcar salida', false, false);
       }
       print('chau salida');
       ejecutandoSalida = false;
     }
+    marcando = false;
+    setState(() {});
   }
 
   Future<void> getLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high
+      );
       setState(() {
         _currentPosition = '${position.latitude}, ${position.longitude}';
         print('${position.latitude}, ${position.longitude}');
@@ -306,15 +338,16 @@ class _EntradSalidaState extends State<EntradSalida> {
   }
 
   Future obtenerObjeto() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('marcaConDatos');
-    if (jsonString != null) {
-      print(jsonString);
-      final map = jsonDecode(jsonString);
-      marca = Marca.fromJson(map);
-      Provider.of<OrdenProvider>(context, listen: false).setMarca(marca.marcaId);
-      setState(() {});
-    }
+    marca = await MarcasServices().getUltimaMarca(context, tecnicoId, token);
+    // final prefs = await SharedPreferences.getInstance();
+    // final jsonString = prefs.getString('marcaConDatos');
+    // if (jsonString != null) {
+    //   print(jsonString);
+    //   final map = jsonDecode(jsonString);
+    //   marca = Marca.fromJson(map);
+    // }
+    Provider.of<OrdenProvider>(context, listen: false).setMarca(marca.marcaId);
+    setState(() {});
     return;
   }
 }

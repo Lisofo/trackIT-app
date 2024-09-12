@@ -1,6 +1,6 @@
 {
-    "name": "app_track_it",
-    "short_name": "app_track_it",
+    "name": "app_tec_sedel",
+    "short_name": "app_tec_sedel",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

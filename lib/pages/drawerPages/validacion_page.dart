@@ -1,8 +1,7 @@
-import 'package:app_track_it/models/control_orden.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
-import 'package:app_track_it/services/orden_control_services.dart';
-import 'package:app_track_it/widgets/custom_button.dart';
+import 'package:app_tec_sedel/models/control_orden.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/orden_control_services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +21,8 @@ class _ValidacionPageState extends State<ValidacionPage> {
   int count = 0;
   int desaprueba = 0;
   List<ControlOrden> listaGenerica = [];
+  bool cargoDatosCorrectamente = false;
+  bool cargando = true;
 
   @override
   void initState() {
@@ -31,18 +32,24 @@ class _ValidacionPageState extends State<ValidacionPage> {
 
   cargarDatos() async {
     token = context.read<OrdenProvider>().token;
-    orden = context.read<OrdenProvider>().orden;
-    controles = await OrdenControlServices().getControlOrden(context, orden, token);
-    listaGenerica = controles.where((element) => element.controlRegId == 0).toList();
-    count = listaGenerica.length;
-    if(count == 0){
-      listaGenerica = controles.where((element) => element.respuesta == 'DESAPRUEBA').toList();
-      desaprueba = listaGenerica.length;
+    try {
+      orden = context.read<OrdenProvider>().orden;
+      controles = await OrdenControlServices().getControlOrden(context, orden, token);
+      listaGenerica = controles.where((element) => element.controlRegId == 0).toList();
+      count = listaGenerica.length;
+      if(count == 0){
+        listaGenerica = controles.where((element) => element.respuesta == 'DESAPRUEBA').toList();
+        desaprueba = listaGenerica.length;
+      }
+
+      validacion = count > 0 ? 'Complete el cuestionario' : desaprueba == 0 ? 'Se valida' : 'No se valida';
+      if (controles.isNotEmpty){
+        cargoDatosCorrectamente = true;
+      }
+      cargando = false;
+    }catch (e) {
+      cargando = false;
     }
-
-    validacion = count > 0 ? 'Complete el cuestionario' : desaprueba == 0 ? 'Se valida' : 'No se valida';
-
-
     setState(() {});
   }
 
@@ -52,11 +59,28 @@ class _ValidacionPageState extends State<ValidacionPage> {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Validación', style: TextStyle(color: Colors.white),),
         backgroundColor: colors.primary,
       ),
-      body: Padding(
+      body: cargando ? const Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            Text('Cargando, por favor espere...')
+          ],
+        ),
+      ) : !cargoDatosCorrectamente ? 
+      Center(
+        child: TextButton.icon(
+          onPressed: () async {
+            await cargarDatos();
+          }, 
+          icon: const Icon(Icons.replay_outlined),
+          label: const Text('Recargar'),
+        ),
+      ) : Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -90,17 +114,17 @@ class _ValidacionPageState extends State<ValidacionPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        notchMargin: 10,
-        elevation: 0,
-        shape: const CircularNotchedRectangle(),
-        color: Colors.grey.shade200,
-        child: CustomButton(
-          onPressed: () {},
-          text: 'Confirmar',
-          tamano: 20,
-        ),
-      ),
+      // bottomNavigationBar: BottomAppBar(
+      //   notchMargin: 10,
+      //   elevation: 0,
+      //   shape: const CircularNotchedRectangle(),
+      //   color: Colors.grey.shade200,
+      //   child: CustomButton(
+      //     onPressed: () {},
+      //     text: 'Confirmar',
+      //     tamano: 20,
+      //   ),
+      // ),
       backgroundColor: Colors.grey.shade200,
     );
   }

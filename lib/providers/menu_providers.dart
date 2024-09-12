@@ -1,19 +1,21 @@
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:app_tec_sedel/models/menu.dart';
+import 'package:app_tec_sedel/providers/menu_services.dart';
+import 'package:flutter/widgets.dart';
 
 class MenuProvider {
-  List<dynamic> opciones = [];
-
+  Menu opciones = Menu.empty();
+  List<Ruta> rutas = [];
   MenuProvider();
 
-  Future<List<dynamic>> cargarData(String codTipoOrden) async {
-    final resp = await rootBundle.loadString('data/menu_opts.json');
-
-    Map dataMap = json.decode(resp);
-    opciones = dataMap['rutas'];
-    return opciones
-        .where((menu) => menu['tipoOrden'].toString().contains(codTipoOrden))
-        .toList();
+  Future<List<dynamic>> cargarData(BuildContext context, String codTipoOrden, String token) async {
+    final Menu? menu = await MenuServices().getMenu(context, token);
+    if(menu != null){
+      rutas = menu.rutas;
+      return rutas.where((Ruta ruta) => ruta.tipoOrden.contains(codTipoOrden)).toList();
+    } else{
+      return [];
+    }
   }
 }
 

@@ -23,10 +23,10 @@ class CustomButton extends StatelessWidget {
       onPressed: disabled ? null : onPressed,
       style: ButtonStyle(
           backgroundColor: disabled
-              ? const MaterialStatePropertyAll(Colors.grey)
-              : const MaterialStatePropertyAll(Colors.white),
-          elevation: const MaterialStatePropertyAll(10),
-          shape: const MaterialStatePropertyAll(RoundedRectangleBorder(
+              ? const WidgetStatePropertyAll(Colors.grey)
+              : const WidgetStatePropertyAll(Colors.white),
+          elevation: const WidgetStatePropertyAll(10),
+          shape: const WidgetStatePropertyAll(RoundedRectangleBorder(
               borderRadius: BorderRadius.horizontal(
                   left: Radius.circular(50), right: Radius.circular(50))))),
       child: Text(text,

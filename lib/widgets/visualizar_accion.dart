@@ -34,14 +34,11 @@ class VisualizarAccion extends StatelessWidget {
                 const Spacer(),
                 Text(
                   revision!.codAccion.toString(),
-                  style: TextStyle(
-                      fontSize: 22, color: colors.primary),
+                  style: TextStyle(fontSize: 22, color: colors.primary),
                 )
               ],
             ),
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10,),
             if (revision!.piAccionId == 2 || revision!.piAccionId == 3) ...[
               const ContainerTituloPIRevision(
                 titulo: 'Tareas',
@@ -60,9 +57,7 @@ class VisualizarAccion extends StatelessWidget {
                 ]
               }
             ],
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10,),
             if (revision!.piAccionId == 2) ...[
               const ContainerTituloPIRevision(titulo: 'Plagas'),
               if (revision!.plagas.isEmpty) ...{
@@ -75,7 +70,8 @@ class VisualizarAccion extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
+                      Flexible(
+                        flex: 15,
                         child: Text(
                           revision!.plagas[i].descPlaga,
                           overflow: TextOverflow.ellipsis,
@@ -86,13 +82,15 @@ class VisualizarAccion extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 1),
-                      Expanded(
+                      Flexible(
+                        flex: 1,
                         child: TextFormField(
                           textAlign: TextAlign.right,
                           decoration: InputDecoration(
-                              hintText: revision!.plagas[i].cantidad.toString(),
-                              enabled: false,
-                              border: InputBorder.none),
+                            hintText: revision!.plagas[i].cantidad == null ? '' : revision!.plagas[i].cantidad.toString(),
+                            enabled: false,
+                            border: InputBorder.none
+                          ),
                         ),
                       ),
                     ],
@@ -100,16 +98,15 @@ class VisualizarAccion extends StatelessWidget {
                 ],
               }
             ],
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10,),
             if (revision!.piAccionId == 2 || revision!.piAccionId == 3) ...[
               const ContainerTituloPIRevision(titulo: 'Materiales'),
               for (var i = 0; i < revision!.materiales.length; i++) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
+                    Flexible(
+                      flex: 15,
                       child: Text(
                         revision!.materiales[i].descripcion,
                         overflow: TextOverflow.ellipsis,
@@ -120,14 +117,15 @@ class VisualizarAccion extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 1),
-                    Expanded(
+                    Flexible(
+                      flex: 1,
                       child: TextFormField(
                         textAlign: TextAlign.right,
                         decoration: InputDecoration(
-                            hintText:
-                                revision!.materiales[i].cantidad.toString(),
-                            enabled: false,
-                            border: InputBorder.none),
+                          hintText: revision!.materiales[i].cantidad.toString(),
+                          enabled: false,
+                          border: InputBorder.none
+                        ),
                       ),
                     ),
                   ],
@@ -143,9 +141,7 @@ class VisualizarAccion extends StatelessWidget {
                 )
               } else ...{
                 Text(
-                  revision!.trasladoNuevo[0].zona == 'E'
-                      ? 'Exterior'
-                      : 'Interior',
+                  revision!.trasladoNuevo[0].zona == 'E' ? 'Exterior' : 'Interior',
                   style: const TextStyle(fontSize: 16),
                 ),
               },
@@ -200,17 +196,20 @@ class ContainerTituloPIRevision extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-          color: colors.primary,
-          borderRadius: BorderRadius.circular(5)),
+        color: const Color.fromARGB(255, 90, 163, 101),
+        borderRadius: BorderRadius.circular(5)
+      ),
       height: 30,
       child: Center(
         child: Text(
           titulo,
           style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            color: Colors.white, 
+            fontWeight: FontWeight.bold, 
+            fontSize: 18
+          ),
           textAlign: TextAlign.center,
         ),
       ),

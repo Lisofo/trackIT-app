@@ -29,7 +29,7 @@ class _LoginState extends State<Login> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('images/trackit.jpg'),
+          Image.asset('images/logo.jpg'),
           const SizedBox(height: 40),
           const CircleAvatar(
             radius: 70.5,
@@ -104,9 +104,9 @@ class _LoginState extends State<Login> {
           ),
           ElevatedButton(
               style: const ButtonStyle(
-                  backgroundColor: MaterialStatePropertyAll(Colors.white),
-                  elevation: MaterialStatePropertyAll(10),
-                  shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+                  backgroundColor: WidgetStatePropertyAll(Colors.white),
+                  elevation: WidgetStatePropertyAll(10),
+                  shape: WidgetStatePropertyAll(RoundedRectangleBorder(
                       borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(50),
                           right: Radius.circular(50))))),

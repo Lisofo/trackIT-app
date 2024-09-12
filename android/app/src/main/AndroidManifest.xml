@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    
+        
     <!-- Permiso para acceder a la ubicación precisa -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
@@ -10,9 +10,9 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-
+    
     <application
-        android:label="APP Track IT"
+        android:label="APP Tecnicos SEDEL"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

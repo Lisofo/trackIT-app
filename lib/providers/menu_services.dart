@@ -1,21 +1,39 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:dio/dio.dart';
 import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/models/menu.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:app_tec_sedel/models/ubicacion.dart';
 
-class UbicacionServices {
-  String apiUrl = Config.APIURL;
-  final _dio = Dio();
+class MenuServices{
   int? statusCode;
+  final _dio = Dio();
+  String apiUrl = Config.APIURL;
+  late String apiLink = '${apiUrl}api/v1/appMenuMobile/';
 
-  static Future<void> showDialogs(BuildContext context, String errorMessage, bool doblePop, bool triplePop) async {
+  static void showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          surfaceTintColor: Colors.white,
+          title: const Text('Mensaje'),
+          content: Text(errorMessage),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static Future<void> showDialogs(BuildContext context, String errorMessage, bool doblePop, bool triplePop,) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
           title: const Text('Mensaje'),
           content: Text(errorMessage),
           actions: <Widget>[
@@ -37,55 +55,30 @@ class UbicacionServices {
     );
   }
 
-  Future<int?> getStatusCode() async {
+  Future<int?> getStatusCode () async {
     return statusCode;
   }
 
-  Future<void> resetStatusCode() async {
+  Future<void> resetStatusCode () async {
     statusCode = null;
   }
-
-  Future<void> showErrorDialog(BuildContext context, String mensaje) async {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        surfaceTintColor: Colors.white,
-        title: const Text('Error'),
-        content: Text(mensaje),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future postUbicacion(BuildContext context, Ubicacion ubicacion, String token) async {
+  
+  Future getMenu(BuildContext context, String token) async {
+    String link = apiLink;
     try {
-      String link = '${apiUrl}api/v1/ubicaciones';
       var headers = {'Authorization': token};
-      var xx = ubicacion.toMap();
-      final resp = await _dio.request(
+      var resp = await _dio.request(
         link,
-        data: xx, 
         options: Options(
-          method: 'POST', 
-          headers: headers 
-        )
+          method: 'GET',
+          headers: headers,
+        ),
       );
+
       statusCode = 1;
-      ubicacion.ubicacionId = resp.data['ubicacionId'];
+      final Menu menu = Menu.fromJson(resp.data);
+      return menu;
 
-      if (resp.statusCode == 201) {
-      } else {
-        showErrorDialog(context, 'Hubo un error al momento de marcar entrada');
-      }
-
-      return;
     } catch (e) {
       statusCode = 0;
       if (e is DioException) {

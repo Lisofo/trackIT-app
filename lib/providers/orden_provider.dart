@@ -1,9 +1,9 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'package:flutter/cupertino.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/models/revision_pto_inspeccion.dart';
-import 'package:app_track_it/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
+import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
 
 class OrdenProvider with ChangeNotifier {
   Orden _orden = Orden.empty();
@@ -18,8 +18,6 @@ class OrdenProvider with ChangeNotifier {
   String _modo = '';
   int _tecnicoId = 0;
   List<Orden> ordenesEnProceso = [];
-
-
   Orden get orden => _orden;
   String get menu => _menu;
   String get token => _token;
@@ -116,4 +114,14 @@ class OrdenProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearListaPto(){
+    _ptosInspeccion = [];
+    notifyListeners();
+  }
+
+  void cambiarEstadoOrden(String estado) {
+    _orden.estado = estado;
+    notifyListeners();
+  }
+  
 }

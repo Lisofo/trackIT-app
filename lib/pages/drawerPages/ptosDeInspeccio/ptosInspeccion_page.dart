@@ -1,20 +1,20 @@
 // ignore_for_file: file_names, use_build_context_synchronously, avoid_print, void_checks
 
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/models/plaga_objetivo.dart';
-import 'package:app_track_it/models/revision_pto_inspeccion.dart';
-import 'package:app_track_it/models/tipos_ptos_inspeccion.dart';
-import 'package:app_track_it/models/zona.dart';
-import 'package:app_track_it/services/plagas_services.dart';
-import 'package:app_track_it/services/ptos_services.dart';
-import 'package:app_track_it/widgets/custom_form_dropdown.dart';
-import 'package:app_track_it/widgets/custom_form_field.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/plaga_objetivo.dart';
+import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
+import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/models/zona.dart';
+import 'package:app_tec_sedel/services/plagas_services.dart';
+import 'package:app_tec_sedel/services/ptos_services.dart';
+import 'package:app_tec_sedel/widgets/custom_form_dropdown.dart';
+import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:app_track_it/config/router/router.dart';
-import 'package:app_track_it/models/bottomSheets_opciones.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
+import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/bottomSheets_opciones.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 
 class PtosInspeccionPage extends StatefulWidget {
   const PtosInspeccionPage({super.key});
@@ -31,20 +31,24 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   late List<PlagaObjetivo>  plagasObjetivo = [];
   late TextEditingController comentarioController = TextEditingController();
   late TextEditingController sectorController = TextEditingController();
-  late TextEditingController codPuntoInspeccionController =
-      TextEditingController();
+  late TextEditingController codPuntoInspeccionController = TextEditingController();
   late TextEditingController codigoBarraController = TextEditingController();
   late ZonaPI zonaSeleccionada = ZonaPI.empty();
   late PlagaObjetivo plagaObjetivoSeleccionada = PlagaObjetivo.empty();
   bool selectAll = false;
   bool filtro = false;
+  bool filtro2 = false;
   late String token = '';
   late Orden orden = Orden.empty();
   late int marcaId = 0;
   bool pendientes = false;
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  final _ptosInspeccionServices = PtosInspeccionServices();
+  int? statusCodeRevision;
   bool subiendoAcciones = false;
   String _searchTerm = '';
+  bool cargoDatosCorrectamente = false;
+  bool cargando = true;
 
   readQRCode() async {
     ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
@@ -64,9 +68,9 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
 
   List<RevisionPtoInspeccion> get ptosFiltrados {
     return ptosInspeccion
-        .where((pto) =>
-            pto.tipoPuntoInspeccionId == selectedTipoPto.tipoPuntoInspeccionId)
-        .toList();
+      .where((pto) =>
+        pto.tipoPuntoInspeccionId == selectedTipoPto.tipoPuntoInspeccionId)
+      .toList();
   }
 
   List<RevisionPtoInspeccion> get puntosSeleccionados {
@@ -85,13 +89,36 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
 
   cargarDatos() async {
     token = context.read<OrdenProvider>().token;
-    orden = context.read<OrdenProvider>().orden;
-    marcaId = context.read<OrdenProvider>().marcaId;
-    tiposDePuntos = await PtosInspeccionServices().getTiposPtosInspeccion(token);
-    ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
-    plagasObjetivo = await PlagaServices().getPlagasObjetivo(context, token);
-    Provider.of<OrdenProvider>(context, listen: false).setTipoPTI(selectedTipoPto);
+    try {
+      orden = context.read<OrdenProvider>().orden;
+      marcaId = context.read<OrdenProvider>().marcaId;
+      if(orden.otRevisionId != 0) {
+        ptosInspeccion = await _ptosInspeccionServices.getPtosInspeccion(context, orden, token);
+        statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+        await _ptosInspeccionServices.resetStatusCode();
+      }
+      tiposDePuntos = await getTipos();
+      plagasObjetivo = await PlagaServices().getPlagasObjetivo(context, token);
+      Provider.of<OrdenProvider>(context, listen: false).setTipoPTI(selectedTipoPto);
+      if (statusCodeRevision == 1){
+        cargoDatosCorrectamente = true;
+      }
+      cargando = false;
+    } catch (e) {
+      cargando = false;
+    }
+    
     setState(() {});
+  }
+
+  Future<dynamic> getTipos() async {
+    late List<TipoPtosInspeccion> tiposDePuntosFiltrados = [];
+    if(!filtro2){
+      tiposDePuntosFiltrados = await PtosInspeccionServices().getTiposPtosInspeccion(context, token);
+      return tiposDePuntosFiltrados.where((pto)=> cantidadSolo(pto) > 0).toList();
+    } else {
+      return await PtosInspeccionServices().getTiposPtosInspeccion(context, token);
+    }
   }
 
   Future<void> refreshData() async {
@@ -157,16 +184,36 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
             )
           ],
         ),
-        body: Padding(
+        body: cargando ? const Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            Text('Cargando, por favor espere...')
+          ],
+        ),
+      ) : !cargoDatosCorrectamente ? 
+      Center(
+        child: TextButton.icon(
+          onPressed: () async {
+            await cargarDatos();
+          }, 
+          icon: const Icon(Icons.replay_outlined),
+          label: const Text('Recargar'),
+        ),
+      ) : Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
               Container(
                 decoration: BoxDecoration(
-                    border: Border.all(
-                        width: 2,
-                        color: colors.primary),
-                    borderRadius: BorderRadius.circular(5)),
+                  border: Border.all(
+                    width: 2,
+                    color: colors.primary
+                  ),
+                  borderRadius: BorderRadius.circular(5)
+                ),
                 child: DropdownButtonFormField(
                   decoration: const InputDecoration(border: InputBorder.none),
                   hint: const Padding(
@@ -226,28 +273,36 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     icon: Icon(
                       Icons.control_point,
                       size: 35,
-                      color: selectedTipoPto.tipoPuntoInspeccionId != 0
-                          ? colors.primary
-                          : Colors.grey,
+                      color: selectedTipoPto.tipoPuntoInspeccionId != 0 ? colors.primary : Colors.grey,
                     ),
                   ),
                   Switch(
-                      activeColor: colors.primary,
-                      value: filtro,
-                      onChanged: (value) {
-                        setState(() {
-                          filtro = value;
-                          pendientes = filtro;
-                          Provider.of<OrdenProvider>(context, listen: false)
-                              .setPendiente(pendientes);
-                          selectAll = false;
-                          for (var i = 0; i < ptosFiltrados.length; i++) {
-                            ptosFiltrados[i].seleccionado = false;
-                          }
-                          listaDePuntos();
-                        });
-                      }),
+                    activeColor: colors.primary,
+                    value: filtro,
+                    onChanged: (value) {
+                      setState(() {
+                        filtro = value;
+                        pendientes = filtro;
+                        Provider.of<OrdenProvider>(context, listen: false).setPendiente(pendientes);
+                        selectAll = false;
+                        for (var i = 0; i < ptosFiltrados.length; i++) {
+                          ptosFiltrados[i].seleccionado = false;
+                        }
+                        listaDePuntos();
+                      });
+                    }
+                  ),
                   const Spacer(),
+                  // Switch(
+                  //   activeColor: colors.primary,
+                  //   value: filtro2,
+                  //   onChanged: (value) async {
+                  //     filtro2 = value;
+                  //     tiposDePuntos = [];
+                  //     tiposDePuntos = await getTipos();
+                  //     setState(() {});
+                  //   }
+                  // ),
                   Checkbox(
                     activeColor: colors.primary,
                     value: selectAll,
@@ -288,7 +343,14 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
     String retorno = '';
     String cantidad = ptosInspeccion.where((pto) => pto.tipoPuntoInspeccionId == e.tipoPuntoInspeccionId).toList().length.toString();
     retorno = '${e.descripcion} ($cantidad)';
+    print(retorno);
     return retorno;
+  }
+
+  int cantidadSolo(TipoPtosInspeccion e) {
+    int cantidad = ptosInspeccion.where((pto) => pto.tipoPuntoInspeccionId == e.tipoPuntoInspeccionId).toList().length;
+    print(cantidad);
+    return cantidad;
   }
 
   listaDePuntos() {
@@ -306,17 +368,14 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                 const Spacer(),
                 Text(
                   puntoDeInspeccion.codAccion.toString(),
-                  style:
-                     TextStyle(color: colors.primary),
+                  style: TextStyle(color: colors.primary),
                 )
               ],
             ),
             subtitle: Row(
               children: [
                 Text('Zona: ${puntoDeInspeccion.zona}'),
-                const SizedBox(
-                  width: 20,
-                ),
+                const SizedBox(width: 20,),
                 Text('Sector: ${puntoDeInspeccion.sector}'),
               ],
             ),
@@ -332,12 +391,10 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
             ),
             onTap: () {
               if (puntoDeInspeccion.seleccionado) {
-                // Provider.of<OrdenProvider>(context, listen: false)
-                //     .setPI(puntosSeleccionados);
+                // Provider.of<OrdenProvider>(context, listen: false).setPI(puntosSeleccionados);
               } else {
                 Provider.of<OrdenProvider>(context, listen: false).setRevisionPI(puntoDeInspeccion);
               }
-
               router.push('/ptosInspeccionRevision');
             },
           );
@@ -347,7 +404,6 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   }
 
   void _mostrarBottomSheet() {
-    final colors = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -417,7 +473,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     Color iconColor =
                         listaOpcionesAplicar[i].text == 'Sin Acceso'
                             ? Colors.red
-                            : colors.secondary;
+                            : Colors.green;
                     return ListTile(
                       onTap: () {
                         opciones(listaOpcionesAplicar, i, context);
@@ -430,9 +486,9 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     );
                   },
                   separatorBuilder: (BuildContext context, int index) {
-                    return Divider(
+                    return const Divider(
                       height: 1,
-                      color: colors.secondary,
+                      color: Colors.green,
                     );
                   },
                 );
@@ -455,8 +511,10 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
         }
         router.push(botones.ruta);
       break;
-      case 'Desinstalado':
       case 'Sin Actividad':
+        marcarPISinActividad(1, '');
+      break;
+      case 'Desinstalado':
       case 'Sin Acceso':
         showDialog(
           context: context,
@@ -484,7 +542,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('Cancelar'),  
+                  child: const Text('Cancelar'),
                   onPressed: () {
                     router.pop(context);
                   },
@@ -494,14 +552,12 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                   onPressed: () {
                     if(!subiendoAcciones){
                       subiendoAcciones = true;
-                      router.pop(context);
-                      if (botones.text == 'Sin Actividad') {
-                        marcarPISinActividad(1, comentarioController.text);
-                      } else if (botones.text == 'Desinstalado') {
+                      if (botones.text == 'Desinstalado') {
                         marcarPISinActividad(4, comentarioController.text);
                       } else {
                         marcarPISinActividad(7, comentarioController.text);
                       }
+                      router.pop();
                     }
                   },
                 ),
@@ -615,7 +671,6 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     onPressed: () async {
                       if(!subiendoAcciones){
                         subiendoAcciones = true;
-                        router.pop(context);
                         await marcarPINuevo(5, zonaSeleccionada, sectorController.text, comentarioController.text);
                       }
                     },
@@ -689,7 +744,6 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                   onPressed: () async {
                     if(!subiendoAcciones){
                       subiendoAcciones = true;
-                      router.pop(context);
                       await marcarPITraslado(6, zonaSeleccionada, sectorController.text, comentarioController.text);
                     }
                   },
@@ -703,73 +757,46 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   }
 
   Future marcarPISinActividad(int idPIAccion, String comentario) async {
-    List<RevisionPtoInspeccion> nuevosObjetos = [];
     for (var i = 0; i < puntosSeleccionados.length; i++) {
-      RevisionPtoInspeccion nuevaRevisionPtoInspeccion = RevisionPtoInspeccion(
-        otPuntoInspeccionId: puntosSeleccionados[i].otPuntoInspeccionId,
-        ordenTrabajoId: orden.ordenTrabajoId,
-        otRevisionId: orden.otRevisionId,
-        puntoInspeccionId: puntosSeleccionados[i].puntoInspeccionId,
-        planoId: puntosSeleccionados[i].planoId,
-        tipoPuntoInspeccionId: puntosSeleccionados[i].tipoPuntoInspeccionId,
-        codTipoPuntoInspeccion: puntosSeleccionados[i].codTipoPuntoInspeccion,
-        descTipoPuntoInspeccion: '',
-        plagaObjetivoId: puntosSeleccionados[i].plagaObjetivoId,
-        codPuntoInspeccion: puntosSeleccionados[i].codPuntoInspeccion,
-        codigoBarra: puntosSeleccionados[i].codigoBarra,
-        zona: puntosSeleccionados[i].zona,
-        sector: puntosSeleccionados[i].sector,
-        idPIAccion: idPIAccion,
-        piAccionId: idPIAccion,
-        codAccion: idPIAccion.toString(),
-        descPiAccion: '',
-        comentario: comentario,
-        materiales: [],
-        plagas: [],
-        tareas: [],
-        trasladoNuevo: [],
-        seleccionado: puntosSeleccionados[i].seleccionado
-      );
-      nuevosObjetos.add(nuevaRevisionPtoInspeccion);
+      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId;
+      puntosSeleccionados[i].otRevisionId = orden.otRevisionId;
+      puntosSeleccionados[i].descTipoPuntoInspeccion = '';
+      puntosSeleccionados[i].idPIAccion = idPIAccion;
+      puntosSeleccionados[i].piAccionId = idPIAccion;
+      puntosSeleccionados[i].codAccion = '';
+      puntosSeleccionados[i].descPiAccion = '';
+      puntosSeleccionados[i].comentario = comentario;
+      puntosSeleccionados[i].materiales = [];
+      puntosSeleccionados[i].plagas = [];
+      puntosSeleccionados[i].tareas = [];
+      puntosSeleccionados[i].trasladoNuevo = [];
     }
-    await postAcciones(nuevosObjetos);
-    await actualizarDatos();
+    await postAcciones(puntosSeleccionados);
     limpiarDatos();
     subiendoAcciones = false;
   }
 
   Future marcarPITraslado(int idPIAccion, ZonaPI zonaSeleccionada, String sector, String comentario) async {
-    List<RevisionPtoInspeccion> nuevosObjetos = [];
     for (var i = 0; i < puntosSeleccionados.length; i++) {
-      RevisionPtoInspeccion nuevaRevisionPtoInspeccion = RevisionPtoInspeccion(
-        otPuntoInspeccionId: puntosSeleccionados[i].otPuntoInspeccionId,
-        ordenTrabajoId: orden.ordenTrabajoId,
-        otRevisionId: orden.otRevisionId,
-        puntoInspeccionId: puntosSeleccionados[i].puntoInspeccionId,
-        planoId: puntosSeleccionados[i].planoId,
-        tipoPuntoInspeccionId: selectedTipoPto.tipoPuntoInspeccionId,
-        codTipoPuntoInspeccion: puntosSeleccionados[i].codTipoPuntoInspeccion,
-        descTipoPuntoInspeccion: '',
-        plagaObjetivoId: puntosSeleccionados[i].plagaObjetivoId,
-        codPuntoInspeccion: puntosSeleccionados[i].codPuntoInspeccion != '' ? puntosSeleccionados[i].codPuntoInspeccion : codPuntoInspeccionController.text,
-        codigoBarra: puntosSeleccionados[i].codigoBarra != '' ? puntosSeleccionados[i].codigoBarra : codigoBarraController.text,
-        zona: zonaSeleccionada.codZona,
-        sector: sector,
-        idPIAccion: idPIAccion,
-        piAccionId: 6,
-        codAccion: '6',
-        descPiAccion: '',
-        comentario: comentario,
-        materiales: [],
-        plagas: [],
-        tareas: [],
-        trasladoNuevo: [],
-        seleccionado: puntosSeleccionados[i].seleccionado
-      );
-      nuevosObjetos.add(nuevaRevisionPtoInspeccion);
+      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId;
+      puntosSeleccionados[i].otRevisionId = orden.otRevisionId;
+      puntosSeleccionados[i].tipoPuntoInspeccionId = selectedTipoPto.tipoPuntoInspeccionId;
+      puntosSeleccionados[i].descTipoPuntoInspeccion = '';
+      puntosSeleccionados[i].codPuntoInspeccion = puntosSeleccionados[i].codPuntoInspeccion != '' ? puntosSeleccionados[i].codPuntoInspeccion : codPuntoInspeccionController.text;
+      puntosSeleccionados[i].codigoBarra = puntosSeleccionados[i].codigoBarra != '' ? puntosSeleccionados[i].codigoBarra : codigoBarraController.text;
+      puntosSeleccionados[i].zona = zonaSeleccionada.codZona;
+      puntosSeleccionados[i].sector = sector;
+      puntosSeleccionados[i].idPIAccion = idPIAccion;
+      puntosSeleccionados[i].piAccionId = idPIAccion;
+      puntosSeleccionados[i].codAccion = '';
+      puntosSeleccionados[i].descPiAccion = '';
+      puntosSeleccionados[i].comentario = comentario;
+      puntosSeleccionados[i].materiales = [];
+      puntosSeleccionados[i].plagas = [];
+      puntosSeleccionados[i].tareas = [];
+      puntosSeleccionados[i].trasladoNuevo = [];
     }
-    await postAcciones(nuevosObjetos);
-    await actualizarDatos();
+    await postTraslado(puntosSeleccionados);
     limpiarDatos();
     subiendoAcciones = false;
   }
@@ -791,7 +818,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
       sector: sector,
       idPIAccion: idPIAccion,
       piAccionId: idPIAccion,
-      codAccion: idPIAccion.toString(),
+      codAccion: '',
       descPiAccion: '',
       comentario: comentario,
       materiales: [],
@@ -802,14 +829,20 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
     );
 
     if (nuevaRevisionPtoInspeccion.otPuntoInspeccionId != 0) {
-      await PtosInspeccionServices().putPtoInspeccionAccion(context, orden, nuevaRevisionPtoInspeccion, token);
+      await _ptosInspeccionServices.putPtoInspeccionAccion(context, orden, nuevaRevisionPtoInspeccion, token);
+      statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+      await _ptosInspeccionServices.resetStatusCode();
     } else {
-      await PtosInspeccionServices().postPtoInspeccionAccion(context, orden, nuevaRevisionPtoInspeccion, token);
+      await _ptosInspeccionServices.postPtoInspeccionAccion(context, orden, nuevaRevisionPtoInspeccion, token);
+      statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+      await _ptosInspeccionServices.resetStatusCode();
     }
-
-    await actualizarDatos();
-    limpiarDatos();
-    PtosInspeccionServices.showDialogs(context, 'Punto guardado', true, false);
+    if(statusCodeRevision == 1) {
+      await actualizarDatos();
+      limpiarDatos();
+      PtosInspeccionServices.showDialogs(context, 'Punto guardado', true, true);
+    }
+    statusCodeRevision = null;
     subiendoAcciones = false;
   }
 
@@ -822,22 +855,49 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   }
 
   Future<void> actualizarDatos() async {
-    ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
-    plagasObjetivo = await PlagaServices().getPlagasObjetivo(context, token);
-
+    try {
+      ptosInspeccion = await _ptosInspeccionServices.getPtosInspeccion(context, orden, token);
+      plagasObjetivo = await PlagaServices().getPlagasObjetivo(context, token);  
+    } catch (e) {
+      ptosInspeccion = [];
+      plagasObjetivo = [];
+    }
     setState(() {});
   }
 
   Future borrarAcciones() async {
-    await PtosInspeccionServices().deleteAcciones(context, orden, puntosSeleccionados, token);
-    await actualizarDatos();
-    await PtosInspeccionServices.showDialogs(context, puntosSeleccionados.length == 1 ? 'Accion borrada' : 'Acciones borradas', true, false);
+    await _ptosInspeccionServices.deleteAcciones(context, orden, puntosSeleccionados, token);
+    statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+    await _ptosInspeccionServices.resetStatusCode();
+    if(statusCodeRevision == 1) {
+      await PtosInspeccionServices.showDialogs(context, puntosSeleccionados.length == 1 ? 'Acción borrada' : 'Acciones borradas', true, false);
+      await actualizarDatos();
+    }
+    statusCodeRevision = null;
   }
   
   Future postAcciones(List<RevisionPtoInspeccion> acciones) async {
-    await PtosInspeccionServices().postAcciones(context, orden, acciones, token);
-    await actualizarDatos();
-    await PtosInspeccionServices.showDialogs(context, acciones.length == 1 ? 'Accion creada' : 'Acciones creadas', true, false);
+    await _ptosInspeccionServices.postAcciones(context, orden, acciones, token);
+    statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+    await _ptosInspeccionServices.resetStatusCode();
+    if(statusCodeRevision == 1) {
+      await actualizarDatos();
+      await PtosInspeccionServices.showDialogs(context, acciones.length == 1 ? 'Acción creada' : 'Acciones creadas', true, false);
+      
+    }
+    statusCodeRevision = null;
+  }
+
+  Future postTraslado(List<RevisionPtoInspeccion> acciones) async {
+    await _ptosInspeccionServices.postAcciones(context, orden, acciones, token);
+    statusCodeRevision = await _ptosInspeccionServices.getStatusCode();
+    await _ptosInspeccionServices.resetStatusCode();
+    if(statusCodeRevision == 1) {
+      await actualizarDatos();
+      await PtosInspeccionServices.showDialogs(context, acciones.length == 1 ? 'Acción creada' : 'Acciones creadas', true, true);
+      
+    }
+    statusCodeRevision = null;
   }
 
   Future borrarAccion() async {
@@ -856,7 +916,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cerrar'),
+              child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () async {

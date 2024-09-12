@@ -1,19 +1,20 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 
-import 'package:app_track_it/models/ubicacion.dart';
-import 'package:app_track_it/services/orden_services.dart';
-import 'package:app_track_it/services/revision_services.dart';
-import 'package:app_track_it/services/ubicacion_services.dart';
-import 'package:app_track_it/widgets/custom_button.dart';
+import 'package:app_tec_sedel/models/menu.dart';
+import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:app_tec_sedel/services/revision_services.dart';
+import 'package:app_tec_sedel/services/ubicacion_services.dart';
+import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:app_track_it/config/router/router.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/providers/menu_providers.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
-import 'package:app_track_it/widgets/icons.dart';
+import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/menu_providers.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/widgets/icons.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -31,6 +32,11 @@ class _OrdenInternaState extends State<OrdenInterna> {
   late Ubicacion ubicacion = Ubicacion.empty();
   bool ejecutando = false;
   String token = '';
+  final _ubicacionServices = UbicacionServices();
+  final _ordenServices = OrdenServices();
+  final _revisionServices = RevisionServices();
+  int? statusCode;
+  
 
   @override
   void initState() {
@@ -81,7 +87,6 @@ class _OrdenInternaState extends State<OrdenInterna> {
       child: Scaffold(
         backgroundColor: Colors.grey.shade200,
         appBar: AppBar(
-          iconTheme: const IconThemeData(color: Colors.white),
           backgroundColor: colors.primary,
           title: Text(
             'Orden ${orden.ordenTrabajoId}',
@@ -101,7 +106,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
           surfaceTintColor: Colors.white,
           child: Column(
             children: [
-              Image.asset('images/trackit.jpg'),
+              Image.asset('images/banner.jpg'),
               const SizedBox(
                 height: 25,
               ),
@@ -161,8 +166,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  DateFormat('EEEE d, MMMM yyyy', 'es')
-                      .format(orden.fechaOrdenTrabajo),
+                  DateFormat('EEEE d, MMMM yyyy', 'es').format(orden.fechaOrdenTrabajo),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -205,7 +209,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     Text(
-                      orden.estado,
+                      context.watch<OrdenProvider>().orden.estado,
                       style: const TextStyle(fontSize: 16),
                     )
                   ],
@@ -302,30 +306,24 @@ class _OrdenInternaState extends State<OrdenInterna> {
             children: [
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado != 'EN PROCESO'
-                    ? () => _mostrarDialogoConfirmacion('iniciar')
-                    : null,
+                onPressed: ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('iniciar') : null,
                 text: 'Iniciar',
                 tamano: 18,
-                disabled: !(marcaId != 0 && orden.estado == 'PENDIENTE'),
+                disabled: (!(marcaId != 0 && orden.estado == 'PENDIENTE') || ejecutando),
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO'
-                    ? () => _mostrarDialogoConfirmacion('finalizar')
-                    : null,
+                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
                 text: 'Finalizar',
                 tamano: 18,
                 disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
               ),
               IconButton(
-                  onPressed: marcaId != 0 && orden.estado == 'EN PROCESO'
-                      ? () => volverAPendiente(orden)
-                      : null,
-                  icon: Icon(Icons.backspace,
-                      color: marcaId != 0 && orden.estado == 'EN PROCESO'
-                          ? colors.primary
-                          : Colors.grey)),
+                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => volverAPendiente(orden) : null,
+                icon: Icon(Icons.backspace,
+                  color: marcaId != 0 && orden.estado == 'EN PROCESO' ? colors.primary : Colors.grey
+                )
+              ),
             ],
           ),
         ),
@@ -334,59 +332,70 @@ class _OrdenInternaState extends State<OrdenInterna> {
   }
 
   Widget _listaItems() {
+    final colors = Theme.of(context).colorScheme;
     final String tipoOrden = orden.tipoOrden.codTipoOrden;
     return FutureBuilder(
-      future: menuProvider.cargarData(tipoOrden),
+      future: menuProvider.cargarData(context, tipoOrden, token),
       initialData: const [],
       builder: (context, snapshot) {
-        return ListView(
-          children: _listaItemsDrawer(snapshot.data, context),
-        );
+        if(snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(),);
+        } else if(snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay datos disponibles'));
+        } else {
+          final List<Ruta> rutas = snapshot.data as List<Ruta>;
+
+          return ListView.separated(
+            itemCount: rutas.length,
+            itemBuilder: (context, i) {
+              final Ruta ruta = rutas[i];
+              return ListTile(
+                title: Text(ruta.texto),
+                leading: getIcon(ruta.icon, context),
+                trailing: Icon(
+                  Icons.keyboard_arrow_right,
+                  color: colors.secondary,
+                ),
+                onTap: () {
+                  router.push(ruta.ruta);
+                } 
+              );
+            }, 
+            separatorBuilder: (BuildContext context, int index) { return const Divider(); },
+          ); 
+        }
       },
     );
-  }
-
-  List<Widget> _listaItemsDrawer(data, BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final List<Widget> opciones = [];
-    data.forEach((opt) {
-      final widgetTemp = ListTile(
-        title: Text(opt['texto']),
-        leading: getIcon(opt['icon'], context),
-        trailing: Icon(
-          Icons.keyboard_arrow_right,
-          color: colors.secondary,
-        ),
-        onTap: () {
-          router.push(opt['ruta']);
-        },
-      );
-
-      opciones
-        ..add(widgetTemp)
-        ..add(const Divider());
-    });
-    return opciones;
   }
 
   cambiarEstado(String estado) async {
     if (!ejecutando) {
       ejecutando = true;
-
       await obtenerUbicacion();
-      int ubicacionId = ubicacion.ubicacionId;
-      int uId = context.read<OrdenProvider>().uId;
-
-      String token = context.read<OrdenProvider>().token;
-
-      await OrdenServices().patchOrden(context, orden, estado, ubicacionId, token);
-      if (estado == 'EN PROCESO') {
-        await RevisionServices().postRevision(uId, orden, token);
+      if (statusCode == 1){
+        int ubicacionId = ubicacion.ubicacionId;
+        int uId = context.read<OrdenProvider>().uId;
+        String token = context.read<OrdenProvider>().token;
+        await _ordenServices.patchOrden(context, orden, estado, ubicacionId, token);
+        statusCode = await _ordenServices.getStatusCode();
+        await _ordenServices.resetStatusCode();
+        if (statusCode == 1) {
+          if (estado == 'EN PROCESO') {
+            await _revisionServices.postRevision(context, uId, orden, token);
+            statusCode = await _revisionServices.getStatusCode();
+            await _revisionServices.resetStatusCode();
+            if (statusCode == 1) {
+              await OrdenServices.showDialogs(context, 'Estado cambiado correctamente', false, false);
+            }
+          }
+          
+        }
       }
-      setState(() {});
-
-      print('hola entrada');
       ejecutando = false;
+      statusCode = null;
+      setState(() {});
     }
   }
 
@@ -396,16 +405,15 @@ class _OrdenInternaState extends State<OrdenInterna> {
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
-
     String token = context.read<OrdenProvider>().token;
-
-    await UbicacionServices().postUbicacion(context, ubicacion, token);
+    await _ubicacionServices.postUbicacion(context, ubicacion, token);
+    statusCode = await _ubicacionServices.getStatusCode();
+    await _ubicacionServices.resetStatusCode();
   }
 
   Future<void> getLocation() async {
     try {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _currentPosition = '${position.latitude}, ${position.longitude}';
         print('${position.latitude}, ${position.longitude}');
@@ -431,19 +439,25 @@ class _OrdenInternaState extends State<OrdenInterna> {
           actions: [
             TextButton(
               onPressed: () => GoRouter.of(context).pop(),
-              child: const Text('Cerrar')
+              child: const Text('Cancelar')
             ),
             TextButton(
               onPressed: () async {
                 if (!ejecutando) {
                   ejecutando = true;
                   await obtenerUbicacion();
-                  int ubicacionId = ubicacion.ubicacionId;
-                  await OrdenServices().patchOrden(context, orden, 'PENDIENTE', ubicacionId, token);
-                  setState(() {});
-                  ejecutando = false;
+                  if (statusCode == 1){
+                    int ubicacionId = ubicacion.ubicacionId;
+                    await _ordenServices.patchOrden(context, orden, 'PENDIENTE', ubicacionId, token);
+                    statusCode = await _ordenServices.getStatusCode();
+                    await _ordenServices.resetStatusCode();
+                    if (statusCode == 1){
+                      await OrdenServices.showDialogs(context, 'Estado cambiado a Pendiente', true, true);
+                    }
+                  }
                 }
-                await OrdenServices.showDialogs(context, 'Estado cambiado a Pendiente', true, true);
+                ejecutando = false;
+                statusCode = null;
                 setState(() {});
               },
               child: const Text('Confirmar')

@@ -1,11 +1,11 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
 
-import 'package:app_track_it/models/control_orden.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
-import 'package:app_track_it/services/orden_control_services.dart';
-import 'package:app_track_it/widgets/custom_button.dart';
-import 'package:app_track_it/widgets/custom_form_field.dart';
+import 'package:app_tec_sedel/models/control_orden.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/orden_control_services.dart';
+import 'package:app_tec_sedel/widgets/custom_button.dart';
+import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,14 +20,16 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
   String selectedPregunta = '';
   final TextEditingController comentarioController = TextEditingController();
   late Orden orden = Orden.empty();
-
+  final _ordenControlServices = OrdenControlServices();
   List<ControlOrden> controles =[];
   String token = '';
   List<String> grupos = [];
   List<ControlOrden> preguntasFiltradas = [];
   List<String> models = [];
-
-
+  bool cargoDatosCorrectamente = false;
+  bool cargando = true;
+  int? statusCodeControles;
+  late int marcaId = 0;
   
 
   @override
@@ -38,15 +40,24 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
 
   cargarDatos() async {
     token = context.read<OrdenProvider>().token;
-    orden = context.read<OrdenProvider>().orden;
-    controles = await OrdenControlServices().getControlOrden(context, orden, token);
-    
-    for(var i = 0; i < controles.length; i++){
-      models.add(controles[i].grupo);
+    try {
+      orden = context.read<OrdenProvider>().orden;
+      marcaId = context.read<OrdenProvider>().marcaId;
+      controles = await OrdenControlServices().getControlOrden(context, orden, token);
+      controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
+      for(var i = 0; i < controles.length; i++){
+        models.add(controles[i].grupo);
+      }
+      Set<String> conjunto = Set.from(models);
+      grupos = conjunto.toList();
+      grupos.sort((a, b) => a.compareTo(b));
+      if (controles.isNotEmpty){
+        cargoDatosCorrectamente = true;
+      }
+      cargando = false;
+    } catch (e) {
+      cargando = false;
     }
-    Set<String> conjunto = Set.from(models);
-    grupos = conjunto.toList();
-
     setState(() {});
   }
 
@@ -57,21 +68,41 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          iconTheme: const IconThemeData(color: Colors.white),
           title: const Text('Cuestionario',style:TextStyle(color: Colors.white)),
           backgroundColor: colors.primary,
         ),
-        body: Padding(
+        body: cargando ? const Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              Text('Cargando, por favor espere...')
+            ],
+          ),
+        ) : !cargoDatosCorrectamente ? 
+          Center(
+            child: TextButton.icon(
+              onPressed: () async {
+                await cargarDatos();
+              }, 
+              icon: const Icon(Icons.replay_outlined),
+              label: const Text('Recargar'),
+            ),
+          ) : Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
               Container( 
                 decoration: BoxDecoration(
-                    border: Border.all(
-                        width: 2, color: colors.primary),
-                    borderRadius: BorderRadius.circular(5)),
+                  border: Border.all(width: 2, color: colors.primary),
+                  borderRadius: BorderRadius.circular(5)
+                ),
                 child: DropdownButtonFormField(
-                  decoration: const InputDecoration(border: InputBorder.none),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                  ),
+                  hint: const Text('Seleccione un grupo de controles', textAlign: TextAlign.center,),
                   items: grupos.map((e) {
                     return DropdownMenuItem(
                       value: e,
@@ -115,8 +146,9 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
                       children: [
                         Flexible(
                           child: SizedBox(
-                              width: MediaQuery.of(context).size.width,
-                              child: Text(pregunta.pregunta)),
+                            width: MediaQuery.of(context).size.width,
+                            child: Text(pregunta.pregunta)
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.comment),
@@ -164,9 +196,9 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
                   );
                 },
                 separatorBuilder: (BuildContext context, int index) {
-                  return Divider(
+                  return const Divider(
                     thickness: 3,
-                    color: colors.secondary,
+                    color: Colors.green,
                   );
                 },
               ))
@@ -180,7 +212,13 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
           color: Colors.grey.shade200,
           child: CustomButton(
             onPressed: () async {
-              await postPut(context);
+              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('No puede de ingresar o editar datos.'),
+                ));
+                return Future.value(false);
+              }
+              await postControles(context);
             },
             text: 'Guardar',
             tamano: 20,
@@ -191,20 +229,25 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
     );
   }
 
-  Future<void> postPut(BuildContext context) async {
-    for(var i = 0; i < controles.length; i++){
-      if(controles[i].controlRegId == 0 && controles[i].respuesta.isNotEmpty){
-        await OrdenControlServices().postControl(context, orden, controles[i], token);
-      }else{
-        await OrdenControlServices().putControl(context, orden, controles[i], token);
+  Future<void> postControles(BuildContext context) async {  
+    List<ControlOrden> controlesSeleccionados = [];
+    for(var control in controles) {
+      if(control.respuesta.isNotEmpty){
+        controlesSeleccionados.add(control);
       }
-    }
-    await OrdenControlServices.showDialogs(context, 'Controles actualizados correctamente', false, false);
+    }    
+    await _ordenControlServices.postControles(context, orden, controlesSeleccionados, token);
+    statusCodeControles = await _ordenControlServices.getStatusCode();
+    await _ordenControlServices.resetStatusCode();
+    if(statusCodeControles == 1){
+      await OrdenControlServices.showDialogs(context, 'Controles actualizados correctamente', false, false);
+    }    
     setState(() {});
+    statusCodeControles = null;
   }
 
   void popUpComentario(BuildContext context, ControlOrden pregunta) {
-    if(pregunta.controlRegId != 0){
+    if(pregunta.controlRegId != 0 || pregunta.comentario != ''){
       comentarioController.text = pregunta.comentario;
     }else{comentarioController.text = '';}
 

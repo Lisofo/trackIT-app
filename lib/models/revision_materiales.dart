@@ -4,13 +4,12 @@
 
 import 'dart:convert';
 
-import 'package:app_track_it/models/material.dart';
-import 'package:app_track_it/models/plaga.dart';
+import 'package:app_tec_sedel/models/material.dart';
+import 'package:app_tec_sedel/models/plaga.dart';
 
 RevisionMaterial revisionMaterialesFromMap(String str) => RevisionMaterial.fromJson(json.decode(str));
 
-String revisionMaterialesToMap(RevisionMaterial data) =>
-    json.encode(data.toMap());
+String revisionMaterialesToMap(RevisionMaterial data) => json.encode(data.toMap());
 
 class RevisionMaterial {
   late int otMaterialId;
@@ -22,7 +21,7 @@ class RevisionMaterial {
   late String areaCobertura;
   late List<Plaga> plagas;
   late Materiales material;
-  late Lote lote;
+  late Lote? lote;
   late MetodoAplicacion metodoAplicacion;
 
   RevisionMaterial({
@@ -64,7 +63,7 @@ class RevisionMaterial {
         "areaCobertura": areaCobertura,
         "plagas": List<dynamic>.from(plagas.map((x) => x.toMap())),
         "material": material.toMap(),
-        "lote": lote.toMap(),
+        "lote": lote?.toMap(),
         "metodoAplicacion": metodoAplicacion.toMap(),
       };
 

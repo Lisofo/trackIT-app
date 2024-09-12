@@ -1,8 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:app_track_it/config/config.dart';
-import 'package:app_track_it/models/control_orden.dart';
-import 'package:app_track_it/models/orden.dart';
+import 'dart:convert';
+
+import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/models/control_orden.dart';
+import 'package:app_tec_sedel/models/orden.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -10,6 +12,7 @@ class OrdenControlServices{
   final _dio = Dio();
   String apiUrl = Config.APIURL;
   late String apiLink = '${apiUrl}api/v1/ordenes/';
+  int? statusCode;
 
   static void showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
@@ -24,7 +27,7 @@ class OrdenControlServices{
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cerrar'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -51,7 +54,7 @@ class OrdenControlServices{
                   Navigator.of(context).pop();
                 }
               },
-              child: const Text('Cerrar'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -59,8 +62,15 @@ class OrdenControlServices{
     );
   }
 
+  Future<int?> getStatusCode() async {
+    return statusCode;
+  }
+  Future<void> resetStatusCode() async {
+    statusCode = null;
+  }
+
   Future getControlOrden(BuildContext context, Orden orden, String token) async {
-    String link = '$apiLink${orden.ordenTrabajoId}/controles';
+    String link = '$apiLink${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/controles';
 
     try {
       var headers = {'Authorization': token};
@@ -71,64 +81,76 @@ class OrdenControlServices{
           headers: headers,
         ),
       );
+      statusCode = 1;
       final List<dynamic> controlesList = resp.data;
 
       return controlesList.map((obj) => ControlOrden.fromJson(obj)).toList();
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
             if(e.response!.statusCode == 403){
               showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else{
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
               final errors = responseData['errors'] as List<dynamic>;
               final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            showErrorDialog(context, errorMessages.join('\n'));
-          }
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
             showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          showErrorDialog(context, 'Error: ${e.message}');
-        }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
       } 
     }
   }
 
-  Future putControl(BuildContext context,Orden orden, ControlOrden control, String token) async {
+  Future putControl(BuildContext context, Orden orden, ControlOrden control, String token) async {
     try {
-      String link = '$apiLink${orden.ordenTrabajoId}/controles/${control.controlRegId}';
+      String link = '$apiLink${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/controles/${control.controlRegId}';
       var headers = {'Authorization': token};
 
-      final resp = await _dio.request(link,
-          data: control.toMap(),
-          options: Options(method: 'PUT', headers: headers));
-
+      final resp = await _dio.request(
+        link,
+        data: control.toMap(),
+        options: Options(
+          method: 'PUT', 
+          headers: headers
+          )
+        );
+      statusCode = 1;
       if (resp.statusCode == 200) { }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
             if(e.response!.statusCode == 403){
               showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else{
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
               final errors = responseData['errors'] as List<dynamic>;
               final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            showErrorDialog(context, errorMessages.join('\n'));
-          }
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
             showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          showErrorDialog(context, 'Error: ${e.message}');
-        }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
       } 
     }
   }
@@ -136,37 +158,115 @@ class OrdenControlServices{
 
   Future postControl(BuildContext context, Orden orden, ControlOrden control, String token) async {
     try {
-      String link = '$apiLink${orden.ordenTrabajoId}/controles/';
+      String link = '$apiLink${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/controles/';
       var headers = {'Authorization': token};
       var data = control.toMap();
-      final resp = await _dio.request(link,
-          data: data,
-          options: Options(method: 'POST', headers: headers));
-
+      final resp = await _dio.request(
+        link,
+        data: data,
+        options: Options(
+          method: 'POST', 
+          headers: headers
+        )
+      );
+      statusCode = 1;
       if (resp.statusCode == 201) {
         control.controlRegId = resp.data["controlRegId"]; 
       }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
             if(e.response!.statusCode == 403){
               showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else{
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
               final errors = responseData['errors'] as List<dynamic>;
               final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            showErrorDialog(context, errorMessages.join('\n'));
-          }
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
             showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          showErrorDialog(context, 'Error: ${e.message}');
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future postControles(BuildContext context, Orden orden, List<ControlOrden> controles, String token) async {
+    String link = '$apiLink${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/controles/batch';
+    print(link);
+    List datos = [];
+    Map<String, dynamic> mapa;
+    for(int i = 0; i < controles.length; i++){
+      mapa = ({
+        "metodo": controles[i].controlRegId == 0 ? "POST" : "PUT",
+        "controlId": controles[i].controlId,
+        "ordinal": controles[i].ordinal,
+        "respuesta": controles[i].respuesta,
+        "comentario": controles[i].comentario,
+        "controlRegId": controles[i].controlRegId,
+      });
+      datos.add(mapa);
+    }
+
+    String datosJson = json.encode(datos);
+    print(datosJson);
+    print(datos);
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: headers,
+
+        ),
+        data: datosJson
+      );
+      statusCode = 1;
+      if (resp.statusCode == 201) {
+        for(int i = 0; i < controles.length; i++){
+          if(controles[i].controlRegId == 0){
+            if(resp.data[0]["status"] == 201){
+              controles[i].controlRegId = resp.data[0]["content"]["controlRegId"];
+              print(controles[i].controlRegId);
+            }
+          }
         }
+      }
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
       } 
     }
   }

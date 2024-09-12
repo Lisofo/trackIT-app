@@ -2,11 +2,11 @@
 
 import 'dart:convert';
 
-import 'package:app_track_it/config/config.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/models/revision_pto_inspeccion.dart';
-import 'package:app_track_it/models/tipos_ptos_inspeccion.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
+import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
+import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,13 +14,9 @@ import 'package:provider/provider.dart';
 class PtosInspeccionServices {
   final _dio = Dio();
   String apiUrl = Config.APIURL;
+  int? statusCode;
 
-  static Future<void> showDialogs(
-    BuildContext context,
-    String errorMessage,
-    bool doblePop,
-    bool triplePop,
-  ) async {
+  static Future<void> showDialogs(BuildContext context,String errorMessage,bool doblePop,bool triplePop,) async {
     showDialog(
       context: context,
       builder: (context) {
@@ -39,7 +35,7 @@ class PtosInspeccionServices {
                   Navigator.of(context).pop();
                 }
               },
-              child: const Text('Cerrar'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -47,7 +43,7 @@ class PtosInspeccionServices {
     );
   }
 
-  Future<void> mostrarError(BuildContext context, String mensaje) async {
+  Future<void> showErrorDialog(BuildContext context, String mensaje) async {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -66,7 +62,15 @@ class PtosInspeccionServices {
     );
   }
 
-  Future getTiposPtosInspeccion(String token) async {
+  Future<int?> getStatusCode() async {
+    return statusCode;
+  }
+
+  Future<void> resetStatusCode() async {
+    statusCode = null;
+  }
+
+  Future getTiposPtosInspeccion(BuildContext context, String token) async {
     String link = '${apiUrl}api/v1/tipos/puntos';
 
     try {
@@ -78,14 +82,34 @@ class PtosInspeccionServices {
           headers: headers,
         ),
       );
+      statusCode = 1;
       final List tipoPtoInspeccionList = resp.data;
-      var retorno = tipoPtoInspeccionList
-          .map((e) => TipoPtosInspeccion.fromJson(e))
-          .toList();
-
+      var retorno = tipoPtoInspeccionList.map((e) => TipoPtosInspeccion.fromJson(e)).toList();
       return retorno;
     } catch (e) {
-      print(e);
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -101,16 +125,37 @@ class PtosInspeccionServices {
           headers: headers,
         ),
       );
+      statusCode = 1;
       final List ptoInspeccionList = resp.data;
-      var retorno = ptoInspeccionList
-          .map((e) => RevisionPtoInspeccion.fromJson(e))
-          .toList();
+      var retorno = ptoInspeccionList.map((e) => RevisionPtoInspeccion.fromJson(e)).toList();
 
       Provider.of<OrdenProvider>(context, listen: false).setPI(retorno);
 
       return retorno;
     } catch (e) {
-      print(e);
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -177,27 +222,35 @@ class PtosInspeccionServices {
         ),
         data: data
       );
+      statusCode = 1;
       if (resp.statusCode == 201) {
         revisionPtoInspeccion.otPuntoInspeccionId = resp.data["otPuntoInspeccionId"];
       }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -275,28 +328,35 @@ class PtosInspeccionServices {
             headers: headers,
           ),
           data: data);
+      statusCode = 1;
       if (resp.statusCode == 200) {
-        revisionPtoInspeccion.otPuntoInspeccionId =
-            resp.data["otPuntoInspeccionId"];
+        revisionPtoInspeccion.otPuntoInspeccionId = resp.data["otPuntoInspeccionId"];
       }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -314,24 +374,32 @@ class PtosInspeccionServices {
         ),
       );
 
+      statusCode = 1;
       return resp;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -348,26 +416,33 @@ class PtosInspeccionServices {
         ),
       );
 
-      final RevisionPtoInspeccion ptoInspeccion =
-          RevisionPtoInspeccion.fromJson(resp.data);
+      statusCode = 1;
+      final RevisionPtoInspeccion ptoInspeccion = RevisionPtoInspeccion.fromJson(resp.data);
       return ptoInspeccion;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -467,35 +542,49 @@ class PtosInspeccionServices {
         options: Options(
           method: 'POST',
           headers: headers,
+
         ),
         data: datosJson
       );
-      print(resp);
+      statusCode = 1;
+      // print(resp);
+      // print(resp.data[0]["status"]);
+      // print(resp.data[0]["content"]["otPuntoInspeccionId"]);
       if (resp.statusCode == 201) {
         for(int i = 0; i < acciones.length; i++){
           if(acciones[i].otPuntoInspeccionId == 0){
-            //acciones[i].otPuntoInspeccionId = resp.data["otPuntoInspeccionId"];
+            if(resp.data[i]["status"] == 201){
+              acciones[i].otPuntoInspeccionId = resp.data[i]["content"]["otPuntoInspeccionId"];
+              print(acciones[i].otPuntoInspeccionId);
+            }
           }
         }
       }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 
@@ -527,7 +616,8 @@ class PtosInspeccionServices {
         ),
         data: datosJson
       );
-      print(resp);
+      statusCode = 1;
+      // print(resp);
       if (resp.statusCode == 201) {
         // for(int i = 0; i < acciones.length; i++){
         //   acciones[i].otPuntoInspeccionId = resp.data["otPuntoInspeccionId"];
@@ -535,22 +625,30 @@ class PtosInspeccionServices {
       }
       return;
     } catch (e) {
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response!.data;
           if (responseData != null) {
-            final errors = responseData['errors'] as List<dynamic>;
-            final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            await mostrarError(context, errorMessages.join('\n'));
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
           } else {
-            await mostrarError(context, 'Error: ${e.response!.data}');
+            showErrorDialog(context, 'Error: ${e.response!.data}');
           }
         } else {
-          await mostrarError(context, 'Error: ${e.message}');
-        }
-      }
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 }
+

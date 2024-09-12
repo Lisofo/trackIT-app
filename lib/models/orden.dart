@@ -8,11 +8,9 @@ import 'cliente.dart';
 import 'servicio_ordenes.dart';
 import 'tecnico.dart';
 
-List<Orden> ordenFromMap(String str) =>
-    List<Orden>.from(json.decode(str).map((x) => Orden.fromJson(x)));
+List<Orden> ordenFromMap(String str) => List<Orden>.from(json.decode(str).map((x) => Orden.fromJson(x)));
 
-String ordenToMap(List<Orden> data) =>
-    json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
+String ordenToMap(List<Orden> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 class Orden {
   late int ordenTrabajoId;

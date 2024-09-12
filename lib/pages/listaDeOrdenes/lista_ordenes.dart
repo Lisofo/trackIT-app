@@ -1,13 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:app_track_it/services/orden_services.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:app_track_it/config/router/router.dart';
-import 'package:app_track_it/models/orden.dart';
-import 'package:app_track_it/providers/orden_provider.dart';
+import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 
 class ListaOrdenes extends StatefulWidget {
   const ListaOrdenes({super.key});
@@ -17,9 +17,11 @@ class ListaOrdenes extends StatefulWidget {
 }
 
 DateTime fecha = DateTime.now();
+DateTime fecha2 = DateTime(fecha.year, fecha.month, fecha.day + 1);
 
-String fechaHoy = '${fecha.year}-${fecha.month}-${fecha.day}';
-String fechaManana = '${fecha.year}-${fecha.month}-${fecha.day + 1}';
+
+String fechaHoy = DateFormat('yyyy-MM-dd', 'es').format(fecha);
+String fechaManana = DateFormat('yyyy-MM-dd', 'es').format(fecha2);
 List<String> fechas = [fechaHoy, fechaManana, 'Anteriores'];
 
 class _ListaOrdenesState extends State<ListaOrdenes> {
@@ -51,18 +53,21 @@ class _ListaOrdenesState extends State<ListaOrdenes> {
 
   // 2. Método para manejar la actualización de datos
   Future<void> _refreshData() async {
+    ordenes = [];
+    setState(() {});
     await cargarDatos();
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
-    tecnicoId = context.read<OrdenProvider>().tecnicoId;
-    ordenes = await ordenServices.getOrden(
-        tecnicoId.toString(), opcionActual, opcionActual, token);
-
-    Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
-
-    setState(() {});
+    try {
+      token = context.read<OrdenProvider>().token;
+      tecnicoId = context.read<OrdenProvider>().tecnicoId;
+      ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), opcionActual, opcionActual, token);
+      Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
+      setState(() {});
+    } catch (e) {
+      ordenes = [];
+    }
   }
 
   String opcionActual = fechas[0];
@@ -192,8 +197,8 @@ class _ListaOrdenesState extends State<ListaOrdenes> {
                       child: InkWell(
                         onTap: () {
                           final orden = ordenesFiltradas[i];
+                          Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
                           context.read<OrdenProvider>().setOrden(orden);
-
                           router.push('/ordenInterna');
                         },
                         child: Padding(
@@ -220,9 +225,7 @@ class _ListaOrdenesState extends State<ListaOrdenes> {
                                   Text(ordenesFiltradas[i].tipoOrden.descripcion),
                                 ],
                               ),
-                              Text(
-                                '${ordenesFiltradas[i].cliente.codCliente} - ${ordenesFiltradas[i].cliente.nombre}',
-                              ),
+                              Text('${ordenesFiltradas[i].cliente.codCliente} - ${ordenesFiltradas[i].cliente.nombre}',),
                               Text(ordenesFiltradas[i].cliente.direccion),
                               Text(ordenesFiltradas[i].cliente.telefono1),
                               Text(ordenesFiltradas[i].cliente.notas),
