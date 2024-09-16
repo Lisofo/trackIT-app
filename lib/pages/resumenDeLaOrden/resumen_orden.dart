@@ -46,6 +46,8 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   final _ordenServices = OrdenServices();
   final _ubicacionServices = UbicacionServices();
   late int? statusCode = 0;
+  bool resumenPlagas = false;
+  bool resumenPtoInspeccion = false;
   
   @override
   void initState() {
@@ -110,16 +112,18 @@ class _ResumenOrdenState extends State<ResumenOrden> {
             child: Column(
               children: [
                 if(orden.tipoOrden.codTipoOrden == 'N')...[
-                  const ContainerTituloPIRevision(titulo: 'Puntos de inspección'),
-                  const SizedBox(height: 10,),
-                  Text(
-                    faltanCompletarPtos ? 'Faltan completar Puntos de inspección' : 'Puntos de inspección: OK', 
-                    style: const TextStyle(
-                      fontSize: 18
+                  if(resumenPtoInspeccion)...[
+                    const ContainerTituloPIRevision(titulo: 'Puntos de inspección'),
+                    const SizedBox(height: 10,),
+                    Text(
+                      faltanCompletarPtos ? 'Faltan completar Puntos de inspección' : 'Puntos de inspección: OK', 
+                      style: const TextStyle(
+                        fontSize: 18
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10,),
+                    const SizedBox(height: 10,),
+                  ],
                   const ContainerTituloPIRevision(titulo: 'Tareas'),
                   const SizedBox(height: 10,),
                   Text(
@@ -130,15 +134,17 @@ class _ResumenOrdenState extends State<ResumenOrden> {
                   )
                 ],
                 if(orden.tipoOrden.codTipoOrden == 'N' || orden.tipoOrden.codTipoOrden == 'D')...[
-                  const ContainerTituloPIRevision(titulo: 'Plagas'),
-                  const SizedBox(height: 10,),
-                  Text(
-                    plagas.isEmpty ? 'No registró plagas' : 'OK', 
-                    style: const TextStyle(
-                      fontSize: 18
+                  if(resumenPlagas)...[
+                    const ContainerTituloPIRevision(titulo: 'Plagas'),
+                    const SizedBox(height: 10,),
+                    Text(
+                      plagas.isEmpty ? 'No registró plagas' : 'OK', 
+                      style: const TextStyle(
+                        fontSize: 18
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10,),
+                    const SizedBox(height: 10,),
+                  ],
                   const ContainerTituloPIRevision(titulo: 'Materiales'),
                   const SizedBox(height: 10,),
                   Text(

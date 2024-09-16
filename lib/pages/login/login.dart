@@ -42,17 +42,17 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return SafeArea(
-        child: Scaffold(
+      child: Scaffold(
       backgroundColor:  colors.primary,
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('images/banner.jpg'),
             const SizedBox(height: 40),
             const CircleAvatar(
-                radius: 70.5,
-                backgroundImage: AssetImage('images/logo.jpg')),
+              radius: 70.5,
+              backgroundImage: AssetImage('images/logo.jpg')
+            ),
             const SizedBox(
               height: 40,
             ),

@@ -9,11 +9,11 @@ import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 
-class ListaOrdenes extends StatefulWidget {
-  const ListaOrdenes({super.key});
+class ListaOrdenesConEstado extends StatefulWidget {
+  const ListaOrdenesConEstado({super.key});
 
   @override
-  State<ListaOrdenes> createState() => _ListaOrdenesState();
+  State<ListaOrdenesConEstado> createState() => _ListaOrdenesConEstadoState();
 }
 
 DateTime fecha = DateTime.now();
@@ -24,7 +24,7 @@ String fechaHoy = DateFormat('yyyy-MM-dd', 'es').format(fecha);
 String fechaManana = DateFormat('yyyy-MM-dd', 'es').format(fecha2);
 List<String> fechas = [fechaHoy, fechaManana, 'Anteriores'];
 
-class _ListaOrdenesState extends State<ListaOrdenes> {
+class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
   final ordenServices = OrdenServices();
   String token = '';
   List<Orden> ordenes = [];

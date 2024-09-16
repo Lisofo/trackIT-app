@@ -4,8 +4,8 @@ import 'package:app_tec_sedel/pages/drawerPages/firma_page.dart';
 import 'package:app_tec_sedel/pages/drawerPages/observaciones_page.dart';
 import 'package:app_tec_sedel/pages/drawerPages/validacion_page.dart';
 import 'package:app_tec_sedel/pages/entrada/entrada_salida.dart';
-import 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes.dart';
-import 'package:app_tec_sedel/pages/ordenInterna/orden_interna.dart';
+import 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_estado.dart';
+import 'package:app_tec_sedel/pages/ordenInterna/orden_interna_vertical.dart';
 import '../pages/drawerPages/materiales_page.dart';
 import '../pages/drawerPages/plagas_page.dart';
 import '../pages/drawerPages/ptosDeInspeccio/ptosInspeccion_page.dart';
@@ -16,8 +16,8 @@ Map<String, WidgetBuilder> getAppRoutes() {
   return <String, WidgetBuilder>{
     '/': (context) => const Login(),
     'entradaSalida': (context) => const EntradSalida(),
-    'listaOrdenes': (context) => const ListaOrdenes(),
-    'ordenInterna': (context) => const OrdenInterna(),
+    'listaOrdenes': (context) => const ListaOrdenesConEstado(),
+    'ordenInterna': (context) => const OrdenInternaVertical(),
     'tareas': (context) => const TareasPage(),
     'plagas': (context) => const PlagasPage(),
     'ptosInspeccion': (context) => const PtosInspeccionPage(),

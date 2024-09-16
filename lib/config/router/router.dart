@@ -1,11 +1,13 @@
+import 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_busqueda.dart';
+import 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
 
 final router = GoRouter(initialLocation: '/', routes: [
   GoRoute(path: '/', builder: (context, state) => const Login()),
   GoRoute(path: '/entradaSalida', builder: (context, state) => const EntradSalida()),
-  GoRoute(path: '/listaOrdenes', builder: (context, state) => const ListaOrdenes()),
-  GoRoute(path: '/ordenInterna', builder: (context, state) => const OrdenInterna()),
+  GoRoute(path: '/listaOrdenes', builder: (context, state) => const ListaOrdenesConBusqueda()),
+  GoRoute(path: '/ordenInterna', builder: (context, state) => const OrdenInternaHorizontal()),
   GoRoute(path: '/ptosInspeccion', builder: (context, state) => const PtosInspeccionPage()),
   GoRoute(path: '/ptosInspeccionActividad', builder: (context, state) => const PtosInspeccionActividad()),
   GoRoute(path: '/ptosInspeccionRevision', builder: (context, state) => const PtosInspeccionRevisionPage()),

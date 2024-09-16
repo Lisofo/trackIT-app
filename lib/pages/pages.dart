@@ -1,7 +1,7 @@
 export 'package:app_tec_sedel/pages/login/login.dart';
 export 'package:app_tec_sedel/pages/entrada/entrada_salida.dart';
-export 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes.dart';
-export 'package:app_tec_sedel/pages/ordenInterna/orden_interna.dart';
+export 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_estado.dart';
+export 'package:app_tec_sedel/pages/ordenInterna/orden_interna_vertical.dart';
 export 'package:app_tec_sedel/pages/resumenDeLaOrden/resumen_orden.dart';
 
 export 'package:app_tec_sedel/pages/drawerPages/ptosDeInspeccio/ptosInspeccion_page.dart';

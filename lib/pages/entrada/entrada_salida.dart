@@ -53,46 +53,19 @@ class _EntradSalidaState extends State<EntradSalida> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return WillPopScope(
-      onWillPop: () async {
-        return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            surfaceTintColor: Colors.white,
-            title: const Text('¿Desea salir de la aplicación?'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Sí'),
-              ),
-            ],
-          ),
-        );
-      },
-      child: SafeArea(
-        child: Scaffold(
-          backgroundColor: colors.primary,
-          body: Column(
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: colors.primary,
+        body: SingleChildScrollView(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('images/banner.jpg'),
+              SizedBox(
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height * 0.3,
+                child: Image.asset('images/banner.jpg')
+              ),
               const SizedBox(height: 20),
-              CircleAvatar(
-                backgroundColor: Colors.grey.shade800,
-                radius: 55.5,
-                child: const Icon(
-                  Icons.person,
-                  size: 70,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(
-                height: 5,
-              ),
               Text(
                 nombreUsuario,
                 style: const TextStyle(
@@ -100,18 +73,11 @@ class _EntradSalidaState extends State<EntradSalida> {
                     fontSize: 35,
                     fontWeight: FontWeight.bold),
               ),
-              if (marca.marcaId != 0) ...[
-                Text(
-                  'Tiene una entrada iniciada a la hora ${marca.desde}',
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                )
-              ] else ...[
-                const Text(
-                  'No marcó entrada aún',
-                  style: TextStyle(color: Colors.white),
-                )
-              ],
+              Text(
+                marca.marcaId != 0 ? 'Tiene una entrada iniciada a la hora ${marca.desde}' : 'No marcó entrada aún',
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(
                 height: 20,
               ),
@@ -163,18 +129,18 @@ class _EntradSalidaState extends State<EntradSalida> {
                   }
                 }
               ),
-              const Expanded(child: Text('')),
+              // const Expanded(child: Text('')),
             ],
           ),
-          bottomNavigationBar: Container(
-            width: MediaQuery.of(context).size.width,
-            color: Colors.white,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
-              child: Text(
-                'info@integralsoft.com.uy | 099113500',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+        ),
+        bottomNavigationBar: Container(
+          width: MediaQuery.of(context).size.width,
+          color: Colors.white,
+          child: const Padding(
+            padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
+            child: Text(
+              'info@integralsoft.com.uy | 099113500',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ),

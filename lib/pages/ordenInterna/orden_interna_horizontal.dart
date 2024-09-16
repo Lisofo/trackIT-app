@@ -6,6 +6,7 @@ import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
+import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -18,14 +19,14 @@ import 'package:app_tec_sedel/widgets/icons.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class OrdenInterna extends StatefulWidget {
-  const OrdenInterna({super.key});
+class OrdenInternaHorizontal extends StatefulWidget {
+  const OrdenInternaHorizontal({super.key});
 
   @override
-  State<OrdenInterna> createState() => _OrdenInternaState();
+  State<OrdenInternaHorizontal> createState() => _OrdenInternaHorizontalState();
 }
 
-class _OrdenInternaState extends State<OrdenInterna> {
+class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
   late Orden orden;
   late int marcaId = 0;
   late String _currentPosition = '';
@@ -36,6 +37,9 @@ class _OrdenInternaState extends State<OrdenInterna> {
   final _ordenServices = OrdenServices();
   final _revisionServices = RevisionServices();
   int? statusCode;
+  final TextEditingController pinController = TextEditingController();
+  bool pedirConfirmacion = true;
+  bool isObscured = true;
   
 
   @override
@@ -47,34 +51,71 @@ class _OrdenInternaState extends State<OrdenInterna> {
   }
 
   void _mostrarDialogoConfirmacion(String accion) {
+    pinController.text = '';
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          surfaceTintColor: Colors.white,
-          title: const Text('Confirmación'),
-          content: Text('¿Estás seguro que deseas $accion la orden?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                router.pop(context);
-              },
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  if (accion == 'iniciar') {
-                    cambiarEstado('EN PROCESO');
-                  } else {
-                    cambiarEstado('FINALIZADA');
-                  }
-                });
-                router.pop(context);
-              },
-              child: const Text('Confirmar'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setStateBd) {
+            return AlertDialog(
+              surfaceTintColor: Colors.white,
+              title: const Text('Confirmación'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('¿Estás seguro que deseas $accion la orden?'),
+                  if(pedirConfirmacion)...[
+                    const SizedBox(height: 5,),
+                    CustomTextFormField(
+                      preffixIcon: const Icon(Icons.lock),
+                      keyboard: const TextInputType.numberWithOptions(),
+                      controller: pinController,
+                      hint: 'Ingrese PIN',
+                      maxLines: 1,
+                      obscure: isObscured,
+                      suffixIcon: IconButton(
+                        icon: isObscured
+                            ? const Icon(
+                                Icons.visibility_off,
+                                color: Colors.black,
+                              )
+                            : const Icon(
+                                Icons.visibility,
+                                color: Colors.black,
+                              ),
+                        onPressed: () {
+                          setStateBd(() {
+                            isObscured = !isObscured;
+                          });
+                        },
+                      ),
+                    )
+                  ]
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    router.pop(context);
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      if (accion == 'iniciar') {
+                        cambiarEstado('EN PROCESO');
+                      } else {
+                        cambiarEstado('FINALIZADA');
+                      }
+                    });
+                    router.pop(context);
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -89,7 +130,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
         appBar: AppBar(
           backgroundColor: colors.primary,
           title: Text(
-            'Orden ${orden.ordenTrabajoId}',
+            'Orden ${orden.ordenTrabajoId}: Servicio y distribucion 90.000KM',
             style: const TextStyle(color: Colors.white),
           ),
           actions: [
@@ -125,8 +166,9 @@ class _OrdenInternaState extends State<OrdenInterna> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                      color: colors.primary,
-                      borderRadius: BorderRadius.circular(5)),
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(5)
+                  ),
                   height: 30,
                   child: const Center(
                     child: Text(
@@ -143,22 +185,11 @@ class _OrdenInternaState extends State<OrdenInterna> {
                   height: 20,
                 ),
                 const Text(
-                  'Nombre del cliente: ',
+                  'Cliente: ',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente.nombre,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Codigo del cliente: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  orden.cliente.codCliente,
+                  '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -169,38 +200,9 @@ class _OrdenInternaState extends State<OrdenInterna> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  DateFormat('EEEE d, MMMM yyyy', 'es').format(orden.fechaOrdenTrabajo),
+                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
                   style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Direccion del cliente: ',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    IconButton(onPressed: (){
-                      _launchMaps(orden.cliente.coordenadas);
-                    }, icon: Icon(Icons.person_pin, color: colors.primary))
-                  ],
-                ),
-                Text(
-                  orden.cliente.direccion,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Telefono del cliente: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  orden.cliente.telefono1,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                ), 
                 const SizedBox(
                   height: 10,
                 ),
@@ -217,33 +219,7 @@ class _OrdenInternaState extends State<OrdenInterna> {
                     )
                   ],
                 ),
-                const SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Tipo de Orden: ',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    Text(orden.tipoOrden.descripcion,
-                        style: const TextStyle(fontSize: 16))
-                  ],
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Servicios: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                for (var i = 0; i < orden.servicio.length; i++) ...[
-                  Text(
-                    orden.servicio[i].descripcion,
-                    style: const TextStyle(fontSize: 16),
-                  )
-                ],
+                
                 const SizedBox(
                   height: 10,
                 ),
