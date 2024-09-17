@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:app_tec_sedel/services/orden_services.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -122,8 +121,13 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                   Text(
                                     DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(ordenes[i].fechaOrdenTrabajo),
                                   ),
+                                  const SizedBox(
+                                    width: 10,
+                                  ),
                                   const Spacer(),
-                                  Text(ordenes[i].tipoOrden.descripcion),
+                                  const Text(
+                                    'SCN 1016', style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
                                 ],
                               ),
                               Row(
@@ -132,7 +136,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                   const VerticalDivider(),
                                   Text(ordenes[i].cliente.direccion),
                                   const VerticalDivider(),
-                                  Text(ordenes[i].cliente.notas), 
+                                  Text(ordenes[i].cliente.notas),
+                                  const Spacer(),
+                                  Text(ordenes[i].estado)
                                 ],
                               ),
                               

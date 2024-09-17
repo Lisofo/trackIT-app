@@ -1,12 +1,16 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 
 import 'package:app_tec_sedel/models/menu.dart';
+import 'package:app_tec_sedel/models/revision_materiales.dart';
+import 'package:app_tec_sedel/models/revision_tarea.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -40,7 +44,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
   final TextEditingController pinController = TextEditingController();
   bool pedirConfirmacion = true;
   bool isObscured = true;
-  
+  late List<RevisionTarea> tareas = [];
+  late List<RevisionMaterial> materiales = [];
+  bool cambiarLista = true;
+  int groupValue = 0;
 
   @override
   void initState() {
@@ -48,6 +55,17 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<OrdenProvider>().token;
+    cargarDatos();
+  }
+  
+  cargarDatos() async {
+    if(orden.otRevisionId != 0) {
+      tareas = await RevisionServices().getRevisionTareas(context, orden, token);
+      materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
+    }
+    setState(() {
+      
+    });
   }
 
   void _mostrarDialogoConfirmacion(String accion) {
@@ -162,115 +180,262 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(5)
-                  ),
-                  height: 30,
-                  child: const Center(
-                    child: Text(
-                      'Detalle',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  'Cliente: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Fecha de la orden: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                  style: const TextStyle(fontSize: 16),
-                ), 
-                const SizedBox(
-                  height: 10,
-                ),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Estado: ',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Cliente: ',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Fecha de la orden: ',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text(
+                                'Estado: ',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                context.watch<OrdenProvider>().orden.estado,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
+                          ),
+                          const Text(
+                            'Notas del cliente: ',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: colors.primary, width: 2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: TextFormField(
+                              enabled: false,
+                              minLines: 1,
+                              maxLines: 10,
+                              initialValue: 'Cheaquear luz de chequeo y luces',
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            'Instrucciones: ',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: colors.primary, width: 2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: TextFormField(
+                              enabled: false,
+                              minLines: 1,
+                              maxLines: 5,
+                              initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      context.watch<OrdenProvider>().orden.estado,
-                      style: const TextStyle(fontSize: 16),
-                    )
+                    const SizedBox(width: 20), 
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CupertinoSegmentedControl<int>(
+                            padding: const EdgeInsets.all(10),
+                            groupValue: groupValue,
+                            borderColor: Colors.black,
+                            selectedColor: colors.primary,
+                            unselectedColor: Colors.white,
+                            children: {
+                              0: buildSegment('Tareas'),
+                              1: buildSegment('Materiales'),
+                            },
+                            onValueChanged: (newValue) {
+                              groupValue = newValue;
+                              cambiarLista = groupValue == 0 ? true : false;
+                              setState(() {});
+                            },
+                          ),
+                          if(cambiarLista)...[
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.8,
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: colors.onPrimary,
+                                border: Border.all(),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Stack(
+                                  children: [
+                                    SingleChildScrollView(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Padding(
+                                                padding: EdgeInsets.only(right: 8),
+                                                child: Text('Codigo'),
+                                              ),
+                                              Padding(
+                                                padding: EdgeInsets.only(right: 8),
+                                                child: Text('Descripcion',),
+                                              ),
+                                              Text(''),
+                                            ],
+                                          ),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Table(
+                                              columnWidths: const <int, TableColumnWidth> {
+                                                0: IntrinsicColumnWidth(flex: 1),
+                                                1: IntrinsicColumnWidth(flex: 4),
+                                                2: IntrinsicColumnWidth(flex: 2),
+                                                3: IntrinsicColumnWidth(flex: 1),
+                                              },
+                                              children: [
+                                                for(var tarea in tareas)...[
+                                                  TableRow(
+                                                    children: [
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(right: 8),
+                                                        child: Text(tarea.codTarea, textAlign: TextAlign.center,),
+                                                      ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(right: 8),
+                                                        child: Text(tarea.descripcion),
+                                                      ),
+                                                      const Text('Comentario'),
+                                                      const Text('Avance'),
+                                                    ]
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Material(
+                                        elevation: 0,
+                                        child: Container(
+                                          color: colors.onPrimary,
+                                          child: Table(
+                                            columnWidths: const <int, TableColumnWidth>{
+                                              0: IntrinsicColumnWidth(flex: 1),
+                                              1: IntrinsicColumnWidth(flex: 4),
+                                              2: IntrinsicColumnWidth(flex: 2),
+                                              3: FlexColumnWidth(1),
+                                            },
+                                            children: const [
+                                              TableRow(
+                                                children: [
+                                                  Padding(
+                                                    padding: EdgeInsets.only(right: 8),
+                                                    child: Text('Codigo', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.only(right: 8),
+                                                    child: Text('Descripcion', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.only(right: 8),
+                                                    child: Text('Comentario', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.only(right: 8),
+                                                    child: Text('Avance', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            )
+                          ] else...[
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.8,
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              decoration: BoxDecoration(
+                                color: colors.onPrimary,
+                                border: Border.all(),
+                                borderRadius: BorderRadius.circular(5)
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SingleChildScrollView(
+                                  child: Table(
+                                    columnWidths: const <int, TableColumnWidth> {
+                                      0 : FlexColumnWidth(),
+                                      1 : FlexColumnWidth(11)
+                                    },
+                                    children: [
+                                      for(var material in materiales)...[
+                                        TableRow(
+                                          children: [
+                                            Text(material.material.codMaterial, textAlign: TextAlign.center,),
+                                            Text(material.material.descripcion),
+                                          ]
+                                        )
+                                      ]
+                                    ],
+                                  ),
+                                ),
+                              )
+                              
+                            )
+                          ]
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Notas del cliente: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(
-                          color: colors.primary,
-                          width: 2),
-                      borderRadius: BorderRadius.circular(5)),
-                  child: TextFormField(
-                    enabled: false,
-                    minLines: 1,
-                    maxLines: 100,
-                    initialValue: orden.cliente.notas,
-                    decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        fillColor: Colors.white,
-                        filled: true),
-                  ),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  'Instrucciones: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(
-                          color: colors.primary,
-                          width: 2),
-                      borderRadius: BorderRadius.circular(5)),
-                  child: TextFormField(
-                    enabled: false,
-                    minLines: 1,
-                    maxLines: 100,
-                    initialValue: orden.instrucciones,
-                    decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        fillColor: Colors.white,
-                        filled: true),
-                  ),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
+                const SizedBox(height: 20,),
+                 
               ],
             ),
           ),
@@ -464,6 +629,16 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
     } else {
       throw 'No se pudo abrir la url';
     }
+  }
+
+  Widget buildSegment(String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 15),
+      ),
+    );
   }
 
 }
