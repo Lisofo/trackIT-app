@@ -49,6 +49,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
   bool cambiarLista = true;
   int groupValue = 0;
 
+
+
+  
+
   @override
   void initState() {
     super.initState();
@@ -142,6 +146,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
+
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.grey.shade200,
@@ -288,145 +298,82 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
                               setState(() {});
                             },
                           ),
+
                           if(cambiarLista)...[
                             Container(
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              height: MediaQuery.of(context).size.height * 0.5,
-                              clipBehavior: Clip.antiAlias,
+                              width: screenWidth * 0.9,
+                              height: screenHeight * 0.6,
                               decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
                                 color: colors.onPrimary,
-                                border: Border.all(),
-                                borderRadius: BorderRadius.circular(5),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Stack(
-                                  children: [
-                                    SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  // Fixed header
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[400],
+                                      border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        _buildHeaderCell('Codigo', flex: 1),
+                                        _buildHeaderCell('Descripcion', flex: 3),
+                                        _buildHeaderCell('Comentario', flex: 1),
+                                        _buildHeaderCell('Avance', flex: 1),
+                                      ],
+                                    ),
+                                  ),
+                                  // Scrollable content
+                                  Expanded(
+                                    child: SingleChildScrollView(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Row(
-                                            children: [
-                                              Padding(
-                                                padding: EdgeInsets.only(right: 8),
-                                                child: Text('Codigo'),
-                                              ),
-                                              Padding(
-                                                padding: EdgeInsets.only(right: 8),
-                                                child: Text('Descripcion',),
-                                              ),
-                                              Text(''),
-                                            ],
-                                          ),
-                                          SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Table(
-                                              columnWidths: const <int, TableColumnWidth> {
-                                                0: IntrinsicColumnWidth(flex: 1),
-                                                1: IntrinsicColumnWidth(flex: 4),
-                                                2: IntrinsicColumnWidth(flex: 2),
-                                                3: IntrinsicColumnWidth(flex: 1),
-                                              },
-                                              children: [
-                                                for(var tarea in tareas)...[
-                                                  TableRow(
-                                                    children: [
-                                                      Padding(
-                                                        padding: const EdgeInsets.only(right: 8),
-                                                        child: Text(tarea.codTarea, textAlign: TextAlign.center,),
-                                                      ),
-                                                      Padding(
-                                                        padding: const EdgeInsets.only(right: 8),
-                                                        child: Text(tarea.descripcion),
-                                                      ),
-                                                      const Text('Comentario'),
-                                                      const Text('Avance'),
-                                                    ]
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                        children: tareas.map((tarea) => _buildDataRow(tarea, context)).toList(),
                                       ),
                                     ),
-                                    Positioned(
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: Material(
-                                        elevation: 0,
-                                        child: Container(
-                                          color: colors.onPrimary,
-                                          child: Table(
-                                            columnWidths: const <int, TableColumnWidth>{
-                                              0: IntrinsicColumnWidth(flex: 1),
-                                              1: IntrinsicColumnWidth(flex: 4),
-                                              2: IntrinsicColumnWidth(flex: 2),
-                                              3: FlexColumnWidth(1),
-                                            },
-                                            children: const [
-                                              TableRow(
-                                                children: [
-                                                  Padding(
-                                                    padding: EdgeInsets.only(right: 8),
-                                                    child: Text('Codigo', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                  Padding(
-                                                    padding: EdgeInsets.only(right: 8),
-                                                    child: Text('Descripcion', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                  Padding(
-                                                    padding: EdgeInsets.only(right: 8),
-                                                    child: Text('Comentario', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                  Padding(
-                                                    padding: EdgeInsets.only(right: 8),
-                                                    child: Text('Avance', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
+                                  ),
+                                ],
+                              ),
                             )
                           ] else...[
                             Container(
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              height: MediaQuery.of(context).size.height * 0.5,
+                              width: screenWidth * 0.9,
+                              height: screenHeight * 0.6,
                               decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
                                 color: colors.onPrimary,
-                                border: Border.all(),
-                                borderRadius: BorderRadius.circular(5)
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: SingleChildScrollView(
-                                  child: Table(
-                                    columnWidths: const <int, TableColumnWidth> {
-                                      0 : FlexColumnWidth(),
-                                      1 : FlexColumnWidth(11)
-                                    },
-                                    children: [
-                                      for(var material in materiales)...[
-                                        TableRow(
-                                          children: [
-                                            Text(material.material.codMaterial, textAlign: TextAlign.center,),
-                                            Text(material.material.descripcion),
-                                          ]
-                                        )
-                                      ]
-                                    ],
+                              child: Column(
+                                children: [
+                                  // Fixed header
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[400],
+                                      border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        _buildHeaderCell('Codigo', flex: 1),
+                                        _buildHeaderCell('Descripcion', flex: 3),
+                                        _buildHeaderCell('Comentario', flex: 1),
+                                        _buildHeaderCell('Avance', flex: 1),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              )
-                              
+                                  // Scrollable content
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        children: materiales.map((material) => _buildDataRow(material, context)).toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             )
                           ]
                         ],
@@ -637,6 +584,60 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
       child: Text(
         text,
         style: const TextStyle(fontSize: 15),
+      ),
+    );
+  }
+
+
+  Widget _buildHeaderCell(String text, {required int flex}) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        alignment: text != 'Codigo' ? Alignment.centerLeft : Alignment.center,
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataRow(dynamic objeto, BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey)),
+      ),
+      child: Row(
+        children: [
+          if(objeto is RevisionTarea)...[
+            _buildDataCell(objeto.codTarea, flex: 1, alignment: Alignment.center),
+            _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+            _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
+            _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+          ] else if(objeto is RevisionMaterial) ... [
+            _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
+            _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
+            _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
+            _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+          ],
+         
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataCell(String text, {required int flex, required Alignment alignment}) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        alignment: alignment,
+        child: Text(
+          text,
+          textAlign: alignment == Alignment.center ? TextAlign.center : TextAlign.left,
+        ),
       ),
     );
   }

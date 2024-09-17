@@ -4,8 +4,7 @@
 
 import 'dart:convert';
 
-RevisionTarea tareaFromMap(String str) =>
-    RevisionTarea.fromJson(json.decode(str));
+RevisionTarea tareaFromMap(String str) => RevisionTarea.fromJson(json.decode(str));
 
 String tareaToMap(RevisionTarea data) => json.encode(data.toMap());
 
