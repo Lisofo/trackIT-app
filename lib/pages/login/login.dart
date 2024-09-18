@@ -24,6 +24,7 @@ class _LoginState extends State<Login> {
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   final _loginServices = LoginServices();
+  bool soloPin = true;
 
   @override
   void initState() {
@@ -62,7 +63,8 @@ class _LoginState extends State<Login> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    CustomTextFormField(
+                    if(!soloPin)...[
+                      CustomTextFormField(
                         controller: usernameController,
                         hint: 'Ingrese su usuario',
                         fillColor: Colors.white,
@@ -75,55 +77,66 @@ class _LoginState extends State<Login> {
                           }
                           return null;
                         },
-                        onSaved: (newValue) => user = newValue!),
-                    const SizedBox(
-                      height: 20,
-                    ),
+                        onSaved: (newValue) => user = newValue!
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                    ],
                     CustomTextFormField(
-                        controller: passwordController,
-                        obscure: isObscured,
-                        focusNode: passwordFocusNode,
-                        keyboard: TextInputType.number,
-                        maxLines: 1,
-                        fillColor: Colors.white,
-                        hint: 'Ingrese su contraseña',
-                        preffixIcon: const Icon(Icons.lock),
-                        prefixIconColor: colors.primary,
-                        suffixIcon: IconButton(
-                          icon: isObscured
-                              ? const Icon(
-                                  Icons.visibility_off,
-                                  color: Colors.black,
-                                )
-                              : const Icon(
-                                  Icons.visibility,
-                                  color: Colors.black,
-                                ),
-                          onPressed: () {
-                            setState(() {
-                              isObscured = !isObscured;
-                            });
-                          },
-                        ),
-                        validator: (value) {
-                          if (value!.isEmpty || value.trim().isEmpty) {
-                            return 'Ingrese su contraseña';
-                          }
-                          if (value.length < 6) {
-                            return 'Contraseña invalida';
-                          }
-                          return null;
+                      controller: passwordController,
+                      obscure: isObscured,
+                      focusNode: passwordFocusNode,
+                      keyboard: TextInputType.number,
+                      maxLines: 1,
+                      fillColor: Colors.white,
+                      hint: soloPin ? 'Ingrese su PIN' : 'Ingrese su contraseña',
+                      preffixIcon: const Icon(Icons.lock),
+                      prefixIconColor: colors.primary,
+                      suffixIcon: IconButton(
+                        icon: isObscured
+                          ? const Icon(
+                              Icons.visibility_off,
+                              color: Colors.black,
+                            )
+                          : const Icon(
+                              Icons.visibility,
+                              color: Colors.black,
+                            ),
+                        onPressed: () {
+                          setState(() {
+                            isObscured = !isObscured;
+                          });
                         },
-                        onFieldSubmitted: (value) async {
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty || value.trim().isEmpty) {
+                          return 'Ingrese su contraseña';
+                        }
+                        if (value.length < 6) {
+                          return 'Contraseña invalida';
+                        }
+                        return null;
+                      },
+                      onFieldSubmitted: (value) async {
+                        if(soloPin){
+                          await pin(context);
+                        } else{
                           await login(context);
-                        },
-                        onSaved: (newValue) => pass = newValue!),
+                        }
+                      },
+                      onSaved: (newValue) => pass = newValue!
+                    ),
                     const SizedBox(
                       height: 30,
                     ),
                     CustomButton(
                       onPressed: () async {
-                        await login(context);
+                        if(soloPin){
+                          await pin(context);
+                        } else{
+                          await login(context);
+                        }
                       },
                       text: 'Iniciar Sesión',
                       tamano: 25,
@@ -132,18 +145,19 @@ class _LoginState extends State<Login> {
                       height: 100,
                     ),
                     FutureBuilder(
-                        future: PackageInfo.fromPlatform(),
-                        builder: (BuildContext context,
-                            AsyncSnapshot<PackageInfo> snapshot) {
-                          if (snapshot.hasData) {
-                            return Text(
-                              'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
-                              style: const TextStyle(color: Colors.white),
-                            );
-                          } else {
-                            return const Text('Cargando la app...');
-                          }
-                        })
+                      future: PackageInfo.fromPlatform(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<PackageInfo> snapshot) {
+                        if (snapshot.hasData) {
+                          return Text(
+                            'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
+                            style: const TextStyle(color: Colors.white),
+                          );
+                        } else {
+                          return const Text('Cargando la app...');
+                        }
+                      }
+                    )
                   ],
                 ),
               ),
@@ -155,8 +169,7 @@ class _LoginState extends State<Login> {
         width: MediaQuery.of(context).size.width,
         color: Colors.white,
         child: const Padding(
-          padding:
-              EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
+          padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 5),
           child: Text(
             'info@integralsoft.com.uy | 099113500',
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -193,6 +206,35 @@ class _LoginState extends State<Login> {
           ),
         );
         print('Credenciales inválidas. Intente nuevamente.');
+      }
+    }
+  }
+  Future<void> pin(BuildContext context) async {
+    await _loginServices.pin2(
+      passwordController.text,
+      context,
+    );
+
+    if (_formKey.currentState?.validate() == true) {
+      var statusCode = await _loginServices.getStatusCode();
+      await _loginServices.resetStatusCode();
+      if (statusCode == 1) {
+        context.pushReplacement('/entradaSalida');
+      } else if (statusCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Revise su conexión'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else if (statusCode >= 400 && statusCode < 500){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Credencial inválida. Intente nuevamente.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('Credencial inválida. Intente nuevamente.');
       }
     }
   }
