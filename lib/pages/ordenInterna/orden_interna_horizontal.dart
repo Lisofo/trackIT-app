@@ -30,7 +30,7 @@ class OrdenInternaHorizontal extends StatefulWidget {
   State<OrdenInternaHorizontal> createState() => _OrdenInternaHorizontalState();
 }
 
-class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
+class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with TickerProviderStateMixin{
   late Orden orden;
   late int marcaId = 0;
   late String _currentPosition = '';
@@ -48,10 +48,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
   late List<RevisionMaterial> materiales = [];
   bool cambiarLista = true;
   int groupValue = 0;
+  int buttonIndex = 0;
+  int? selectedTaskIndex;
 
 
-
-  
+  late TabController tabBarController;
 
   @override
   void initState() {
@@ -59,8 +60,25 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<OrdenProvider>().token;
+    tabBarController = TabController(length: 3, vsync: this);
+    tabBarController.addListener(handleTabSelection);
     cargarDatos();
   }
+
+  void handleTabSelection() {
+    if (tabBarController.indexIsChanging) {
+      print('Tab ${tabBarController.index} is being selected');
+    }
+  }
+
+  @override
+  void dispose() {
+    tabBarController.removeListener(handleTabSelection);
+    tabBarController.dispose();
+    super.dispose();
+  }
+
+  
   
   cargarDatos() async {
     if(orden.otRevisionId != 0) {
@@ -190,234 +208,299 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Container(
+                  width: screenWidth * 0.9,
+                  child: TabBar(
+                    labelColor: Colors.white,
+                    indicator: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(3)),
+                      color: Colors.cyan,
+                    ),
+                    dividerColor: Colors.cyan,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    controller: tabBarController,
+                    tabs: const [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Cliente: ',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Fecha de la orden: ',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Text(
-                                'Estado: ',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                context.watch<OrdenProvider>().orden.estado,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ],
-                          ),
-                          const Text(
-                            'Notas del cliente: ',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: colors.primary, width: 2),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: TextFormField(
-                              enabled: false,
-                              minLines: 1,
-                              maxLines: 10,
-                              initialValue: 'Cheaquear luz de chequeo y luces',
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            'Instrucciones: ',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: colors.primary, width: 2),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: TextFormField(
-                              enabled: false,
-                              minLines: 1,
-                              maxLines: 5,
-                              initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                            ),
-                          ),
+                          Icon(Icons.tram_sharp),
+                          Tab(text: 'Tab 1',),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 20), 
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CupertinoSegmentedControl<int>(
-                            padding: const EdgeInsets.all(10),
-                            groupValue: groupValue,
-                            borderColor: Colors.black,
-                            selectedColor: colors.primary,
-                            unselectedColor: Colors.white,
-                            children: {
-                              0: buildSegment('Tareas'),
-                              1: buildSegment('Materiales'),
-                            },
-                            onValueChanged: (newValue) {
-                              groupValue = newValue;
-                              cambiarLista = groupValue == 0 ? true : false;
-                              setState(() {});
-                            },
-                          ),
-
-                          if(cambiarLista)...[
-                            Container(
-                              width: screenWidth * 0.9,
-                              height: screenHeight * 0.6,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                                color: colors.onPrimary,
-                              ),
-                              child: Column(
-                                children: [
-                                  // Fixed header
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[400],
-                                      border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        _buildHeaderCell('Codigo', flex: 1),
-                                        _buildHeaderCell('Descripcion', flex: 3),
-                                        _buildHeaderCell('Comentario', flex: 1),
-                                        _buildHeaderCell('Avance', flex: 1),
-                                      ],
-                                    ),
-                                  ),
-                                  // Scrollable content
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        children: tareas.map((tarea) => _buildDataRow(tarea, context)).toList(),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ] else...[
-                            Container(
-                              width: screenWidth * 0.9,
-                              height: screenHeight * 0.6,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                                color: colors.onPrimary,
-                              ),
-                              child: Column(
-                                children: [
-                                  // Fixed header
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[400],
-                                      border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        _buildHeaderCell('Codigo', flex: 1),
-                                        _buildHeaderCell('Descripcion', flex: 3),
-                                        _buildHeaderCell('Comentario', flex: 1),
-                                        _buildHeaderCell('Avance', flex: 1),
-                                      ],
-                                    ),
-                                  ),
-                                  // Scrollable content
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        children: materiales.map((material) => _buildDataRow(material, context)).toList(),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ]
-                        ],
-                      ),
-                    ),
-                  ],
+                      Tab(text: 'Tab 2',),
+                      Tab(text: 'Tab 3',),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20,),
-                 
+                SizedBox(
+                  width: screenWidth * 0.9,
+                  height: screenHeight * 0.8,
+                  child: TabBarView(
+                    controller: tabBarController,
+                    children: [
+                      Container(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            
+                            const Text(
+                              'Cliente: ',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Fecha de la orden: ',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            //SizedBox(width: 50,),
+                            const Text(
+                              'Estado: ',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              context.watch<OrdenProvider>().orden.estado,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            
+                            
+                            Column(
+                              children: [
+                                const Text(
+                                  'Notas del cliente: ',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                ),
+                                Container(
+                                  width: screenWidth * 0.4,
+                                  height: screenHeight * 0.1,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: colors.primary, width: 2),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: TextFormField(
+                                    enabled: false,
+                                    minLines: 6,
+                                    maxLines: 20,
+                                    initialValue: 'Cheaquear luz de chequeo y luces',
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      fillColor: Colors.white,
+                                      filled: true,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                const Text(
+                                  'Instrucciones: ',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                ),
+                                Container(
+                                  width: screenWidth * 0.4,
+                                  height: screenHeight * 0.1,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: colors.primary, width: 2),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: TextFormField(
+                                    enabled: false,
+                                    minLines: 6,
+                                    maxLines: 20,
+                                    initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      fillColor: Colors.white,
+                                      filled: true,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: screenWidth * 0.9,
+                        height: screenHeight * 0.6,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                          color: colors.onPrimary,
+                        ),
+                        child: Column(
+                          children: [
+                            // Fixed header
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildHeaderCell('Codigo', flex: 1),
+                                  _buildHeaderCell('Descripcion', flex: 3),
+                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Avance', flex: 1),
+                                ],
+                              ),
+                            ),
+                            // Scrollable content
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: tareas.asMap().entries.map((entry) => 
+                                    _buildDataRow(entry.value, context, entry.key)
+                                  ).toList(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: screenWidth * 0.9,
+                        height: screenHeight * 0.6,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                          color: colors.onPrimary,
+                        ),
+                        child: Column(
+                          children: [
+                            // Fixed header
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildHeaderCell('Codigo', flex: 1),
+                                  _buildHeaderCell('Descripcion', flex: 3),
+                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Avance', flex: 1),
+                                ],
+                              ),
+                            ),
+                            // Scrollable content
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: materiales.asMap().entries.map((entry) => 
+                                    _buildDataRow(entry.value, context, entry.key)
+                                  ).toList(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        bottomNavigationBar: BottomAppBar(
-          notchMargin: 10,
-          elevation: 0,
-          shape: const CircularNotchedRectangle(),
-          color: Colors.grey.shade200,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CustomButton(
-                clip: Clip.antiAlias,
-                onPressed: ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('iniciar') : null,
-                text: 'Iniciar',
-                tamano: 18,
-                disabled: (!(marcaId != 0 && orden.estado == 'PENDIENTE') || ejecutando),
-              ),
-              CustomButton(
-                clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
-                text: 'Finalizar',
-                tamano: 18,
-                disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
-              ),
-              IconButton(
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => volverAPendiente(orden) : null,
-                icon: Icon(Icons.backspace,
-                  color: marcaId != 0 && orden.estado == 'EN PROCESO' ? colors.primary : Colors.grey
-                )
-              ),
-            ],
-          ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: buttonIndex,
+          onTap: (index) {
+            setState(() {
+              buttonIndex = index;
+              switch (buttonIndex){
+                case 0: 
+                  if ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando){
+                    _mostrarDialogoConfirmacion('iniciar');
+                  } else {
+                    null;
+                  }
+                break;
+                case 1:
+                  if (marcaId != 0 && orden.estado == 'EN PROCESO'){
+                    router.push('/resumenOrden');
+                  } else {
+                    null;
+                  }
+                break;
+                case 2:
+                  if (marcaId != 0 && orden.estado == 'EN PROCESO'){
+                    volverAPendiente(orden);
+                  } else {
+                    null;
+                  }  
+                break;
+              }
+            });
+          },
+          showUnselectedLabels: true,
+
+          selectedItemColor: colors.primary,
+          unselectedItemColor: colors.primary,  
+          items: const [
+            BottomNavigationBarItem(
+              
+              icon: Icon(Icons.play_circle_outline),
+              label: 'Iniciar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.stop_circle_outlined),
+              label: 'Finalizar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.backspace_outlined),
+              label: 'Volver a Pendiente',
+            ),
+          ],
         ),
+
+        // bottomNavigationBar: BottomAppBar(
+        //   notchMargin: 10,
+        //   elevation: 0,
+        //   shape: const CircularNotchedRectangle(),
+        //   color: Colors.grey.shade200,
+        //   child: Row(
+        //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //     children: [
+        //       CustomButton(
+        //         clip: Clip.antiAlias,
+        //         onPressed: ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('iniciar') : null,
+        //         text: 'Iniciar',
+        //         tamano: 18,
+        //         disabled: (!(marcaId != 0 && orden.estado == 'PENDIENTE') || ejecutando),
+        //       ),
+        //       CustomButton(
+        //         clip: Clip.antiAlias,
+        //         onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
+        //         text: 'Finalizar',
+        //         tamano: 18,
+        //         disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
+        //       ),
+        //       IconButton(
+        //         onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => volverAPendiente(orden) : null,
+        //         icon: Icon(Icons.backspace,
+        //           color: marcaId != 0 && orden.estado == 'EN PROCESO' ? colors.primary : Colors.grey
+        //         )
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ),
     );
   }
@@ -604,26 +687,35 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> {
     );
   }
 
-  Widget _buildDataRow(dynamic objeto, BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey)),
-      ),
-      child: Row(
-        children: [
-          if(objeto is RevisionTarea)...[
-            _buildDataCell(objeto.codTarea, flex: 1, alignment: Alignment.center),
-            _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
-            _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
-            _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
-          ] else if(objeto is RevisionMaterial) ... [
-            _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
-            _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
-            _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
-            _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+  Widget _buildDataRow(dynamic objeto, BuildContext context, int index) {
+    final isSelected = index == selectedTaskIndex;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedTaskIndex = isSelected ? null : index;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.withOpacity(0.3) : null,
+          border: const Border(bottom: BorderSide(color: Colors.grey)),      
+        ),
+        child: Row(
+          children: [
+            if(objeto is RevisionTarea)...[
+              _buildDataCell(objeto.codTarea, flex: 1, alignment: Alignment.center),
+              _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+              _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
+              _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+            ] else if(objeto is RevisionMaterial) ... [
+              _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
+              _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
+              _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
+              _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+            ],
           ],
-         
-        ],
+        ),
       ),
     );
   }
