@@ -166,11 +166,15 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: colors.primary,
           title: Text(
+<<<<<<< Updated upstream
             'Orden ${orden.ordenTrabajoId}: ${orden.descripcion}',
+=======
+            'Orden ${orden.numeroOrdenTrabajo} ${orden.descripcion} ',
+>>>>>>> Stashed changes
             style: const TextStyle(color: Colors.white),
           ),
           actions: [
@@ -202,7 +206,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
@@ -220,12 +223,27 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.tram_sharp),
-                          Tab(text: 'Tab 1',),
+                          Icon(Icons.description),
+                          SizedBox(width: 10,),
+                          Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
                         ],
                       ),
-                      Tab(text: 'Tab 2',),
-                      Tab(text: 'Tab 3',),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.format_list_bulleted_outlined),
+                          SizedBox(width: 10,),
+                          Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.format_list_bulleted_outlined),
+                          SizedBox(width: 10,),
+                          Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -235,96 +253,160 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          
-                          const Text(
-                            'Cliente: ',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Fecha de la orden: ',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          //SizedBox(width: 50,),
-                          const Text(
-                            'Estado: ',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            context.watch<OrdenProvider>().orden.estado,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          
-                          
-                          Column(
-                            children: [
-                              const Text(
-                                'Notas del cliente: ',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                              ),
-                              Container(
-                                width: screenWidth * 0.4,
-                                height: screenHeight * 0.1,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: colors.primary, width: 2),
-                                  borderRadius: BorderRadius.circular(5),
+                      Card(
+                        elevation: 10,
+                        color: Colors.cyan[50],
+                        child: Column(
+                          children: [
+                            Column(
+                              children: [
+                                const Text(
+                                  'Cliente: ',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                                 ),
-                                child: TextFormField(
-                                  enabled: false,
-                                  minLines: 6,
-                                  maxLines: 20,
-                                  initialValue: 'Cheaquear luz de chequeo y luces',
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    fillColor: Colors.white,
-                                    filled: true,
+                                Container(
+                                  width: screenWidth * 0.4,
+                                  height: screenHeight * 0.1,
+                                  child: Center(
+                                    child: Text(
+                                      '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                      style: const TextStyle(fontSize: 18),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              const Text(
-                                'Instrucciones: ',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                              ),
-                              Container(
-                                width: screenWidth * 0.4,
-                                height: screenHeight * 0.1,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: colors.primary, width: 2),
-                                  borderRadius: BorderRadius.circular(5),
+                              ],
+                            ),
+                            Divider(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Column(
+                                  children: [
+                                    const Text(
+                                      'Fecha de la orden: ',
+                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                    ),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.1,
+                                      child: Center(
+                                        child: Text(
+                                          DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    const Text(
+                                      'Fecha de Vencimiento: ',
+                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                    ),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.1,
+                                      child: Center(
+                                        child: Text(
+                                          DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Fecha de Entrega: ',
+                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                    ),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.1,
+                                      child: Center(
+                                        child: Text(
+                                          DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Estado: ',
+                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                    ),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.1,
+                                      child: Center(
+                                        child: Text(
+                                          context.watch<OrdenProvider>().orden.estado,
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                                    ),      
+                                  ],
                                 ),
-                                child: TextFormField(
-                                  enabled: false,
-                                  minLines: 6,
-                                  maxLines: 20,
-                                  initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    fillColor: Colors.white,
-                                    filled: true,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                                Column(
+                                  //mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.2,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          const Text(
+                                            'Notas del cliente: ',
+                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          ),
+                                          TextFormField(
+                                            enabled: false,
+                                            minLines: 4,
+                                            maxLines: 20,
+                                            initialValue: 'Cheaquear luz de chequeo y luces',
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10,),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.1,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          const Text(
+                                            'Instrucciones: ',
+                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          ),
+                                          TextFormField(
+                                            enabled: false,
+                                            minLines: 4,
+                                            maxLines: 20,
+                                            initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         width: screenWidth * 0.9,
@@ -407,59 +489,70 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     ]
                   ),
                 ),
+                
               ],
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: buttonIndex,
-          onTap: (index) {
-            setState(() {
-              buttonIndex = index;
-              switch (buttonIndex){
-                case 0: 
-                  if ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando){
-                    _mostrarDialogoConfirmacion('iniciar');
-                  } else {
-                    null;
-                  }
-                break;
-                case 1:
-                  if (marcaId != 0 && orden.estado == 'EN PROCESO'){
-                    router.push('/resumenOrden');
-                  } else {
-                    null;
-                  }
-                break;
-                case 2:
-                  if (marcaId != 0 && orden.estado == 'EN PROCESO'){
-                    volverAPendiente(orden);
-                  } else {
-                    null;
-                  }  
-                break;
-              }
-            });
-          },
-          showUnselectedLabels: true,
-
-          selectedItemColor: colors.primary,
-          unselectedItemColor: colors.primary,  
-          items: const [
-            BottomNavigationBarItem(
-              
-              icon: Icon(Icons.play_circle_outline),
-              label: 'Iniciar',
+        bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: colors.primary,
+                  width: 1,
+                ),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.stop_circle_outlined),
-              label: 'Finalizar',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.backspace_outlined),
-              label: 'Volver a Pendiente',
-            ),
-          ],
+          child: BottomNavigationBar(
+            currentIndex: buttonIndex,
+            onTap: (index) {
+              setState(() {
+                buttonIndex = index;
+                switch (buttonIndex){
+                  case 0: 
+                    if ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando){
+                      _mostrarDialogoConfirmacion('iniciar');
+                    } else {
+                      null;
+                    }
+                  break;
+                  case 1:
+                    if (marcaId != 0 && orden.estado == 'EN PROCESO'){
+                      router.push('/resumenOrden');
+                    } else {
+                      null;
+                    }
+                  break;
+                  case 2:
+                    if (marcaId != 0 && orden.estado == 'EN PROCESO'){
+                      volverAPendiente(orden);
+                    } else {
+                      null;
+                    }  
+                  break;
+                }
+              });
+            },
+            showUnselectedLabels: true,
+          
+            selectedItemColor: colors.primary,
+            unselectedItemColor: colors.primary,  
+            items: const [
+              BottomNavigationBarItem(
+                
+                icon: Icon(Icons.play_circle_outline),
+                label: 'Iniciar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.stop_circle_outlined),
+                label: 'Finalizar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.backspace_outlined),
+                label: 'Volver a Pendiente',
+              ),
+            ],
+          ),
         ),
 
         // bottomNavigationBar: BottomAppBar(
