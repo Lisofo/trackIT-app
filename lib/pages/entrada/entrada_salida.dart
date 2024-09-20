@@ -47,7 +47,7 @@ class _EntradSalidaState extends State<EntradSalida> {
     nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
     tecnicoId = context.read<OrdenProvider>().tecnicoId;
     token = context.read<OrdenProvider>().token;
-    await obtenerObjeto();
+    // await obtenerObjeto();
   }
 
   @override

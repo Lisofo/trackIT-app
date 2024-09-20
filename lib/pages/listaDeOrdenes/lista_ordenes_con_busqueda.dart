@@ -19,22 +19,15 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   final ordenServices = OrdenServices();
   String token = '';
   List<Orden> ordenes = [];
+  List<Orden> ordenesFiltradas = [];
   late int tecnicoId = 0;
   int groupValue = 0;
   List trabajodres = [];
   // 1. Agrega una clave global para el RefreshIndicator
+  final TextEditingController buscador = TextEditingController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
-  List<Orden> get ordenesFiltradas {
-    if (groupValue == 0) {
-      return ordenes.where((orden) => orden.estado == 'PENDIENTE').toList();
-    } else if (groupValue == 1) {
-      return ordenes.where((orden) => orden.estado == 'EN PROCESO').toList();
-    } else if (groupValue == 2) {
-      return ordenes.where((orden) => orden.estado == 'FINALIZADA').toList();
-    }
-    return [];
-  }
+  
 
   @override
   void initState() {
@@ -54,12 +47,33 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       token = context.read<OrdenProvider>().token;
       tecnicoId = context.read<OrdenProvider>().tecnicoId;
       ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), "Anteriores", "Anteriores", token);
+      ordenesFiltradas = ordenes; // Inicializa la lista de filtradas con todas las órdenes
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
       setState(() {});
     } catch (e) {
       ordenes = [];
     }
   }
+
+  void filtrarOrdenes(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        ordenesFiltradas = ordenes; // Muestra todas las órdenes si el filtro está vacío
+      } else {
+        // Filtrar las órdenes que coinciden con el criterio de búsqueda
+        ordenesFiltradas = ordenes.where((orden) {
+          final idMatch = orden.ordenTrabajoId.toString().contains(query);
+          final codClienteMatch = orden.cliente.codCliente.contains(query);
+          final nombreClienteMatch = orden.cliente.nombre.toLowerCase().contains(query.toLowerCase());
+          final notasMatch = orden.cliente.notas.toLowerCase().contains(query.toLowerCase());
+          final matricula = orden.matricula!.toLowerCase().contains(query.toLowerCase());
+          return idMatch || codClienteMatch || nombreClienteMatch || notasMatch || matricula;
+        }).toList();
+      }
+    });
+  }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +86,27 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             'Lista de Ordenes',
             style: TextStyle(color: Colors.white),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.3,
+                child: SearchBar(
+                  controller: buscador,
+                  hintText: 'Filtrar ordenes',
+                  hintStyle: const WidgetStatePropertyAll(
+                    TextStyle(
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                  leading: const Icon(Icons.search),
+                  onChanged: (value) {
+                    filtrarOrdenes(value); // Llama al método de filtrado
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
         backgroundColor: Colors.grey.shade200,
         body: Column(
@@ -83,66 +118,69 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                 child: ListView.builder(
                   itemCount: ordenes.length,
                   itemBuilder: (context, i) {
-                    return Card(
-                      surfaceTintColor: Colors.white,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
-                        side: const BorderSide(
-                          color: Colors.black,
-                          width: 1,
+                    final orden = ordenes[i];
+                    return Visibility(
+                      visible: ordenesFiltradas.contains(ordenes[i]),
+                      child: Card(
+                        surfaceTintColor: Colors.white,
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                          side: const BorderSide(
+                            color: Colors.black,
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      elevation: 20,
-                      child: InkWell(
-                        onTap: () {
-                          final orden = ordenes[i];
-                          Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
-                          context.read<OrdenProvider>().setOrden(orden);
-                          router.push('/ordenInterna');
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    ordenes[i].ordenTrabajoId.toString(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
+                        elevation: 20,
+                        child: InkWell(
+                          onTap: () {
+                            Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
+                            context.read<OrdenProvider>().setOrden(orden);
+                            router.push('/ordenInterna');
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      orden.ordenTrabajoId.toString(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-                                  Text(
-                                    DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(ordenes[i].fechaOrdenTrabajo),
-                                  ),
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-                                  const Spacer(),
-                                  const Text(
-                                    'SCN 1016', style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text('${ordenes[i].cliente.codCliente} - ${ordenes[i].cliente.nombre}',),
-                                  const VerticalDivider(),
-                                  Text(ordenes[i].cliente.direccion),
-                                  const VerticalDivider(),
-                                  Text(ordenes[i].cliente.notas),
-                                  const Spacer(),
-                                  Text(ordenes[i].estado)
-                                ],
-                              ),
-                              
-                            ],
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    Text(
+                                      DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                    ),
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
+                                    const VerticalDivider(),
+                                    Text(orden.comentarioCliente),
+                                    const VerticalDivider(),
+                                    Text(orden.comentarioTrabajo),
+                                    const Spacer(),
+                                    Text(orden.estado)
+                                  ],
+                                ),
+                                
+                              ],
+                            ),
                           ),
                         ),
                       ),

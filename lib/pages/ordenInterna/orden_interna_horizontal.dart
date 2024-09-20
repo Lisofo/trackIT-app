@@ -8,9 +8,7 @@ import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
-import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -211,7 +209,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
+                SizedBox(
                   width: screenWidth * 0.9,
                   child: TabBar(
                     labelColor: Colors.white,
@@ -241,98 +239,96 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
-                      Container(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            
-                            const Text(
-                              'Cliente: ',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Fecha de la orden: ',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 10),
-                            //SizedBox(width: 50,),
-                            const Text(
-                              'Estado: ',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              context.watch<OrdenProvider>().orden.estado,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 10),
-                            
-                            
-                            Column(
-                              children: [
-                                const Text(
-                                  'Notas del cliente: ',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          
+                          const Text(
+                            'Cliente: ',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Fecha de la orden: ',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          //SizedBox(width: 50,),
+                          const Text(
+                            'Estado: ',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            context.watch<OrdenProvider>().orden.estado,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          
+                          
+                          Column(
+                            children: [
+                              const Text(
+                                'Notas del cliente: ',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                              ),
+                              Container(
+                                width: screenWidth * 0.4,
+                                height: screenHeight * 0.1,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: colors.primary, width: 2),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
-                                Container(
-                                  width: screenWidth * 0.4,
-                                  height: screenHeight * 0.1,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: colors.primary, width: 2),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: TextFormField(
-                                    enabled: false,
-                                    minLines: 6,
-                                    maxLines: 20,
-                                    initialValue: 'Cheaquear luz de chequeo y luces',
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      fillColor: Colors.white,
-                                      filled: true,
-                                    ),
+                                child: TextFormField(
+                                  enabled: false,
+                                  minLines: 6,
+                                  maxLines: 20,
+                                  initialValue: 'Cheaquear luz de chequeo y luces',
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    fillColor: Colors.white,
+                                    filled: true,
                                   ),
                                 ),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                const Text(
-                                  'Instrucciones: ',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                'Instrucciones: ',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                              ),
+                              Container(
+                                width: screenWidth * 0.4,
+                                height: screenHeight * 0.1,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: colors.primary, width: 2),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
-                                Container(
-                                  width: screenWidth * 0.4,
-                                  height: screenHeight * 0.1,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: colors.primary, width: 2),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: TextFormField(
-                                    enabled: false,
-                                    minLines: 6,
-                                    maxLines: 20,
-                                    initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      fillColor: Colors.white,
-                                      filled: true,
-                                    ),
+                                child: TextFormField(
+                                  enabled: false,
+                                  minLines: 6,
+                                  maxLines: 20,
+                                  initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    fillColor: Colors.white,
+                                    filled: true,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       Container(
                         width: screenWidth * 0.9,

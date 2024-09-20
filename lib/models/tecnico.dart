@@ -2,11 +2,9 @@
 
 import 'dart:convert';
 
-List<Tecnico> tecnicoFromMap(String str) =>
-    List<Tecnico>.from(json.decode(str).map((x) => Tecnico.fromJson(x)));
+List<Tecnico> tecnicoFromMap(String str) => List<Tecnico>.from(json.decode(str).map((x) => Tecnico.fromJson(x)));
 
-String tecnicoToMap(List<Tecnico> data) =>
-    json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
+String tecnicoToMap(List<Tecnico> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 class Tecnico {
   late int tecnicoId;
@@ -35,19 +33,10 @@ class Tecnico {
         tecnicoId: json["tecnicoId"] as int? ?? 0,
         codTecnico: json["codTecnico"] as String? ?? '',
         nombre: json["nombre"] as String? ?? '',
-        fechaNacimiento: (json["fechaNacimiento"] == null ||
-                json["fechaNacimiento"] == 'null')
-            ? null
-            : DateTime.tryParse(json["fechaNacimiento"]),
+        fechaNacimiento: (json["fechaNacimiento"] == null || json["fechaNacimiento"] == 'null') ? null : DateTime.tryParse(json["fechaNacimiento"]),
         documento: json["documento"] as String? ?? '',
-        fechaIngreso:
-            (json["fechaIngreso"] == null || json["fechaIngreso"] == 'null')
-                ? null
-                : DateTime.tryParse(json["fechaIngreso"]),
-        fechaVtoCarneSalud: (json["fechaVtoCarneSalud"] == null ||
-                json["fechaVtoCarneSalud"] == 'null')
-            ? null
-            : DateTime.tryParse(json["fechaVtoCarneSalud"]),
+        fechaIngreso: (json["fechaIngreso"] == null || json["fechaIngreso"] == 'null') ? null : DateTime.tryParse(json["fechaIngreso"]),
+        fechaVtoCarneSalud: (json["fechaVtoCarneSalud"] == null || json["fechaVtoCarneSalud"] == 'null') ? null : DateTime.tryParse(json["fechaVtoCarneSalud"]),
         deshabilitado: json["deshabilitado"] as bool? ?? false,
         cargo: json["cargo"] != null ? Cargo.fromJson(json["cargo"]) : null,
       );
@@ -56,14 +45,10 @@ class Tecnico {
         "tecnicoId": tecnicoId,
         "codTecnico": codTecnico,
         "nombre": nombre,
-        "fechaNacimiento":
-            fechaNacimiento == null ? null : fechaNacimiento!.toIso8601String(),
+        "fechaNacimiento": fechaNacimiento == null ? null : fechaNacimiento!.toIso8601String(),
         "documento": documento,
-        "fechaIngreso":
-            fechaIngreso == null ? null : fechaIngreso!.toIso8601String(),
-        "fechaVtoCarneSalud": fechaVtoCarneSalud == null
-            ? null
-            : fechaVtoCarneSalud!.toIso8601String(),
+        "fechaIngreso": fechaIngreso == null ? null : fechaIngreso!.toIso8601String(),
+        "fechaVtoCarneSalud": fechaVtoCarneSalud == null ? null : fechaVtoCarneSalud!.toIso8601String(),
         "deshabilitado": deshabilitado,
         "cargo": null //cargo == null ? Cargo.empty() : cargo!.toMap(),
       };
