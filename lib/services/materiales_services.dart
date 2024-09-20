@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
 
 import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/manuales_materiales.dart';
 import 'package:app_tec_sedel/models/material.dart';
 import 'package:app_tec_sedel/models/materialesTPI.dart';
@@ -484,6 +485,49 @@ class MaterialesServices {
           showErrorDialog(context, 'Error: ${e.message}');
         }
       }
+    }
+  }
+
+  Future getRepuestos(BuildContext context, Orden orden, String token) async {
+    String link = '${apiUrl}api/v1/lineas/?ordenTrabajoId=${orden.ordenTrabajoId}&MO= ';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      final List<dynamic> tareaList = resp.data;
+
+      return tareaList.map((obj) => Linea.fromJson(obj)).toList();
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
     }
   }
 }

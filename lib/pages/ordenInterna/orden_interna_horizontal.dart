@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 
+import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/revision_materiales.dart';
 import 'package:app_tec_sedel/models/revision_tarea.dart';
@@ -7,6 +8,7 @@ import 'package:app_tec_sedel/models/ubicacion.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
+import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
@@ -42,8 +44,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   final TextEditingController pinController = TextEditingController();
   bool pedirConfirmacion = true;
   bool isObscured = true;
-  late List<RevisionTarea> tareas = [];
-  late List<RevisionMaterial> materiales = [];
+  late List<Linea> tareas = [];
+  late List<Linea> materiales = [];
   bool cambiarLista = true;
   int groupValue = 0;
   int buttonIndex = 0;
@@ -79,13 +81,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   
   
   cargarDatos() async {
-    if(orden.otRevisionId != 0) {
-      tareas = await RevisionServices().getRevisionTareas(context, orden, token);
-      materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
-    }
-    setState(() {
-      
-    });
+    tareas = await TareasServices().getMO(context, orden, token);
+    materiales = await MaterialesServices().getRepuestos(context, orden, token);
+    setState(() {});
   }
 
   void _mostrarDialogoConfirmacion(String accion) {
@@ -174,7 +172,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         appBar: AppBar(
           backgroundColor: colors.primary,
           title: Text(
-            'Orden ${orden.ordenTrabajoId}: Servicio y distribucion 90.000KM',
+            'Orden ${orden.ordenTrabajoId}: ${orden.descripcion}',
             style: const TextStyle(color: Colors.white),
           ),
           actions: [
@@ -699,17 +697,18 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         ),
         child: Row(
           children: [
-            if(objeto is RevisionTarea)...[
-              _buildDataCell(objeto.codTarea, flex: 1, alignment: Alignment.center),
+            if(objeto is Linea)...[
+              _buildDataCell(objeto.codItem, flex: 1, alignment: Alignment.center),
               _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
-            ] else if(objeto is RevisionMaterial) ... [
-              _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
-              _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
-              _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
-              _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
-            ],
+            ] 
+            // else if(objeto is RevisionMaterial) ... [
+              // _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
+              // _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
+              // _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
+              // _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
+            // ],
           ],
         ),
       ),
