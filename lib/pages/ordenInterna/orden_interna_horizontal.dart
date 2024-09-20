@@ -170,11 +170,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         appBar: AppBar(
           backgroundColor: colors.primary,
           title: Text(
-<<<<<<< Updated upstream
-            'Orden ${orden.ordenTrabajoId}: ${orden.descripcion}',
-=======
             'Orden ${orden.numeroOrdenTrabajo} ${orden.descripcion} ',
->>>>>>> Stashed changes
             style: const TextStyle(color: Colors.white),
           ),
           actions: [
