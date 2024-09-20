@@ -18,7 +18,7 @@ class Linea {
   late String familia;
   late String grupoInventario;
   late int ordinal;
-  late int cantidad;
+  late double cantidad;
   late double costoUnitario;
   late int descuento1;
   late int descuento2;
@@ -69,7 +69,7 @@ class Linea {
     familia: json["Familia"] as String? ?? '',
     grupoInventario: json["GrupoInventario"] as String? ?? '',
     ordinal: json["Ordinal"] as int? ?? 0,
-    cantidad: json["Cantidad"] as int? ?? 0,
+    cantidad: json["Cantidad"]?.toDouble(),
     costoUnitario: json["CostoUnitario"]?.toDouble(),
     descuento1: json["Descuento1"] as int? ?? 0,
     descuento2: json["Descuento2"] as int? ?? 0,
