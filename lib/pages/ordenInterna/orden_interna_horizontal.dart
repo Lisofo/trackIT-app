@@ -643,38 +643,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ],
           ),
         ),
-
-        // bottomNavigationBar: BottomAppBar(
-        //   notchMargin: 10,
-        //   elevation: 0,
-        //   shape: const CircularNotchedRectangle(),
-        //   color: Colors.grey.shade200,
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        //     children: [
-        //       CustomButton(
-        //         clip: Clip.antiAlias,
-        //         onPressed: ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('iniciar') : null,
-        //         text: 'Iniciar',
-        //         tamano: 18,
-        //         disabled: (!(marcaId != 0 && orden.estado == 'PENDIENTE') || ejecutando),
-        //       ),
-        //       CustomButton(
-        //         clip: Clip.antiAlias,
-        //         onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
-        //         text: 'Finalizar',
-        //         tamano: 18,
-        //         disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
-        //       ),
-        //       IconButton(
-        //         onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => volverAPendiente(orden) : null,
-        //         icon: Icon(Icons.backspace,
-        //           color: marcaId != 0 && orden.estado == 'EN PROCESO' ? colors.primary : Colors.grey
-        //         )
-        //       ),
-        //     ],
-        //   ),
-        // ),
       ),
     );
   }
