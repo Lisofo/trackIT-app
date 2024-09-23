@@ -261,7 +261,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: screenWidth * 0.4,
-                                  height: screenHeight * 0.11,
+                                  height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.08,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -271,26 +271,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                                         ),
                                       ),
-                                      if (screenWidth > screenHeight) ... [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Center(
-                                              child: Text(
-                                                '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                                style: const TextStyle(fontSize: 18),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ),
-                                      ]else ... [
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Center(
-                                            child: Text(
-                                              '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
+                                        Center(
+                                          child: Text(
+                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                            style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ),
                                         Center(
@@ -301,105 +286,48 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                         ),
                                       ],
-                                    ],
                                   ),
                                 ),
                               ],
                             ),
                             const Divider(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Column(
-                                  children: [
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        //crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Estado: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                            Padding(
+                              padding: (screenWidth > screenHeight) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: screenWidth * 0.4,
+                                        height: screenHeight * 0.11,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(color: colors.primary, width: 2),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Column(
+                                          //crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Center(
+                                              child: Text(
+                                                'Estado: ',
+                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                              ),
                                             ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              context.watch<OrdenProvider>().orden.estado,
-                                              style: const TextStyle(fontSize: 18,),
-                                              textAlign: TextAlign.start,
+                                            Padding(
+                                              padding: const EdgeInsets.all(6.0),
+                                              child: Text(
+                                                context.watch<OrdenProvider>().orden.estado,
+                                                style: const TextStyle(fontSize: 18,),
+                                                textAlign: TextAlign.start,
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ), 
-                                    const SizedBox(height: 10,),
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Fecha de la orden: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),     
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Fecha de Vencimiento: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    if (orden.fechaEntrega != null) ... [
+                                          ],
+                                        ),
+                                      ), 
+                                      const SizedBox(height: 10,),
                                       Container(
                                         width: screenWidth * 0.4,
                                         height: screenHeight * 0.11,
@@ -413,14 +341,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           children: [
                                             const Center(
                                               child: Text(
-                                                'Fecha de Entrega: ',
+                                                'Fecha de la orden: ',
                                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                                               ),
                                             ),
                                             Padding(
                                               padding: const EdgeInsets.all(6.0),
                                               child: Text(
-                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
                                                 style: const TextStyle(fontSize: 18),
                                                 textAlign: TextAlign.start,
                                               ),
@@ -428,70 +356,133 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ],
                                         ),
                                       ),
-                                    ],      
-                                  ],
-                                ),
-                                Column(
-                                  //mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.2,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Notas del cliente: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                          ),
-                                          TextFormField(
-                                            enabled: false,
-                                            minLines: 3,
-                                            maxLines: 20,
-                                            initialValue: 'Cheaquear luz de chequeo y luces',
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              fillColor: Colors.white,
-                                              filled: true,
+                                      const SizedBox(height: 10),     
+                                      Container(
+                                        width: screenWidth * 0.4,
+                                        height: screenHeight * 0.11,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(color: colors.primary, width: 2),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Center(
+                                              child: Text(
+                                                'Fecha de Vencimiento: ',
+                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10,),
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.2,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Instrucciones: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                          ),
-                                          TextFormField(
-                                            enabled: false,
-                                            minLines: 3,
-                                            maxLines: 20,
-                                            initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              fillColor: Colors.white,
-                                              filled: true,
+                                            Padding(
+                                              padding: const EdgeInsets.all(6.0),
+                                              child: Text(
+                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+                                                style: const TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                )
-                              ],
+                                      const SizedBox(height: 10),
+                                      if (orden.fechaEntrega != null) ... [
+                                        Container(
+                                          width: screenWidth * 0.4,
+                                          height: screenHeight * 0.11,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(color: colors.primary, width: 2),
+                                            borderRadius: BorderRadius.circular(5),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Center(
+                                                child: Text(
+                                                  'Fecha de Entrega: ',
+                                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.all(6.0),
+                                                child: Text(
+                                                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                                                  style: const TextStyle(fontSize: 18),
+                                                  textAlign: TextAlign.start,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],      
+                                    ],
+                                  ),
+                                  Column(
+                                    //mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      
+                                      Container(
+                                        width: screenWidth * 0.4,
+                                        height: screenHeight * 0.2,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: colors.primary, width: 2),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            const Text(
+                                              'Notas del cliente: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
+                                            TextFormField(
+                                              enabled: false,
+                                              minLines: 3,
+                                              maxLines: 20,
+                                              initialValue: 'Cheaquear luz de chequeo y luces',
+                                              style: const TextStyle(color: Colors.black),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                fillColor: Colors.white,
+                                                filled: true,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10,),
+                                      Container(
+                                        width: screenWidth * 0.4,
+                                        height: screenHeight * 0.2,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: colors.primary, width: 2),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            const Text(
+                                              'Instrucciones: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
+                                            TextFormField(
+                                              enabled: false,
+                                              minLines: 3,
+                                              maxLines: 20,
+                                              style: const TextStyle(color: Colors.black),
+                                              initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                fillColor: Colors.white,
+                                                filled: true,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
                             ),
                           ],
                         ),
