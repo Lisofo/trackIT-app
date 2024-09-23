@@ -260,7 +260,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: screenWidth * 0.4,
-                                  height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.08,
+                                  height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.07,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
