@@ -270,6 +270,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                       Text(
                                         '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
                                         style: const TextStyle(fontSize: 18),
+                                        textAlign: TextAlign.start,
                                       ),
                                     ],
                                   ),
@@ -298,7 +299,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                           Text(
                                             context.watch<OrdenProvider>().orden.estado,
-                                            style: const TextStyle(fontSize: 18),
+                                            style: const TextStyle(fontSize: 18,),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ],
                                       ),
@@ -321,6 +323,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           Text(
                                             DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
                                             style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ],
                                       ),
@@ -343,6 +346,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           Text(
                                             DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
                                             style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ],
                                       ),
@@ -366,6 +370,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                             Text(
                                               DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
                                               style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
                                             ),
                                           ],
                                         ),
@@ -876,7 +881,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   void comenzarTarea(BuildContext context, int i) {
-    // final colors = Theme.of(context).colorScheme;
+    
     pinController.text = '';
     showDialog(
       context: context,
@@ -903,11 +908,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 onPressed: () {
                   MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
                 }, 
-                // !comenzando ? () async {
-                  // comenzando = true;
-                  // setState(() {});
-                 // comenzarTarea()
-                // } : null,
                 child: const Text("COMENZAR")
               ),
             ],
