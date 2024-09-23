@@ -917,7 +917,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("¿Comienza a trabajar en la tarea ${tareas[i].descripcion}?"),
+                Text("¿Comienza a trabajar en la OT: ${orden.numeroOrdenTrabajo} ${orden.descripcion} en la tarea ${tareas[i].descripcion}?"),
               ],
             ),
             actions: <Widget>[
@@ -945,5 +945,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       }
     );
   }
+
+
 
 }

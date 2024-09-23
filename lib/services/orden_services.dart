@@ -2,6 +2,7 @@
 
 import 'package:app_tec_sedel/config/config.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/ultimaTarea.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -220,7 +221,7 @@ class OrdenServices {
     }
   }
 
-  Future cerrarTrabajo(BuildContext context, String token) async {
+  Future cerrarTarea(BuildContext context, String token) async {
     String link = apiLink;
     link += 'api/v1/ordenes/tiempos';
 
@@ -241,6 +242,55 @@ class OrdenServices {
       }
 
       return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future ultimaTarea(BuildContext context, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/tiempos';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      late UltimaTarea ultimaTarea;
+      if (resp.data == null) {
+        ultimaTarea = UltimaTarea.empty();
+      } else {
+        ultimaTarea = UltimaTarea.fromMap(resp.data);
+      }
+
+      return ultimaTarea;
     } catch (e) {
       statusCode = 0;
       if (e is DioException) {

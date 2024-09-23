@@ -3,8 +3,12 @@
 import 'dart:convert';
 
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/ultimaTarea.dart';
+import 'package:app_tec_sedel/providers/menu_services.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
@@ -36,6 +40,10 @@ class _EntradSalidaState extends State<EntradSalida> {
   final _ubicacionServices = UbicacionServices();
   int? statusCode;
   bool marcando = false;
+  final ordenServices = OrdenServices();
+  late UltimaTarea ultimaTarea = UltimaTarea.empty();
+  bool parabrisas = true;
+  final TextEditingController ultimaTareaController = TextEditingController();
 
   @override
   void initState() {
@@ -47,12 +55,17 @@ class _EntradSalidaState extends State<EntradSalida> {
     nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
     tecnicoId = context.read<OrdenProvider>().tecnicoId;
     token = context.read<OrdenProvider>().token;
+    ultimaTarea = await ordenServices.ultimaTarea(context, token);
     // await obtenerObjeto();
+    setState(() {
+      
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    ultimaTareaController.text = 'OT: ${ultimaTarea.ordenTrabajoId} ${ultimaTarea.descripcion} \nTarea: ${ultimaTarea.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.desde)} \nFin: ${ultimaTarea.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.hasta!) : ''}';
     return SafeArea(
       child: Scaffold(
         backgroundColor: colors.primary,
@@ -62,49 +75,78 @@ class _EntradSalidaState extends State<EntradSalida> {
             children: [
               SizedBox(
                 width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height * 0.3,
+                height: MediaQuery.sizeOf(context).height * 0.2,
                 child: Image.asset('images/banner.jpg')
               ),
               const SizedBox(height: 20),
               Text(
                 nombreUsuario,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 35,
+                  fontWeight: FontWeight.bold
+                ),
               ),
-              Text(
-                marca.marcaId != 0 ? 'Tiene una entrada iniciada a la hora ${marca.desde}' : 'No marcó entrada aún',
-                style: const TextStyle(color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
+              if(!parabrisas) ...[
+                Text(
+                  marca.marcaId != 0 ? 'Tiene una entrada iniciada a la hora ${marca.desde}' : 'No marcó entrada aún',
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                CustomButton(
+                  onPressed: marca.marcaId == 0 ? () {
+                    marcando = true;
+                    setState(() {});
+                    marcarEntrada();
+                  } : null,
+                  text: 'Marcar entrada',
+                  disabled: marca.marcaId != 0 || marcando,
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                CustomButton(
+                  onPressed: marca.marcaId != 0 ? () {
+                    marcando = true;
+                    setState(() {});
+                    marcarSalida();
+                  } : null,
+                  text: 'Marcar Salida',
+                  disabled: marca.marcaId == 0 || marcando,
+                ),
+              ],              
               const SizedBox(
-                height: 20,
+                height: 15,
               ),
-              CustomButton(
-                onPressed: marca.marcaId == 0 ? () {
-                  marcando = true;
-                  setState(() {});
-                  marcarEntrada();
-                } : null,
-                text: 'Marcar entrada',
-                disabled: marca.marcaId != 0 || marcando,
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              CustomButton(
-                onPressed: marca.marcaId != 0 ? () {
-                  marcando = true;
-                  setState(() {});
-                  marcarSalida();
-                } : null,
-                text: 'Marcar Salida',
-                disabled: marca.marcaId == 0 || marcando,
-              ),
-              const SizedBox(
-                height: 30,
-              ),
+              if(parabrisas)...[
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      width: 10,
+                      color: Colors.white
+                    ),
+                    borderRadius: BorderRadius.circular(5)
+                  ),
+                  child: TextFormField(
+                    decoration:  InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(5))
+                      ),
+                      label: const Text('No tiene registrado trabajo en curso...'),
+                      labelStyle: TextStyle(color: Colors.grey[500], fontSize: 24),
+                    ),
+                    minLines: 5,
+                    maxLines: 10,
+                    controller: ultimaTareaController,
+                  ),
+                )
+              ],
               CustomButton(
                 onPressed: !marcando ? () {
                   router.push('/listaOrdenes');
@@ -113,7 +155,7 @@ class _EntradSalidaState extends State<EntradSalida> {
                 disabled: marcando,
               ),
               const SizedBox(
-                height: 100,
+                height: 50,
               ),
               FutureBuilder(
                 future: PackageInfo.fromPlatform(),
@@ -315,5 +357,46 @@ class _EntradSalidaState extends State<EntradSalida> {
     Provider.of<OrdenProvider>(context, listen: false).setMarca(marca.marcaId);
     setState(() {});
     return;
+  }
+
+  void finalizarTarea(BuildContext context, int i) {
+    late int? statusCode;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateBd) => AlertDialog(
+            surfaceTintColor: Colors.white,
+            title: const Text("Confirmar"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("¿Quiere finalizar la tarea ${ultimaTarea.descripcion} iniciada a la hora ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.desde)} en la OT: ${ultimaTarea.numeroOrdenTrabajo}?"),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text("CANCELAR"),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                onPressed: () async {
+                  await ordenServices.cerrarTarea(context, token);
+                  statusCode = await ordenServices.getStatusCode();
+                  await ordenServices.resetStatusCode();
+                  if(statusCode == 1){
+                    MenuServices.showDialogs2(context, 'Tarea finalizada', true, false, false, false);
+                  }
+                }, 
+                child: const Text("COMENZAR")
+              ),
+            ],
+          ),
+        );
+      }
+    );
   }
 }
