@@ -262,15 +262,21 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   width: screenWidth * 0.4,
                                   height: screenHeight * 0.1,
                                   child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        'Cliente: ',
-                                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                      const Center(
+                                        child: Text(
+                                          'Cliente: ',
+                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                        ),
                                       ),
-                                      Text(
-                                        '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                        style: const TextStyle(fontSize: 18),
-                                        textAlign: TextAlign.start,
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                          style: const TextStyle(fontSize: 18),
+                                          textAlign: TextAlign.start,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -292,15 +298,21 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                         borderRadius: BorderRadius.circular(5),
                                       ),
                                       child: Column(
+                                        //crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'Estado: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          const Center(
+                                            child: Text(
+                                              'Estado: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
                                           ),
-                                          Text(
-                                            context.watch<OrdenProvider>().orden.estado,
-                                            style: const TextStyle(fontSize: 18,),
-                                            textAlign: TextAlign.start,
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Text(
+                                              context.watch<OrdenProvider>().orden.estado,
+                                              style: const TextStyle(fontSize: 18,),
+                                              textAlign: TextAlign.start,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -315,15 +327,21 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                         borderRadius: BorderRadius.circular(5),
                                       ),
                                       child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'Fecha de la orden: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          const Center(
+                                            child: Text(
+                                              'Fecha de la orden: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
                                           ),
-                                          Text(
-                                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.start,
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Text(
+                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -338,15 +356,21 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                         borderRadius: BorderRadius.circular(5),
                                       ),
                                       child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'Fecha de Vencimiento: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          const Center(
+                                            child: Text(
+                                              'Fecha de Vencimiento: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
                                           ),
-                                          Text(
-                                            DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.start,
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Text(
+                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -362,15 +386,21 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           borderRadius: BorderRadius.circular(5),
                                         ),
                                         child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
-                                              'Fecha de Entrega: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            const Center(
+                                              child: Text(
+                                                'Fecha de Entrega: ',
+                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                              ),
                                             ),
-                                            Text(
-                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                                                style: const TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -872,7 +902,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         padding: const EdgeInsets.all(8),
         alignment: alignment,
         child: Text(
-          style: TextStyle(fontSize: 18),
+          style: const TextStyle(fontSize: 18),
           text,
           textAlign: alignment == Alignment.center ? TextAlign.center : TextAlign.left,
         ),
