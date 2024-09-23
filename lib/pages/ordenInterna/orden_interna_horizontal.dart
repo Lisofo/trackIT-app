@@ -260,7 +260,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: screenWidth * 0.4,
-                                  height: screenHeight * 0.1,
+                                  height: screenHeight * 0.11,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -291,7 +291,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   children: [
                                     Container(
                                       width: screenWidth * 0.4,
-                                      height: screenHeight * 0.1,
+                                      height: screenHeight * 0.11,
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         border: Border.all(color: colors.primary, width: 2),
@@ -307,7 +307,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(8.0),
+                                            padding: const EdgeInsets.all(6.0),
                                             child: Text(
                                               context.watch<OrdenProvider>().orden.estado,
                                               style: const TextStyle(fontSize: 18,),
@@ -320,7 +320,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     const SizedBox(height: 10,),
                                     Container(
                                       width: screenWidth * 0.4,
-                                      height: screenHeight * 0.1,
+                                      height: screenHeight * 0.11,
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         border: Border.all(color: colors.primary, width: 2),
@@ -336,7 +336,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(8.0),
+                                            padding: const EdgeInsets.all(6.0),
                                             child: Text(
                                               DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
                                               style: const TextStyle(fontSize: 18),
@@ -349,7 +349,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     const SizedBox(height: 10),     
                                     Container(
                                       width: screenWidth * 0.4,
-                                      height: screenHeight * 0.1,
+                                      height: screenHeight * 0.11,
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         border: Border.all(color: colors.primary, width: 2),
@@ -365,7 +365,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(8.0),
+                                            padding: const EdgeInsets.all(6.0),
                                             child: Text(
                                               DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
                                               style: const TextStyle(fontSize: 18),
@@ -379,7 +379,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     if (orden.fechaEntrega != null) ... [
                                       Container(
                                         width: screenWidth * 0.4,
-                                        height: screenHeight * 0.1,
+                                        height: screenHeight * 0.11,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           border: Border.all(color: colors.primary, width: 2),
@@ -395,7 +395,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                               ),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding: const EdgeInsets.all(6.0),
                                               child: Text(
                                                 DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
                                                 style: const TextStyle(fontSize: 18),
