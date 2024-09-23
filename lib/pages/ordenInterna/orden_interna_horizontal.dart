@@ -3,6 +3,7 @@
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
@@ -390,7 +391,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                           TextFormField(
                                             enabled: false,
-                                            minLines: 4,
+                                            minLines: 3,
                                             maxLines: 20,
                                             initialValue: 'Cheaquear luz de chequeo y luces',
                                             decoration: const InputDecoration(
@@ -418,7 +419,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                           TextFormField(
                                             enabled: false,
-                                            minLines: 4,
+                                            minLines: 3,
                                             maxLines: 20,
                                             initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
                                             decoration: const InputDecoration(
@@ -815,34 +816,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       onDoubleTap: () {
         if(objeto is Linea) {
           if (objeto.mo == 'MO'){
-                setState(() {
+            setState(() {
               selectedTaskIndex = isSelected ? null : index; 
             });
-            showDialog(context: context, builder: (BuildContext context) {
-              return AlertDialog(
-                surfaceTintColor: Colors.white,
-                title: const Text("Confirmar"),
-                content: const Text(
-                  "¿Estas seguro de querer Iniciar la tarea?"
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text("CANCELAR"),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-            
-                    },
-                    child: const Text("INICIAR")
-                  ),
-                ],
-              );
-            });
-             
+            comenzarTarea(context, index);
           }
         }
         
@@ -859,36 +836,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.mo == 'MO' ? objeto.avance.toString() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
+              if(objeto.mo == 'MO')
               IconButton(
                 onPressed: (){
                   if (objeto.mo == 'MO'){
                     setState(() {
                       selectedTaskIndex = isSelected ? null : index; 
                     });
-                    showDialog(context: context, builder: (BuildContext context) {
-                      return AlertDialog(
-                        surfaceTintColor: Colors.white,
-                        title: const Text("Confirmar"),
-                        content: const Text(
-                          "¿Estas seguro de querer Iniciar la tarea?"
-                        ),
-                        actions: <Widget>[
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text("CANCELAR"),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                            
-                            },
-                            child: const Text("INICIAR")
-                          ),
-                        ],
-                      );
-                    });
+                    comenzarTarea(context, index);
                   }
                 }, icon: const Icon(Icons.play_arrow)
               )
@@ -917,6 +872,48 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           textAlign: alignment == Alignment.center ? TextAlign.center : TextAlign.left,
         ),
       ),
+    );
+  }
+
+  void comenzarTarea(BuildContext context, int i) {
+    // final colors = Theme.of(context).colorScheme;
+    pinController.text = '';
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateBd) => AlertDialog(
+            surfaceTintColor: Colors.white,
+            title: const Text("Confirmar"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("¿Comienza a trabajar en la tarea ${tareas[i].descripcion}?"),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text("CANCELAR"),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                onPressed: () {
+                  MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
+                }, 
+                // !comenzando ? () async {
+                  // comenzando = true;
+                  // setState(() {});
+                 // comenzarTarea()
+                // } : null,
+                child: const Text("COMENZAR")
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 
