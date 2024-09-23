@@ -260,7 +260,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: screenWidth * 0.4,
-                                  height: (screenWidth > screenHeight) ? screenHeight * 0.1 : screenHeight * 0.08,
+                                  height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.08,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -270,26 +270,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                                         ),
                                       ),
-                                      if (screenWidth > screenHeight) ... [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Center(
-                                              child: Text(
-                                                '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                                style: const TextStyle(fontSize: 18),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ),
-                                      ]else ... [
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Center(
-                                            child: Text(
-                                              '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
+                                        Center(
+                                          child: Text(
+                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                            style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ),
                                         Center(
@@ -300,7 +285,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                         ),
                                       ],
-                                    ],
                                   ),
                                 ),
                               ],
