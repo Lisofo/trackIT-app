@@ -270,14 +270,36 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                                         ),
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(
-                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                          style: const TextStyle(fontSize: 18),
-                                          textAlign: TextAlign.start,
+                                      if (screenWidth > screenHeight) ... [
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Center(
+                                              child: Text(
+                                                '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                                style: const TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ),
+                                      ]else ... [
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Center(
+                                            child: Text(
+                                              '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        Center(
+                                          child: Text(
+                                            'Telefono: ${orden.cliente.telefono1}',
+                                            style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
