@@ -145,7 +145,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                 Row(
                                   children: [
                                     Text(
-                                      orden.ordenTrabajoId.toString(),
+                                      orden.numeroOrdenTrabajo.toString(),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,

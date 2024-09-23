@@ -49,6 +49,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   int groupValue = 0;
   int buttonIndex = 0;
   int? selectedTaskIndex;
+  final ordenServices = OrdenServices();
 
 
   late TabController tabBarController;
@@ -509,7 +510,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   _buildHeaderCell('Descripcion', flex: 3),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
-                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],))
+                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
+                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
                                 ],
                               ),
                             ),
@@ -549,7 +551,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   _buildHeaderCell('Descripcion', flex: 3),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Cantidad', flex: 1),
-                                  IconButton(onPressed: (){}, icon: Icon(Icons.play_arrow, color: Colors.grey[400],))
                                 ],
                               ),
                             ),
@@ -851,18 +852,30 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               _buildDataCell(objeto.codItem, flex: 1, alignment: Alignment.center),
               _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
-              _buildDataCell(objeto.mo == 'MO' ? objeto.avance.toString() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
-              if(objeto.mo == 'MO')
-              IconButton(
-                onPressed: (){
-                  if (objeto.mo == 'MO'){
-                    setState(() {
-                      selectedTaskIndex = isSelected ? null : index; 
-                    });
-                    comenzarTarea(context, index);
-                  }
-                }, icon: const Icon(Icons.play_arrow)
-              )
+              _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
+              if(objeto.mo == 'MO')...[
+                IconButton(
+                  onPressed: (){
+                    if (objeto.mo == 'MO'){
+                      setState(() {
+                        selectedTaskIndex = isSelected ? null : index; 
+                      });
+                      comenzarTarea(context, index);
+                    }
+                  }, icon: const Icon(Icons.play_arrow)
+                ),
+                IconButton(
+                  onPressed: (){
+                    if (objeto.mo == 'MO'){
+                      setState(() {
+                        selectedTaskIndex = isSelected ? null : index; 
+                      });
+                      comenzarTarea(context, index);
+                    }
+                  }, icon: const Icon(Icons.stop_circle_outlined)
+                )
+              ]
+              
             ] 
             // else if(objeto is RevisionMaterial) ... [
               // _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
@@ -892,7 +905,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   void comenzarTarea(BuildContext context, int i) {
-    
+    late int? statusCode;
     pinController.text = '';
     showDialog(
       context: context,
@@ -917,9 +930,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   foregroundColor: Colors.red,
                 ),
                 onPressed: () async {
-                  await OrdenServices().iniciarTrabajo(context, orden, tareas[i].lineaId, token);
-                  
-                  MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
+                  await ordenServices.iniciarTrabajo(context, orden, tareas[i].lineaId, token);
+                  statusCode = await ordenServices.getStatusCode();
+                  await ordenServices.resetStatusCode();
+                  if(statusCode == 1){
+                    MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
+                  }
                 }, 
                 child: const Text("COMENZAR")
               ),
