@@ -128,7 +128,7 @@ class TareasServices {
   }
 
   Future getMO(BuildContext context, Orden orden, String token) async {
-    String link = '${apiLink}api/v1/lineas/?ordenTrabajoId=${orden.ordenTrabajoId}&MO=MO';
+    String link = '${apiLink}api/v1/ordenes/${orden.ordenTrabajoId}/lineas/?MO=MO';
 
     try {
       var headers = {'Authorization': token};

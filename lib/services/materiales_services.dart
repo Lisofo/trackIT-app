@@ -489,7 +489,7 @@ class MaterialesServices {
   }
 
   Future getRepuestos(BuildContext context, Orden orden, String token) async {
-    String link = '${apiUrl}api/v1/lineas/?ordenTrabajoId=${orden.ordenTrabajoId}&MO= ';
+    String link = '${apiUrl}api/v1/ordenes/${orden.ordenTrabajoId}/lineas/?MO=MA';
 
     try {
       var headers = {'Authorization': token};
