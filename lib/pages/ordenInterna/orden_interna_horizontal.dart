@@ -258,7 +258,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             Column(
                               children: [
                                 const SizedBox(height: 10),
-                                Container(
+                                SizedBox(
                                   width: screenWidth * 0.4,
                                   height: screenHeight * 0.1,
                                   child: Column(
@@ -935,7 +935,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.red,
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  await OrdenServices().iniciarTrabajo(context, orden, tareas[i].lineaId, token);
+                  
                   MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
                 }, 
                 child: const Text("COMENZAR")
