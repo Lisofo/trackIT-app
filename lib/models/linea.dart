@@ -136,4 +136,19 @@ class Linea {
     avance = 0;
     mo = '';
   }
+
+  String getAvanceEnHorasMinutos() {
+    if (avance == null || avance! < 0) return "0:00";  // Manejo de nulos o valores negativos
+
+    int horas = avance! < 60 ? 0 : avance! ~/ 60; // División entera para obtener las horas
+    int minutos = avance! % 60; // Resto para obtener los minutos
+
+    // Formatear el resultado en "hh:mm"
+    String horasStr = horas.toString();
+    String minutosStr = minutos.toString().padLeft(2, '0');  // Asegurar que siempre sean dos dígitos
+    print(horasStr);
+    print(minutosStr);
+    return "$horasStr:$minutosStr";
+  }
+
 }
