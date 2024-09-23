@@ -23,7 +23,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   late int tecnicoId = 0;
   int groupValue = 0;
   List trabajodres = [];
-  // 1. Agrega una clave global para el RefreshIndicator
   final TextEditingController buscador = TextEditingController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 

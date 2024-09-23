@@ -460,6 +460,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   _buildHeaderCell('Descripcion', flex: 3),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
+                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],))
                                 ],
                               ),
                             ),
@@ -499,6 +500,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   _buildHeaderCell('Descripcion', flex: 3),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Cantidad', flex: 1),
+                                  IconButton(onPressed: (){}, icon: Icon(Icons.play_arrow, color: Colors.grey[400],))
                                 ],
                               ),
                             ),
@@ -857,6 +859,39 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.mo == 'MO' ? objeto.avance.toString() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
+              IconButton(
+                onPressed: (){
+                  if (objeto.mo == 'MO'){
+                    setState(() {
+                      selectedTaskIndex = isSelected ? null : index; 
+                    });
+                    showDialog(context: context, builder: (BuildContext context) {
+                      return AlertDialog(
+                        surfaceTintColor: Colors.white,
+                        title: const Text("Confirmar"),
+                        content: const Text(
+                          "¿Estas seguro de querer Iniciar la tarea?"
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("CANCELAR"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                            
+                            },
+                            child: const Text("INICIAR")
+                          ),
+                        ],
+                      );
+                    });
+                  }
+                }, icon: const Icon(Icons.play_arrow)
+              )
             ] 
             // else if(objeto is RevisionMaterial) ... [
               // _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
