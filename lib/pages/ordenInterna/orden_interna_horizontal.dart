@@ -283,236 +283,68 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
-                      Column(
-                        children: [
-                          Column(
+                      Card(
+                        elevation: 10,
+                        child: SingleChildScrollView(
+                          child: Column(
                             children: [
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: screenWidth * 0.4,
-                                height: (screenWidth > screenHeight) ? screenHeight * 0.13 : screenHeight * 0.08,
-                                child: Column(
+                              Column(
+                                children: [
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: screenWidth * 0.4,
+                                    height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.07,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Center(
+                                          child: Text(
+                                            'Cliente: ',
+                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                          Center(
+                                            child: Text(
+                                              '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
+                                          Center(
+                                            child: Text(
+                                              'Telefono: ${orden.cliente.telefono1}',
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              Padding(
+                                padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
+                                child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Center(
-                                      child: Text(
-                                        'Cliente: ',
-                                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                      Center(
-                                        child: Text(
-                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                          style: const TextStyle(fontSize: 18),
-                                          textAlign: TextAlign.start,
-                                        ),
-                                      ),
-                                      Center(
-                                        child: Text(
-                                          'Telefono: ${orden.cliente.telefono1}',
-                                          style: const TextStyle(fontSize: 18),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ],
+                                    childrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    childrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors)
+                                  ],
+                                ):Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    childrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    childrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors)
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const Divider(),
-                          Padding(
-                            padding: (screenWidth > screenHeight) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Column(
-                                  children: [
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        //crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Estado: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              context.watch<OrdenProvider>().orden.estado,
-                                              style: const TextStyle(fontSize: 18,),
-                                              textAlign: TextAlign.start,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ), 
-                                    const SizedBox(height: 10,),
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Fecha de la orden: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),     
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.11,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Center(
-                                            child: Text(
-                                              'Fecha de Vencimiento: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(6.0),
-                                            child: Text(
-                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    if (orden.fechaEntrega != null) ... [
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.11,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Center(
-                                              child: Text(
-                                                'Fecha de Entrega: ',
-                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(6.0),
-                                              child: Text(
-                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
-                                                style: const TextStyle(fontSize: 18),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],      
-                                  ],
-                                ),
-                                Column(
-                                  //mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.2,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Notas del cliente: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                          ),
-                                          TextFormField(
-                                            enabled: false,
-                                            minLines: 3,
-                                            maxLines: 20,
-                                            controller: notasController,
-                                            style: const TextStyle(color: Colors.black),
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              fillColor: Colors.white,
-                                              filled: true,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10,),
-                                    Container(
-                                      width: screenWidth * 0.4,
-                                      height: screenHeight * 0.2,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: colors.primary, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Instrucciones: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                          ),
-                                          TextFormField(
-                                            enabled: true,
-                                            minLines: 3,
-                                            maxLines: 20,
-                                            style: const TextStyle(color: Colors.black),
-                                            controller: instruccionesController,
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              fillColor: Colors.white,
-                                              filled: true,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       Container(
                         width: screenWidth * 0.9,
@@ -534,7 +366,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               child: Row(
                                 children: [
                                   _buildHeaderCell('Codigo', flex: 1),
-                                  _buildHeaderCell('Descripcion', flex: 3),
+                                  screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
@@ -574,7 +406,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               child: Row(
                                 children: [
                                   _buildHeaderCell('Codigo', flex: 1),
-                                  _buildHeaderCell('Descripcion', flex: 3),
+                                  screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Cantidad', flex: 1),
                                 ],
@@ -1091,3 +923,231 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   
 
 }
+
+class childrenColumn1 extends StatelessWidget {
+  const childrenColumn1({
+    super.key,
+    required this.screenWidth,
+    required this.screenHeight,
+    required this.colors,
+    required this.orden,
+  });
+
+  final double screenWidth;
+  final double screenHeight;
+  final ColorScheme colors;
+  final Orden orden;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: screenWidth,
+          height: screenHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: colors.primary, width: 2),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Column(
+            //crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Estado: ',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Text(
+                  context.watch<OrdenProvider>().orden.estado,
+                  style: const TextStyle(fontSize: 18,),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ],
+          ),
+        ), 
+        const SizedBox(height: 10,),
+        Container(
+          width: screenWidth,
+          height: screenHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: colors.primary, width: 2),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Fecha de la orden: ',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Text(
+                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),     
+        Container(
+          width: screenWidth,
+          height: screenHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: colors.primary, width: 2),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Fecha de Vencimiento: ',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Text(
+                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (orden.fechaEntrega != null) ... [
+          Container(
+            width: screenWidth,
+            height: screenHeight,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: colors.primary, width: 2),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Text(
+                    'Fecha de Entrega: ',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Text(
+                    DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                    style: const TextStyle(fontSize: 18),
+                    textAlign: TextAlign.start,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],      
+      ],
+    );
+  }
+}
+
+
+class childrenColumn2 extends StatelessWidget {
+  const childrenColumn2({
+    super.key,
+    required this.screenWidth,
+    required this.screenHeight,
+    required this.colors,
+  });
+
+  final double screenWidth;
+  final double screenHeight;
+  final ColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        return Column(
+        //mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+              width: screenWidth,
+              height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.5, //! revisar, era * 0,2
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.primary, width: 2),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Notas del cliente: ',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                  TextFormField(
+                    enabled: false,
+                    minLines: 3,
+                    maxLines: 20,
+                    initialValue: 'Cheaquear luz de chequeo y luces',
+                    style: const TextStyle(color: Colors.black),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10,),
+            Container(
+              width: screenWidth,
+              height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.5,  //! revisar, era * 0,2
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.primary, width: 2),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Column(
+                
+                children: [
+                  const Text(
+                    'Instrucciones: ',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                  TextFormField(
+                    enabled: false,
+                    minLines: 3,
+                    maxLines: 20,
+                    style: const TextStyle(color: Colors.black),
+                    initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      
+    );
+  }
+}
+
+
