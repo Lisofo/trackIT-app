@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, unused_element
 
+import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
@@ -63,11 +64,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     'Líquido de Freno',
     'Líquido enfriamiento'
   ];
-  
+  late List<Control> controles = [];
   Map<String, String?> valores = {};
   Map<String, Color> colores = {};
-
+  List<String> models = [];
+  List<String> grupos = [];
   // Función para manejar el cambio de valor y color
+
   void actualizarValor(String concepto, String valor, Color color) {
     setState(() {
       valores[concepto] = valor;
@@ -76,6 +79,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   late TabController tabBarController;
+  late TabController tabBarController2;
 
   @override
   void initState() {
@@ -84,7 +88,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<OrdenProvider>().token;
     tabBarController = TabController(length: 4, vsync: this);
+    tabBarController2 = TabController(length: 5, vsync: this);
     tabBarController.addListener(handleTabSelection);
+    tabBarController2.addListener(handleTabSelection2);
     cargarDatos();
   }
 
@@ -93,11 +99,18 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       print('Tab ${tabBarController.index} is being selected');
     }
   }
+  void handleTabSelection2() {
+    if (tabBarController2.indexIsChanging) {
+      print('Tab ${tabBarController2.index} is being selected');
+    }
+  }
 
   @override
   void dispose() {
     tabBarController.removeListener(handleTabSelection);
+    tabBarController2.removeListener(handleTabSelection2);
     tabBarController.dispose();
+    tabBarController2.dispose();
     notasController.dispose();
     instruccionesController.dispose();
     super.dispose();
@@ -116,6 +129,17 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     materiales = await MaterialesServices().getRepuestos(context, orden, token);
     notasController.text = orden.comentarioCliente;
     instruccionesController.text = orden.comentarioTrabajo;
+    controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId, token);
+    controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
+    for(var i = 0; i < controles.length; i++){
+      models.add(controles[i].grupo);
+    }
+    Set<String> conjunto = Set.from(models);
+    grupos = conjunto.toList();
+    grupos.sort((a, b) => a.compareTo(b));
+    for(var grupo in grupos){
+      print(grupo);
+    }
     setState(() {});
   }
 
@@ -259,7 +283,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               children: [
                                 const SizedBox(height: 10),
                                 SizedBox(
-                                  width: screenWidth * 0.3,
+                                  width: screenWidth * 0.4,
                                   height: (screenWidth > screenHeight) ? screenHeight * 0.13 : screenHeight * 0.08,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,14 +322,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 children: [
                                   ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
                                   const SizedBox(height: 10,),
-                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors)
+                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, notas: notasController, instrucciones: instruccionesController,)
                                 ],
                               ):Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
                                   const SizedBox(height: 10,),
-                                  ChildrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors)
+                                  ChildrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, notas: notasController, instrucciones: instruccionesController,)
                                 ],
                               ),
                             ),
@@ -390,63 +414,104 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                           ],
                         ),
                       ),
-                      SizedBox(
-                        width: screenWidth * 0.9,
-                        height: screenHeight * 0.6,
-                        child: ListView.builder(
-                          itemCount: conceptos.length,
-                          itemBuilder: (context, index) {
-                            final concepto = conceptos[index];
-                            return GestureDetector(
-                              onDoubleTap: () async {
-                                await comentarioControl(context);
-                              },
-                              child: Card(
-                                color: colores[concepto] ?? Colors.white, // Cambia el fondo según la selección
-                                child: ListTile(
-                                  title: Text(concepto),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Botón Verde
-                                      IconButton(
-                                        icon: const Icon(Icons.check_circle, color: Colors.green),
-                                        onPressed: () {
-                                          actualizarValor(concepto, 'Largo Plazo', Colors.green[100]!);
-                                        },
-                                      ),
-                                      // Botón Amarillo
-                                      IconButton(
-                                        icon: const Icon(Icons.check_circle, color: Colors.yellow),
-                                        onPressed: () {
-                                          actualizarValor(concepto, 'Corto Plazo', Colors.yellow[100]!);
-                                        },
-                                      ),
-                                      // Botón Rojo
-                                      IconButton(
-                                        icon: const Icon(Icons.check_circle, color: Colors.red),
-                                        onPressed: () {
-                                          actualizarValor(concepto, 'Inmediato', Colors.red[100]!);
-                                        },
-                                      ),
-                                      // Botón Limpiar
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.grey),
-                                        onPressed: () {
-                                          actualizarValor(concepto, 'Sin selección', Colors.white);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    valores[concepto] ?? 'Sin selección',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: screenWidth,
+                            child: TabBar(
+                              labelColor: Colors.white,
+                              indicator: const BoxDecoration(
+                                borderRadius: BorderRadius.all(Radius.circular(3)),
+                                color: Colors.cyan,
                               ),
-                            );
-                          },
-                        ),
+                              dividerColor: Colors.cyan,
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              controller: tabBarController2,
+                              tabs: const [
+                                Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                Tab(child: Text('Conformidad', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                Tab(child: Text('Control de Niveles', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                Tab(child: Text('Seguridad', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                Tab(child: Text('Señalización - Visualización', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: screenWidth * 0.9,
+                            height: screenHeight * 0.6,
+                            child: TabBarView(
+                              controller: tabBarController2,
+                              children: [
+                                ListView.builder(
+                                  itemCount: controles.length,
+                                  itemBuilder: (context, index) {
+                                    final control = controles[index];
+                                    return GestureDetector(
+                                      onDoubleTap: () async {
+                                        await comentarioControl(context);
+                                      },
+                                      child: Card(
+                                        color: colores[control.pregunta] ?? Colors.white, // Cambia el fondo según la selección
+                                        child: ListTile(
+                                          title: Text(control.pregunta),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Botón Verde
+                                              IconButton(
+                                                icon: const Icon(Icons.check_circle, color: Colors.green),
+                                                onPressed: () {
+                                                  actualizarValor(control.pregunta, 'Largo Plazo', Colors.green[100]!);
+                                                },
+                                              ),
+                                              // Botón Amarillo
+                                              IconButton(
+                                                icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                                                onPressed: () {
+                                                  actualizarValor(control.pregunta, 'Corto Plazo', Colors.yellow[100]!);
+                                                },
+                                              ),
+                                              // Botón Rojo
+                                              IconButton(
+                                                icon: const Icon(Icons.check_circle, color: Colors.red),
+                                                onPressed: () {
+                                                  actualizarValor(control.pregunta, 'Inmediato', Colors.red[100]!);
+                                                },
+                                              ),
+                                              // Botón Limpiar
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.grey),
+                                                onPressed: () {
+                                                  actualizarValor(control.pregunta, 'Sin selección', Colors.white);
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          subtitle: Text(
+                                            valores[control.pregunta] ?? 'Sin selección',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const Center(
+                                  child: Text('data'),
+                                ),
+                                const Center(
+                                  child: Text('data'),
+                                ),
+                                const Center(
+                                  child: Text('data'),
+                                ),
+                                const Center(
+                                  child: Text('data'),
+                                ),
+                              ]
+                            )
+                          ),
+                        ],
                       ),
                     ]
                   ),
@@ -724,7 +789,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       ),
     );
   }
-
 
   Widget _buildHeaderCell(String text, {required int flex}) {
     return Expanded(
@@ -1034,12 +1098,16 @@ class ChildrenColumn2 extends StatelessWidget {
     required this.screenWidth,
     required this.screenHeight,
     required this.colors,
+    required this.notas,
+    required this.instrucciones,
   });
 
   final double screenWidth;
   final double screenHeight;
   final ColorScheme colors;
-
+  final TextEditingController notas;
+  final TextEditingController instrucciones;
+  
   @override
   Widget build(BuildContext context) {
     return OrientationBuilder(
@@ -1049,7 +1117,7 @@ class ChildrenColumn2 extends StatelessWidget {
           children: [
             Container(
               width: screenWidth,
-              height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.5, //! revisar, era * 0,2
+              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4, //! revisar, era * 0,2
               decoration: BoxDecoration(
                 border: Border.all(color: colors.primary, width: 2),
                 borderRadius: BorderRadius.circular(5),
@@ -1061,10 +1129,9 @@ class ChildrenColumn2 extends StatelessWidget {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                   TextFormField(
-                    enabled: false,
-                    minLines: 3,
+                    minLines: 2,
                     maxLines: 20,
-                    initialValue: 'Cheaquear luz de chequeo y luces',
+                    controller: notas,
                     style: const TextStyle(color: Colors.black),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -1078,7 +1145,7 @@ class ChildrenColumn2 extends StatelessWidget {
             const SizedBox(height: 10,),
             Container(
               width: screenWidth,
-              height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.5,  //! revisar, era * 0,2
+              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
               decoration: BoxDecoration(
                 border: Border.all(color: colors.primary, width: 2),
                 borderRadius: BorderRadius.circular(5),
@@ -1091,11 +1158,10 @@ class ChildrenColumn2 extends StatelessWidget {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                   TextFormField(
-                    enabled: false,
-                    minLines: 3,
+                    minLines: 2,
                     maxLines: 20,
                     style: const TextStyle(color: Colors.black),
-                    initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
+                    controller: instrucciones,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       fillColor: Colors.white,

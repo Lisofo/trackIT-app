@@ -61,7 +61,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       } else {
         // Filtrar las órdenes que coinciden con el criterio de búsqueda
         ordenesFiltradas = ordenes.where((orden) {
-          final idMatch = orden.ordenTrabajoId.toString().contains(query);
+          final idMatch = orden.numeroOrdenTrabajo.toString().contains(query);
           final codClienteMatch = orden.cliente.codCliente.contains(query);
           final nombreClienteMatch = orden.cliente.nombre.toLowerCase().contains(query.toLowerCase());
           final notasMatch = orden.cliente.notas.toLowerCase().contains(query.toLowerCase());
