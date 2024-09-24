@@ -230,7 +230,7 @@ class OrdenServices {
       var resp = await _dio.request(
         link,
         options: Options(
-          method: 'POST',
+          method: 'PUT',
           headers: headers,
         ),
       );

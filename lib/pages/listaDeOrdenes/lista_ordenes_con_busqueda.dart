@@ -81,6 +81,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: colors.primary,
+          iconTheme: IconThemeData(
+            color: colors.onPrimary
+          ),
           title: const Text(
             'Lista de Ordenes',
             style: TextStyle(color: Colors.white),
@@ -98,16 +101,25 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                       fontWeight: FontWeight.w300,
                     ),
                   ),
-                  leading: const Icon(Icons.search),
+                  leading: const Icon(Icons.search, color: Colors.black,),
                   onChanged: (value) {
                     filtrarOrdenes(value); // Llama al método de filtrado
                   },
                 ),
               ),
             ),
+            IconButton(
+              onPressed: () async {
+                logout();
+              }, 
+              icon: const Icon(
+                Icons.logout,
+                size: 34,
+              )
+            )
           ],
         ),
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: Colors.white,
         body: Column(
           children: [
             Expanded(
@@ -121,16 +133,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     return Visibility(
                       visible: ordenesFiltradas.contains(ordenes[i]),
                       child: Card(
-                        surfaceTintColor: Colors.white,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                          side: const BorderSide(
-                            color: Colors.black,
-                            width: 1,
-                          ),
-                        ),
-                        elevation: 20,
                         child: InkWell(
                           onTap: () {
                             Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
@@ -177,7 +179,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                     Text(orden.estado)
                                   ],
                                 ),
-                                
                               ],
                             ),
                           ),
@@ -201,6 +202,36 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         text,
         style: const TextStyle(fontSize: 15),
       ),
+    );
+  }
+
+  void logout() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Cerrar sesion'),
+          content: const Text('Esta seguro de querer cerrar sesion?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text('Cancelar')
+            ),
+            TextButton(
+              onPressed: () {
+                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                router.pushReplacement('/');
+              },
+              child: const Text(
+                'Cerrar Sesion',
+                style: TextStyle(color: Colors.red),
+              )
+            ),
+          ],
+        );
+      },
     );
   }
 }

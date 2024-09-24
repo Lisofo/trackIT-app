@@ -99,7 +99,7 @@ class UltimaTarea {
     usuarioId = 0;
     usuario = '';
     desde = DateTime.now();
-    hasta = DateTime.now();
+    hasta = null;
     avance = 0;
     estado = '';
     estadoTot = '';

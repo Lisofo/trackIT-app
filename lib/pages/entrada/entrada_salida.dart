@@ -41,7 +41,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   int? statusCode;
   bool marcando = false;
   final ordenServices = OrdenServices();
-  late UltimaTarea ultimaTarea = UltimaTarea.empty();
+  late UltimaTarea? ultimaTarea = UltimaTarea.empty();
   bool parabrisas = true;
   final TextEditingController ultimaTareaController = TextEditingController();
 
@@ -65,10 +65,27 @@ class _EntradSalidaState extends State<EntradSalida> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    ultimaTareaController.text = 'OT: ${ultimaTarea.ordenTrabajoId} ${ultimaTarea.descripcion} \nTarea: ${ultimaTarea.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.desde)} \nFin: ${ultimaTarea.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.hasta!) : ''}';
+    ultimaTareaController.text = 'OT: ${ultimaTarea?.ordenTrabajoId} ${ultimaTarea?.descripcion} \nTarea: ${ultimaTarea?.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.desde)} \nFin: ${ultimaTarea?.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.hasta!) : ''}';
     return SafeArea(
       child: Scaffold(
         backgroundColor: colors.primary,
+        appBar: AppBar(
+          backgroundColor: colors.primary,
+          iconTheme: IconThemeData(
+            color: colors.onPrimary
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                logout();
+              }, 
+              icon: const Icon(
+                Icons.logout,
+                size: 34,
+              )
+            )
+          ],
+        ),
         body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -138,14 +155,25 @@ class _EntradSalidaState extends State<EntradSalida> {
                       border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(5))
                       ),
-                      label: const Text('No tiene registrado trabajo en curso...'),
+                      label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
                       labelStyle: TextStyle(color: Colors.grey[500], fontSize: 24),
                     ),
+                    readOnly: true,
                     minLines: 5,
                     maxLines: 10,
                     controller: ultimaTareaController,
                   ),
-                )
+                ),
+                const SizedBox(height: 10,),
+                CustomButton(
+                  text: 'Detener tarea', 
+                  onPressed: () async {
+                    if(ultimaTarea?.hasta == null) {
+                      await finalizarTarea(context);
+                    }
+                  }
+                ),
+                const SizedBox(height: 10,),
               ],
               CustomButton(
                 onPressed: !marcando ? () {
@@ -159,8 +187,7 @@ class _EntradSalidaState extends State<EntradSalida> {
               ),
               FutureBuilder(
                 future: PackageInfo.fromPlatform(),
-                builder: (BuildContext context,
-                    AsyncSnapshot<PackageInfo> snapshot) {
+                builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
                   if (snapshot.hasData) {
                     return Text(
                       'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
@@ -359,7 +386,7 @@ class _EntradSalidaState extends State<EntradSalida> {
     return;
   }
 
-  void finalizarTarea(BuildContext context, int i) {
+  Future<void> finalizarTarea(BuildContext context) async {
     late int? statusCode;
     showDialog(
       context: context,
@@ -371,7 +398,7 @@ class _EntradSalidaState extends State<EntradSalida> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("¿Quiere finalizar la tarea ${ultimaTarea.descripcion} iniciada a la hora ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea.desde)} en la OT: ${ultimaTarea.numeroOrdenTrabajo}?"),
+                Text("¿Quiere finalizar la tarea ${ultimaTarea?.descripcion} iniciada a la hora ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.desde)} en la OT: ${ultimaTarea?.numeroOrdenTrabajo}?"),
               ],
             ),
             actions: <Widget>[
@@ -390,13 +417,45 @@ class _EntradSalidaState extends State<EntradSalida> {
                   if(statusCode == 1){
                     MenuServices.showDialogs2(context, 'Tarea finalizada', true, false, false, false);
                   }
+                  ultimaTarea = await ordenServices.ultimaTarea(context, token);
+                  setState(() {});
                 }, 
-                child: const Text("COMENZAR")
+                child: const Text("TERMINAR")
               ),
             ],
           ),
         );
       }
+    );
+  }
+
+  void logout() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Cerrar sesion'),
+          content: const Text('Esta seguro de querer cerrar sesion?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text('Cancelar')
+            ),
+            TextButton(
+              onPressed: () {
+                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                router.pushReplacement('/');
+              },
+              child: const Text(
+                'Cerrar Sesion',
+                style: TextStyle(color: Colors.red),
+              )
+            ),
+          ],
+        );
+      },
     );
   }
 }

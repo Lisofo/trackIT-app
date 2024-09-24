@@ -50,7 +50,29 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   int buttonIndex = 0;
   int? selectedTaskIndex;
   final ordenServices = OrdenServices();
+  final TextEditingController notasController = TextEditingController();
+  final TextEditingController instruccionesController = TextEditingController();
+  final TextEditingController comentarioController = TextEditingController();
+  final List<String> conceptos = [
+    'Luces de posición',
+    'Luz de patente',
+    'Luz de Emergencia (baliza) y de posición',
+    'Cambio de Luz',
+    'Luz de marcha atrás',
+    'Aceite de Motor',
+    'Líquido de Freno',
+    'Líquido enfriamiento'
+  ];
+  Map<String, String?> valores = {};
+  Map<String, Color> colores = {};
 
+  // Función para manejar el cambio de valor y color
+  void actualizarValor(String concepto, String valor, Color color) {
+    setState(() {
+      valores[concepto] = valor;
+      colores[concepto] = color;
+    });
+  }
 
   late TabController tabBarController;
 
@@ -60,7 +82,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<OrdenProvider>().token;
-    tabBarController = TabController(length: 3, vsync: this);
+    tabBarController = TabController(length: 4, vsync: this);
     tabBarController.addListener(handleTabSelection);
     cargarDatos();
   }
@@ -75,14 +97,24 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   void dispose() {
     tabBarController.removeListener(handleTabSelection);
     tabBarController.dispose();
+    notasController.dispose();
+    instruccionesController.dispose();
     super.dispose();
   }
 
-  
+  // Función para limpiar el valor y el color
+  void limpiarValor(String concepto) {
+    setState(() {
+      valores[concepto] = null;
+      colores[concepto] = Colors.white; // Restablece el color por defecto
+    });
+  }
   
   cargarDatos() async {
     tareas = await TareasServices().getMO(context, orden, token);
     materiales = await MaterialesServices().getRepuestos(context, orden, token);
+    notasController.text = orden.comentarioCliente;
+    instruccionesController.text = orden.comentarioTrabajo;
     setState(() {});
   }
 
@@ -160,45 +192,37 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
-
-
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: colors.primary,
+          iconTheme: IconThemeData(
+            color: colors.onPrimary
+          ),
+          leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.arrow_back_ios_new),
+          ),
           title: Text(
             'Orden ${orden.numeroOrdenTrabajo} ${orden.descripcion} ',
             style: const TextStyle(color: Colors.white),
           ),
           actions: [
             IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.arrow_back_ios_new),
-              color: Colors.white,
-            )
+              onPressed: () async {
+                logout();
+              }, 
+              icon: const Icon(
+                Icons.logout,
+                size: 34,
+              )
+            ),
           ],
-        ),
-        drawer: Drawer(
-          surfaceTintColor: Colors.white,
-          child: Column(
-            children: [
-              Container(
-                color: colors.primary,
-                child: Image.asset('images/banner.jpg')
-              ),
-              const SizedBox(
-                height: 25,
-              ),
-              Expanded(child: _listaItems())
-            ],
-          ),
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -242,6 +266,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                           Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
                         ],
                       ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.grading),
+                          SizedBox(width: 10,),
+                          Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -251,241 +283,236 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
-                      Card(
-                        elevation: 10,
-                        
-                        child: Column(
-                          children: [
-                            Column(
-                              children: [
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: screenWidth * 0.4,
-                                  height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.07,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Center(
+                      Column(
+                        children: [
+                          Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: screenWidth * 0.4,
+                                height: (screenWidth > screenHeight) ? screenHeight * 0.13 : screenHeight * 0.08,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Center(
+                                      child: Text(
+                                        'Cliente: ',
+                                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                      Center(
                                         child: Text(
-                                          'Cliente: ',
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                          style: const TextStyle(fontSize: 18),
+                                          textAlign: TextAlign.start,
                                         ),
                                       ),
-                                        Center(
-                                          child: Text(
-                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.start,
-                                          ),
+                                      Center(
+                                        child: Text(
+                                          'Telefono: ${orden.cliente.telefono1}',
+                                          style: const TextStyle(fontSize: 18),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        Center(
-                                          child: Text(
-                                            'Telefono: ${orden.cliente.telefono1}',
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ],
-                                  ),
+                                      ),
+                                    ],
                                 ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          Padding(
+                            padding: (screenWidth > screenHeight) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  children: [
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.11,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        //crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Center(
+                                            child: Text(
+                                              'Estado: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(6.0),
+                                            child: Text(
+                                              context.watch<OrdenProvider>().orden.estado,
+                                              style: const TextStyle(fontSize: 18,),
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ), 
+                                    const SizedBox(height: 10,),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.11,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Center(
+                                            child: Text(
+                                              'Fecha de la orden: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(6.0),
+                                            child: Text(
+                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),     
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.11,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Center(
+                                            child: Text(
+                                              'Fecha de Vencimiento: ',
+                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(6.0),
+                                            child: Text(
+                                              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+                                              style: const TextStyle(fontSize: 18),
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (orden.fechaEntrega != null) ... [
+                                      Container(
+                                        width: screenWidth * 0.4,
+                                        height: screenHeight * 0.11,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(color: colors.primary, width: 2),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Center(
+                                              child: Text(
+                                                'Fecha de Entrega: ',
+                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(6.0),
+                                              child: Text(
+                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                                                style: const TextStyle(fontSize: 18),
+                                                textAlign: TextAlign.start,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],      
+                                  ],
+                                ),
+                                Column(
+                                  //mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.2,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          const Text(
+                                            'Notas del cliente: ',
+                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          ),
+                                          TextFormField(
+                                            enabled: false,
+                                            minLines: 3,
+                                            maxLines: 20,
+                                            controller: notasController,
+                                            style: const TextStyle(color: Colors.black),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10,),
+                                    Container(
+                                      width: screenWidth * 0.4,
+                                      height: screenHeight * 0.2,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: colors.primary, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          const Text(
+                                            'Instrucciones: ',
+                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          ),
+                                          TextFormField(
+                                            enabled: true,
+                                            minLines: 3,
+                                            maxLines: 20,
+                                            style: const TextStyle(color: Colors.black),
+                                            controller: instruccionesController,
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
                               ],
                             ),
-                            const Divider(),
-                            Padding(
-                              padding: (screenWidth > screenHeight) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Column(
-                                    children: [
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.11,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          //crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Center(
-                                              child: Text(
-                                                'Estado: ',
-                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(6.0),
-                                              child: Text(
-                                                context.watch<OrdenProvider>().orden.estado,
-                                                style: const TextStyle(fontSize: 18,),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ), 
-                                      const SizedBox(height: 10,),
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.11,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Center(
-                                              child: Text(
-                                                'Fecha de la orden: ',
-                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(6.0),
-                                              child: Text(
-                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                                                style: const TextStyle(fontSize: 18),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),     
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.11,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Center(
-                                              child: Text(
-                                                'Fecha de Vencimiento: ',
-                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(6.0),
-                                              child: Text(
-                                                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-                                                style: const TextStyle(fontSize: 18),
-                                                textAlign: TextAlign.start,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      if (orden.fechaEntrega != null) ... [
-                                        Container(
-                                          width: screenWidth * 0.4,
-                                          height: screenHeight * 0.11,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            border: Border.all(color: colors.primary, width: 2),
-                                            borderRadius: BorderRadius.circular(5),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Center(
-                                                child: Text(
-                                                  'Fecha de Entrega: ',
-                                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.all(6.0),
-                                                child: Text(
-                                                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
-                                                  style: const TextStyle(fontSize: 18),
-                                                  textAlign: TextAlign.start,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],      
-                                    ],
-                                  ),
-                                  Column(
-                                    //mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.2,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            const Text(
-                                              'Notas del cliente: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                            TextFormField(
-                                              enabled: false,
-                                              minLines: 3,
-                                              maxLines: 20,
-                                              initialValue: 'Cheaquear luz de chequeo y luces',
-                                              style: const TextStyle(color: Colors.black),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                fillColor: Colors.white,
-                                                filled: true,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10,),
-                                      Container(
-                                        width: screenWidth * 0.4,
-                                        height: screenHeight * 0.2,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: colors.primary, width: 2),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            const Text(
-                                              'Instrucciones: ',
-                                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                                            ),
-                                            TextFormField(
-                                              enabled: false,
-                                              minLines: 3,
-                                              maxLines: 20,
-                                              style: const TextStyle(color: Colors.black),
-                                              initialValue: 'En el servicio anterior le hicieron distribucion, no fue en el taller.. se controlo con scaner por luz de fallo , ',
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                fillColor: Colors.white,
-                                                filled: true,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       Container(
                         width: screenWidth * 0.9,
@@ -510,7 +537,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   _buildHeaderCell('Descripcion', flex: 3),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
-                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
                                 ],
                               ),
@@ -567,10 +593,67 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                           ],
                         ),
                       ),
+                      Container(
+                        width: screenWidth * 0.9,
+                        height: screenHeight * 0.6,
+                        child: ListView.builder(
+                          itemCount: conceptos.length,
+                          itemBuilder: (context, index) {
+                            final concepto = conceptos[index];
+                            return GestureDetector(
+                              onDoubleTap: () async {
+                                await comentarioControl(context);
+                              },
+                              child: Card(
+                                color: colores[concepto] ?? Colors.white, // Cambia el fondo según la selección
+                                child: ListTile(
+                                  title: Text(concepto),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Botón Verde
+                                      IconButton(
+                                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                                        onPressed: () {
+                                          actualizarValor(concepto, 'Largo Plazo', Colors.green[100]!);
+                                        },
+                                      ),
+                                      // Botón Amarillo
+                                      IconButton(
+                                        icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                                        onPressed: () {
+                                          actualizarValor(concepto, 'Corto Plazo', Colors.yellow[100]!);
+                                        },
+                                      ),
+                                      // Botón Rojo
+                                      IconButton(
+                                        icon: const Icon(Icons.check_circle, color: Colors.red),
+                                        onPressed: () {
+                                          actualizarValor(concepto, 'Inmediato', Colors.red[100]!);
+                                        },
+                                      ),
+                                      // Botón Limpiar
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.grey),
+                                        onPressed: () {
+                                          actualizarValor(concepto, 'Sin selección', Colors.white);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Text(
+                                    valores[concepto] ?? 'Sin selección',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ]
                   ),
                 ),
-                
               ],
             ),
           ),
@@ -604,29 +687,39 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                       null;
                     }
                   break;
-                  case 2:
+                  case 4:
                     if (marcaId != 0 && orden.estado == 'EN PROCESO'){
                       volverAPendiente(orden);
                     } else {
                       null;
                     }  
                   break;
+                  case 2:  
+                  break;
+                  case 3:  
+                  break;
                 }
               });
             },
             showUnselectedLabels: true,
-          
             selectedItemColor: colors.primary,
             unselectedItemColor: colors.primary,  
             items: const [
               BottomNavigationBarItem(
-                
                 icon: Icon(Icons.play_circle_outline),
-                label: 'Iniciar',
+                label: 'Recibir',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.stop_circle_outlined),
-                label: 'Finalizar',
+                label: 'Terminar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.save),
+                label: 'Guardar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.print),
+                label: 'Imprimir',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.backspace_outlined),
@@ -636,6 +729,36 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           ),
         ),
       ),
+    );
+  }
+
+  Future<dynamic> comentarioControl(BuildContext context) {
+    return showDialog(
+      context: context, 
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Comentario'),
+          content: CustomTextFormField(
+            controller: comentarioController,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text('Cancelar')
+            ),
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text(
+                'Guardar',  
+              )
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -864,16 +987,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     }
                   }, icon: const Icon(Icons.play_arrow)
                 ),
-                IconButton(
-                  onPressed: (){
-                    if (objeto.mo == 'MO'){
-                      setState(() {
-                        selectedTaskIndex = isSelected ? null : index; 
-                      });
-                      comenzarTarea(context, index);
-                    }
-                  }, icon: const Icon(Icons.stop_circle_outlined)
-                )
               ]
               
             ] 
@@ -946,6 +1059,35 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     );
   }
 
-
+  void logout() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Cerrar sesion'),
+          content: const Text('Esta seguro de querer cerrar sesion?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text('Cancelar')
+            ),
+            TextButton(
+              onPressed: () {
+                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                router.pushReplacement('/');
+              },
+              child: const Text(
+                'Cerrar Sesion',
+                style: TextStyle(color: Colors.red),
+              )
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
 
 }
