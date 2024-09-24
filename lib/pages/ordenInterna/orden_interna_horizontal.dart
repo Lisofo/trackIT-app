@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, avoid_print
+// ignore_for_file: use_build_context_synchronously, avoid_print, unused_element
 
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
@@ -63,6 +63,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     'Líquido de Freno',
     'Líquido enfriamiento'
   ];
+  
   Map<String, String?> valores = {};
   Map<String, Color> colores = {};
 
@@ -128,39 +129,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             return AlertDialog(
               surfaceTintColor: Colors.white,
               title: const Text('Confirmación'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('¿Estás seguro que deseas $accion la orden?'),
-                  if(pedirConfirmacion)...[
-                    const SizedBox(height: 5,),
-                    CustomTextFormField(
-                      preffixIcon: const Icon(Icons.lock),
-                      keyboard: const TextInputType.numberWithOptions(),
-                      controller: pinController,
-                      hint: 'Ingrese PIN',
-                      maxLines: 1,
-                      obscure: isObscured,
-                      suffixIcon: IconButton(
-                        icon: isObscured
-                            ? const Icon(
-                                Icons.visibility_off,
-                                color: Colors.black,
-                              )
-                            : const Icon(
-                                Icons.visibility,
-                                color: Colors.black,
-                              ),
-                        onPressed: () {
-                          setStateBd(() {
-                            isObscured = !isObscured;
-                          });
-                        },
-                      ),
-                    )
-                  ]
-                ],
-              ),
+              content: Text('¿Estás seguro que deseas $accion la orden?'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -283,83 +252,80 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
-                      Card(
-                        elevation: 10,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              Column(
-                                children: [
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: screenWidth * 0.4,
-                                    height: (screenWidth > screenHeight) ? screenHeight * 0.12 : screenHeight * 0.07,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Center(
+                      SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Column(
+                              children: [
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: screenWidth * 0.3,
+                                  height: (screenWidth > screenHeight) ? screenHeight * 0.13 : screenHeight * 0.08,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Center(
+                                        child: Text(
+                                          'Cliente: ',
+                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                        Center(
                                           child: Text(
-                                            'Cliente: ',
-                                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
+                                            style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.start,
                                           ),
                                         ),
-                                          Center(
-                                            child: Text(
-                                              '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.start,
-                                            ),
+                                        Center(
+                                          child: Text(
+                                            'Telefono: ${orden.cliente.telefono1}',
+                                            style: const TextStyle(fontSize: 18),
+                                            textAlign: TextAlign.center,
                                           ),
-                                          Center(
-                                            child: Text(
-                                              'Telefono: ${orden.cliente.telefono1}',
-                                              style: const TextStyle(fontSize: 18),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ],
-                                    ),
+                                        ),
+                                      ],
                                   ),
+                                ),
+                              ],
+                            ),
+                            const Divider(),
+                            Padding(
+                              padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
+                              child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
+                                  const SizedBox(height: 10,),
+                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors)
+                                ],
+                              ):Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
+                                  const SizedBox(height: 10,),
+                                  ChildrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors)
                                 ],
                               ),
-                              const Divider(),
-                              Padding(
-                                padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
-                                child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    childrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
-                                    const SizedBox(height: 10,),
-                                    childrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors)
-                                  ],
-                                ):Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    childrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
-                                    const SizedBox(height: 10,),
-                                    childrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors)
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                       Container(
                         width: screenWidth * 0.9,
                         height: screenHeight * 0.6,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
                           borderRadius: BorderRadius.circular(8),
                           color: colors.onPrimary,
                         ),
                         child: Column(
                           children: [
                             // Fixed header
+                            const SizedBox(height: 5,),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[400],
+                                color: Colors.grey[200],
                                 border: const Border(bottom: BorderSide(color: Colors.grey)),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -369,7 +335,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
-                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[400],)),
+                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
                                 ],
                               ),
                             ),
@@ -390,7 +356,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                         width: screenWidth * 0.9,
                         height: screenHeight * 0.6,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
                           borderRadius: BorderRadius.circular(8),
                           color: colors.onPrimary,
                         ),
@@ -425,7 +390,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                           ],
                         ),
                       ),
-                      Container(
+                      SizedBox(
                         width: screenWidth * 0.9,
                         height: screenHeight * 0.6,
                         child: ListView.builder(
@@ -796,11 +761,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         }
         
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withOpacity(0.3) : null,
-          border: const Border(bottom: BorderSide(color: Colors.grey)),      
-        ),
+      child: Card(
+        shadowColor: Colors.blue.withOpacity(0.3),
+        color: isSelected ? Colors.blue.withOpacity(0.3) : null,
         child: Row(
           children: [
             if(objeto is Linea)...[
@@ -924,8 +887,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
 
 }
 
-class childrenColumn1 extends StatelessWidget {
-  const childrenColumn1({
+class ChildrenColumn1 extends StatelessWidget {
+  const ChildrenColumn1({
     super.key,
     required this.screenWidth,
     required this.screenHeight,
@@ -1065,8 +1028,8 @@ class childrenColumn1 extends StatelessWidget {
 }
 
 
-class childrenColumn2 extends StatelessWidget {
-  const childrenColumn2({
+class ChildrenColumn2 extends StatelessWidget {
+  const ChildrenColumn2({
     super.key,
     required this.screenWidth,
     required this.screenHeight,

@@ -3,7 +3,7 @@
 import 'dart:convert';
 
 import 'package:app_tec_sedel/models/orden.dart';
-import 'package:app_tec_sedel/models/ultimaTarea.dart';
+import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
