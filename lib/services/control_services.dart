@@ -251,13 +251,14 @@ class ControlServices{
   }
   
   Future putControl2(BuildContext context, Control control, String token) async {
+    var data = control.toMap();
     try {
-      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlId}';
+      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlRegId}';
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
         link,
-        data: control.toMap(),
+        data: data,
         options: Options(
           method: 'PUT', 
           headers: headers
@@ -296,13 +297,14 @@ class ControlServices{
   }
 
   Future postControl2(BuildContext context, Control control, String token) async {
+    var data = control.toMap();
     try {
       String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles';
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
         link,
-        data: control.toMap(),
+        data: data,
         options: Options(
           method: 'POST', 
           headers: headers
@@ -311,7 +313,7 @@ class ControlServices{
 
       statusCode = 1;
       if (resp.statusCode == 201) {
-        control.controlId = resp.data['controlId'];
+        control.controlRegId = resp.data['controlRegId'];
       }
 
       return;
@@ -344,11 +346,11 @@ class ControlServices{
 
   Future deleteControl2(BuildContext context, Control control, String token) async {
     try {
-      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlId}';
+      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlRegId}';
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
-        link += control.controlId.toString(),
+        link,
         options: Options(
           method: 'DELETE', 
           headers: headers
@@ -384,5 +386,5 @@ class ControlServices{
       } 
     }
   }
-  
+
 }

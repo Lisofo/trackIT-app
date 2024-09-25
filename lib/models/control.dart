@@ -43,8 +43,8 @@ class Control {
     "controlId": controlId,
     "grupo": grupo,
     "pregunta": pregunta,
-    "comentario": '',
-    "ordianl": ordinal,
+    "comentario": comentario,
+    "ordinal": ordinal,
     "respuesta": respuesta,
     "claveRespuesta": claveRespuesta,
   };

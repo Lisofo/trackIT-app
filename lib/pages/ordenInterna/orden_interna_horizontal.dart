@@ -1,8 +1,4 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, unused_element
-
-
-import 'dart:ffi';
-
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
@@ -58,6 +54,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   final TextEditingController notasController = TextEditingController();
   final TextEditingController instruccionesController = TextEditingController();
   final TextEditingController comentarioController = TextEditingController();
+  final TextEditingController kmController = TextEditingController();
   final List<String> conceptos = [
     'Luces de posición',
     'Luz de patente',
@@ -121,6 +118,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     tabBarController2.dispose();
     notasController.dispose();
     instruccionesController.dispose();
+    kmController.dispose();
     super.dispose();
   }
 
@@ -137,6 +135,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     materiales = await MaterialesServices().getRepuestos(context, orden, token);
     notasController.text = orden.comentarioCliente;
     instruccionesController.text = orden.comentarioTrabajo;
+    kmController.text = orden.km.toString();
     controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId, token);
     controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
     for(var i = 0; i < controles.length; i++){
@@ -346,11 +345,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   if (esMobile) ... [
                                     ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
                                     const SizedBox(height: 10,),
-                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
                                   ]else ... [
                                     ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
                                     const SizedBox(height: 10,),
-                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
                                   ],
 
                                   
@@ -361,7 +360,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 children: [
                                   ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
                                   const SizedBox(height: 10,),
-                                  ChildrenColumn2(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
                                 ],
                               ),
                             ),
@@ -490,12 +489,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     final control = controles[index];
                                     return GestureDetector(
                                       onDoubleTap: () async {
-                                        if(control.claveRespuesta != null && control.respuesta != 'Sin selección'){
+                                        if(control.controlRegId != 0){
                                           await comentarioControl(context, control);
                                         }
                                       },
                                       child: Card(
-                                        color: colores[control.pregunta] ?? Colors.white, // Cambia el fondo según la selección
+                                        color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
                                         child: ListTile(
                                           title: Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -521,31 +520,50 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                               // Botón Verde
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.green),
-                                                onPressed: () {
+                                                onPressed: () async {
                                                   actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
-                                                  
+                                                  control.claveRespuesta = 0;
+                                                  if(control.controlRegId == 0) {
+                                                    await ControlServices().postControl2(context, control, token);
+                                                  } else{
+                                                    await ControlServices().putControl2(context, control, token);
+                                                  }
                                                 },
                                               ),
                                               // Botón Amarillo
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.yellow),
-                                                onPressed: () {
+                                                onPressed: () async {
                                                   actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
+                                                  control.claveRespuesta = 1;
+                                                  if(control.controlRegId == 0) {
+                                                    await ControlServices().postControl2(context, control, token);
+                                                  } else{
+                                                    await ControlServices().putControl2(context, control, token);
+                                                  }
                                                 },
                                               ),
                                               // Botón Rojo
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.red),
-                                                onPressed: () {
+                                                onPressed: () async {
                                                   actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
+                                                  control.claveRespuesta = 2;
+                                                  if(control.controlRegId == 0) {
+                                                    await ControlServices().postControl2(context, control, token);
+                                                  } else{
+                                                    await ControlServices().putControl2(context, control, token);
+                                                  }
                                                 },
                                               ),
                                               // Botón Limpiar
                                               IconButton(
                                                 icon: const Icon(Icons.delete, color: Colors.grey),
-                                                onPressed: () async {
+                                                onPressed: ()  async {
                                                   await ControlServices().deleteControl2(context, control, token);
-                                                  actualizarValor(control.pregunta, control, 'Sin selección', Colors.white); 
+                                                  control.comentario = '';
+                                                  control.controlRegId = 0;
+                                                  actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
                                                 },
                                               ),
                                             ],
@@ -594,8 +612,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ),
           child: BottomNavigationBar(
             currentIndex: buttonIndex,
-            onTap: (index) {
-              setState(() {
+            onTap: (index) async {
                 buttonIndex = index;
                 switch (buttonIndex){
                   case 0: 
@@ -619,12 +636,63 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                       null;
                     }  
                   break;
-                  case 2:  
+                  case 2:
+                    if(buttonIndex == 2) {
+                      orden.comentarioCliente = notasController.text ;
+                      orden.comentarioTrabajo = instruccionesController.text;
+                      // orden.km = kmController.text;
+                      await showDialog(
+                        context: context, 
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text('Quiere marcar la OT en ALERTA?'),
+                            content: SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: const Text(
+                                '(Responda SI si los comentarios en la OT son relevantes al momento de la facturación  del servicio.)', 
+                                style: TextStyle(fontSize: 18),
+                              )
+                            ),
+                            actions: [
+                              Row(
+                                children: [
+                                  TextButton(
+                                    onPressed: () {
+                                      router.pop();
+                                    },
+                                    child: const Text('Cancelar')
+                                  ),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () async {
+                                      orden.alerta = true;
+                                      await ordenServices.datosAdicionales(context, orden, token);
+                                      router.pop();
+                                    },
+                                    child: const Text('SI')
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      orden.alerta = false;
+                                      await ordenServices.datosAdicionales(context, orden, token);
+                                      router.pop();
+                                    },
+                                    child: const Text(
+                                      'NO',
+                                    )
+                                  ),
+                                ],
+                              ), 
+                            ],
+                          );
+                        }
+                      );
+                    }
                   break;
                   case 3:  
                   break;
                 }
-              });
+              setState(() {});
             },
             showUnselectedLabels: true,
             selectedItemColor: colors.primary,
@@ -679,8 +747,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               child: const Text('Cancelar')
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 control.comentario = comentarioController.text;
+                await ControlServices().putControl2(context, control, token);
                 setState(() {});
                 router.pop();
               },
@@ -850,16 +919,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     }
   }
 
-  Widget buildSegment(String text) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 15),
-      ),
-    );
-  }
-
   Widget _buildHeaderCell(String text, {required int flex}) {
     return Expanded(
       flex: flex,
@@ -922,14 +981,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   }, icon: const Icon(Icons.play_arrow)
                 ),
               ]
-              
             ] 
-            // else if(objeto is RevisionMaterial) ... [
-              // _buildDataCell(objeto.material.codMaterial, flex: 1, alignment: Alignment.center),
-              // _buildDataCell(objeto.material.descripcion, flex: 3, alignment: Alignment.centerLeft),
-              // _buildDataCell('Comentario', flex: 1, alignment: Alignment.centerLeft),
-              // _buildDataCell('Avance', flex: 1, alignment: Alignment.centerLeft),
-            // ],
           ],
         ),
       ),
@@ -1175,6 +1227,7 @@ class ChildrenColumn2 extends StatelessWidget {
     required this.colors,
     required this.notas,
     required this.instrucciones,
+    required this.km,
   });
 
   final double screenWidth;
@@ -1182,6 +1235,7 @@ class ChildrenColumn2 extends StatelessWidget {
   final ColorScheme colors;
   final TextEditingController notas;
   final TextEditingController instrucciones;
+  final TextEditingController km;
   
   @override
   Widget build(BuildContext context) {
@@ -1237,6 +1291,34 @@ class ChildrenColumn2 extends StatelessWidget {
                     maxLines: 20,
                     style: const TextStyle(color: Colors.black),
                     controller: instrucciones,
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10,),
+            Container(
+              width: screenWidth * 0.2,
+              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.primary, width: 2),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Column(
+                
+                children: [
+                  const Text(
+                    'KM: ',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                  TextFormField(
+                    maxLines: 1,
+                    style: const TextStyle(color: Colors.black),
+                    controller: km,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       fillColor: Colors.white,
