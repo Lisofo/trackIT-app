@@ -140,10 +140,11 @@ class _EntradSalidaState extends State<EntradSalida> {
               ),
               if(parabrisas)...[
                 Container(
-                  width: MediaQuery.of(context).size.width * 0.5,
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  
                   decoration: BoxDecoration(
                     border: Border.all(
-                      width: 10,
+                      width: 20,
                       color: Colors.white
                     ),
                     borderRadius: BorderRadius.circular(5)
@@ -157,6 +158,7 @@ class _EntradSalidaState extends State<EntradSalida> {
                       ),
                       label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
                       labelStyle: TextStyle(color: Colors.grey[500], fontSize: 24),
+                      
                     ),
                     readOnly: true,
                     minLines: 5,

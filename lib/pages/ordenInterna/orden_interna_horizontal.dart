@@ -1,5 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, unused_element
 
+
+import 'dart:ffi';
+
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
@@ -70,6 +73,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   Map<String, Color> colores = {};
   List<String> models = [];
   List<String> grupos = [];
+  bool esMobile = false;
+  double heightMultiplierCliente = 0.13;
+
   // Función para manejar el cambio de valor y color
 
   void actualizarValor(String concepto, Control control, String valor, Color color) {
@@ -93,6 +99,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     tabBarController.addListener(handleTabSelection);
     tabBarController2.addListener(handleTabSelection2);
     cargarDatos();
+    
   }
 
   void handleTabSelection() {
@@ -141,6 +148,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     for(var grupo in grupos){
       print(grupo);
     }
+    
+    var shortestSide = MediaQuery.of(context).size.shortestSide;
+    esMobile = shortestSide < 600;
+    if (esMobile) {
+      heightMultiplierCliente = 0.18;
+    }
+    
     setState(() {});
   }
 
@@ -235,39 +249,47 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     dividerColor: Colors.cyan,
                     indicatorSize: TabBarIndicatorSize.tab,
                     controller: tabBarController,
-                    tabs: const [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.description),
-                          SizedBox(width: 10,),
-                          Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.format_list_bulleted_outlined),
-                          SizedBox(width: 10,),
-                          Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.format_list_bulleted_outlined),
-                          SizedBox(width: 10,),
-                          Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.grading),
-                          SizedBox(width: 10,),
-                          Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        ],
-                      ),
+                    tabs: [
+                      if (esMobile) ... [
+                        const Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        const Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        const Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        const Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                      ] else ... [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.description),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.format_list_bulleted_outlined),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.format_list_bulleted_outlined),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.grading),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                      ],
+                      
                     ],
                   ),
                 ),
@@ -284,8 +306,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               children: [
                                 const SizedBox(height: 10),
                                 SizedBox(
-                                  width: screenWidth * 0.4,
-                                  height: (screenWidth > screenHeight) ? screenHeight * 0.13 : screenHeight * 0.08,
+                                  width: screenWidth * 0.7,
+                                  height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.08,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -321,9 +343,18 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
-                                  const SizedBox(height: 10,),
-                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                  if (esMobile) ... [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                  ]else ... [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, notas: notasController, instrucciones: instruccionesController,)
+                                  ],
+
+                                  
+                                  
                                 ],
                               ):Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -357,7 +388,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               child: Row(
                                 children: [
                                   _buildHeaderCell('Codigo', flex: 1),
-                                  screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                  if (esMobile) ... [
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 1),
+                                  ] else ... [
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                  ],
+                                  
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
@@ -396,7 +432,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               child: Row(
                                 children: [
                                   _buildHeaderCell('Codigo', flex: 1),
-                                  screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                  if (esMobile) ... [
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 1),
+                                  ] else ...[
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                  ],
+                                  
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Cantidad', flex: 1),
                                 ],
@@ -460,13 +501,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               SizedBox(
-                                                width: MediaQuery.of(context).size.width * 0.35,
+                                                width: esMobile ? MediaQuery.of(context).size.width * 0.22 : MediaQuery.of(context).size.width * 0.35,
                                                 child: Text(
                                                   control.pregunta,
                                                 ),
                                               ),
                                               SizedBox(
-                                                width: MediaQuery.of(context).size.width * 0.3,
+                                                width: esMobile ? MediaQuery.of(context).size.width * 0.20 : MediaQuery.of(context).size.width * 0.3,
                                                 child: Text(
                                                   control.comentario ?? '',
                                                   overflow: TextOverflow.ellipsis,
@@ -827,7 +868,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         alignment: text != 'Codigo' ? Alignment.centerLeft : Alignment.center,
         child: Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: esMobile ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 18) : const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           textAlign: TextAlign.center,
         ),
       ),
@@ -861,7 +902,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           children: [
             if(objeto is Linea)...[
               _buildDataCell(objeto.codItem, flex: 1, alignment: Alignment.center),
-              _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+              if (esMobile) ... [
+                _buildDataCell(objeto.descripcion, flex: 1, alignment: Alignment.centerLeft),
+              ]else ... [
+                _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+              ],
+              
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
               if(objeto.mo == 'MO')...[

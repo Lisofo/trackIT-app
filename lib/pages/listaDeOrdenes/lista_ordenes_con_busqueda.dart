@@ -163,22 +163,45 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                       width: 10,
                                     ),
                                     const Spacer(),
-                                    Text(
-                                      orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                    Column(
+                                      children: [
+                                        if (MediaQuery.of(context).size.width < 1000)... [
+                                          Text(
+                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(orden.estado)
+                                        ]
+                                        else ... [
+                                          Text(
+                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                        
+                                      ],
                                     ),
                                   ],
                                 ),
-                                Row(
-                                  children: [
-                                    Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
-                                    const VerticalDivider(),
-                                    Text(orden.comentarioCliente),
-                                    const VerticalDivider(),
-                                    Text(orden.comentarioTrabajo),
-                                    const Spacer(),
-                                    Text(orden.estado)
-                                  ],
-                                ),
+                                if (MediaQuery.of(context).size.width < 1000)... [
+                                  Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
+                                  //const VerticalDivider(),
+                                  Text(orden.comentarioCliente),
+                                  //const VerticalDivider(),
+                                  Text(orden.comentarioTrabajo),
+                                ]else ... [
+                                  Row(
+                                    children: [
+                                      Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
+                                      const VerticalDivider(),
+                                      Text(orden.comentarioCliente),
+                                      const VerticalDivider(),
+                                      Text(orden.comentarioTrabajo),
+                                      const Spacer(),
+                                      Text(orden.estado)
+                                    ],
+                                  ),
+                                ],
+                                
+                                
                               ],
                             ),
                           ),
