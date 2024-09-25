@@ -249,4 +249,140 @@ class ControlServices{
       } 
     }
   }
+  
+  Future putControl2(BuildContext context, Control control, String token) async {
+    try {
+      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlId}';
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link,
+        data: control.toMap(),
+        options: Options(
+          method: 'PUT', 
+          headers: headers
+          )
+        );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        // showDialogs(context, 'Control actualizado correctamente', false, false);
+      }
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future postControl2(BuildContext context, Control control, String token) async {
+    try {
+      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles';
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link,
+        data: control.toMap(),
+        options: Options(
+          method: 'POST', 
+          headers: headers
+          )
+        );
+
+      statusCode = 1;
+      if (resp.statusCode == 201) {
+        control.controlId = resp.data['controlId'];
+      }
+
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future deleteControl2(BuildContext context, Control control, String token) async {
+    try {
+      String link = '${apiUrl}api/v1/ordenes/${control.ordenTrabajoId}/controles/${control.controlId}';
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link += control.controlId.toString(),
+        options: Options(
+          method: 'DELETE', 
+          headers: headers
+        )
+      );
+
+      statusCode = 1;
+      if (resp.statusCode == 204) {}
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+  
 }

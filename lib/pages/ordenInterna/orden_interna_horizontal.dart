@@ -5,6 +5,7 @@ import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
+import 'package:app_tec_sedel/services/control_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
@@ -71,9 +72,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   List<String> grupos = [];
   // Función para manejar el cambio de valor y color
 
-  void actualizarValor(String concepto, String valor, Color color) {
+  void actualizarValor(String concepto, Control control, String valor, Color color) {
     setState(() {
-      valores[concepto] = valor;
+      control.respuesta = valor;
       colores[concepto] = color;
     });
   }
@@ -448,12 +449,31 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     final control = controles[index];
                                     return GestureDetector(
                                       onDoubleTap: () async {
-                                        await comentarioControl(context);
+                                        if(control.claveRespuesta != null && control.respuesta != 'Sin selección'){
+                                          await comentarioControl(context, control);
+                                        }
                                       },
                                       child: Card(
                                         color: colores[control.pregunta] ?? Colors.white, // Cambia el fondo según la selección
                                         child: ListTile(
-                                          title: Text(control.pregunta),
+                                          title: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              SizedBox(
+                                                width: MediaQuery.of(context).size.width * 0.35,
+                                                child: Text(
+                                                  control.pregunta,
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                width: MediaQuery.of(context).size.width * 0.3,
+                                                child: Text(
+                                                  control.comentario ?? '',
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              )
+                                            ],
+                                          ),
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -461,34 +481,36 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.green),
                                                 onPressed: () {
-                                                  actualizarValor(control.pregunta, 'Largo Plazo', Colors.green[100]!);
+                                                  actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
+                                                  
                                                 },
                                               ),
                                               // Botón Amarillo
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.yellow),
                                                 onPressed: () {
-                                                  actualizarValor(control.pregunta, 'Corto Plazo', Colors.yellow[100]!);
+                                                  actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
                                                 },
                                               ),
                                               // Botón Rojo
                                               IconButton(
                                                 icon: const Icon(Icons.check_circle, color: Colors.red),
                                                 onPressed: () {
-                                                  actualizarValor(control.pregunta, 'Inmediato', Colors.red[100]!);
+                                                  actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
                                                 },
                                               ),
                                               // Botón Limpiar
                                               IconButton(
                                                 icon: const Icon(Icons.delete, color: Colors.grey),
-                                                onPressed: () {
-                                                  actualizarValor(control.pregunta, 'Sin selección', Colors.white);
+                                                onPressed: () async {
+                                                  await ControlServices().deleteControl2(context, control, token);
+                                                  actualizarValor(control.pregunta, control, 'Sin selección', Colors.white); 
                                                 },
                                               ),
                                             ],
                                           ),
                                           subtitle: Text(
-                                            valores[control.pregunta] ?? 'Sin selección',
+                                            control.respuesta != '' ? control.respuesta : 'Sin selección',
                                             style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                         ),
@@ -594,7 +616,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     );
   }
 
-  Future<dynamic> comentarioControl(BuildContext context) {
+  Future<dynamic> comentarioControl(BuildContext context, Control control) {
+    if(control.comentario != null){
+      comentarioController.text = control.comentario!;
+    } else {
+      comentarioController.text = '';
+    }
     return showDialog(
       context: context, 
       builder: (context) {
@@ -612,6 +639,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ),
             TextButton(
               onPressed: () {
+                control.comentario = comentarioController.text;
+                setState(() {});
                 router.pop();
               },
               child: const Text(
