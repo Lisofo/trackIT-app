@@ -365,7 +365,7 @@ class OrdenServices {
 
   Future datosAdicionales(BuildContext context, Orden orden, String token) async {
     String link = apiLink;
-    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/datosAdcionales';
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/datosAdicionales';
 
     try {
       var headers = {'Authorization': token};

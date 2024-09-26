@@ -55,17 +55,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   final TextEditingController instruccionesController = TextEditingController();
   final TextEditingController comentarioController = TextEditingController();
   final TextEditingController kmController = TextEditingController();
-  final List<String> conceptos = [
-    'Luces de posición',
-    'Luz de patente',
-    'Luz de Emergencia (baliza) y de posición',
-    'Cambio de Luz',
-    'Luz de marcha atrás',
-    'Aceite de Motor',
-    'Líquido de Freno',
-    'Líquido enfriamiento'
-  ];
   late List<Control> controles = [];
+  late List<Control> controlesConformidad = [];
+  late List<Control> controlesDeNivel = [];
+  late List<Control> controlesSeguridad = [];
+  late List<Control> controlesSeVi = [];
   Map<String, String?> valores = {};
   Map<String, Color> colores = {};
   List<String> models = [];
@@ -147,6 +141,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     for(var grupo in grupos){
       print(grupo);
     }
+
+    cargarListas();
     
     var shortestSide = MediaQuery.of(context).size.shortestSide;
     esMobile = shortestSide < 600;
@@ -155,6 +151,31 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     }
     
     setState(() {});
+  }
+
+   void cargarListas() {
+    controlesConformidad.clear();
+    controlesDeNivel.clear();
+    controlesSeguridad.clear();
+    controlesSeVi.clear();
+    for (var control in controles) {
+      switch (control.grupo.toLowerCase()) {
+        case 'conformidad':
+          controlesConformidad.add(control);
+        break;
+        case 'control de niveles':
+          controlesDeNivel.add(control);
+        break;
+        case 'seguridad':
+          controlesSeguridad.add(control);
+        break;
+        case 'señalización - visualizción':
+          controlesSeVi.add(control);
+        break;
+        default:
+        break;
+      }
+    }
   }
 
   void _mostrarDialogoConfirmacion(String accion) {
@@ -351,9 +372,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     const SizedBox(height: 10,),
                                     ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
                                   ],
-
-                                  
-                                  
                                 ],
                               ):Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -392,7 +410,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ] else ... [
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   ],
-                                  
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
@@ -436,7 +453,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ] else ...[
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   ],
-                                  
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Cantidad', flex: 1),
                                 ],
@@ -483,112 +499,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             child: TabBarView(
                               controller: tabBarController2,
                               children: [
-                                ListView.builder(
-                                  itemCount: controles.length,
-                                  itemBuilder: (context, index) {
-                                    final control = controles[index];
-                                    return GestureDetector(
-                                      onDoubleTap: () async {
-                                        if(control.controlRegId != 0){
-                                          await comentarioControl(context, control);
-                                        }
-                                      },
-                                      child: Card(
-                                        color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
-                                        child: ListTile(
-                                          title: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              SizedBox(
-                                                width: esMobile ? MediaQuery.of(context).size.width * 0.22 : MediaQuery.of(context).size.width * 0.35,
-                                                child: Text(
-                                                  control.pregunta,
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                width: esMobile ? MediaQuery.of(context).size.width * 0.20 : MediaQuery.of(context).size.width * 0.3,
-                                                child: Text(
-                                                  control.comentario ?? '',
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              // Botón Verde
-                                              IconButton(
-                                                icon: const Icon(Icons.check_circle, color: Colors.green),
-                                                onPressed: () async {
-                                                  actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
-                                                  control.claveRespuesta = 0;
-                                                  if(control.controlRegId == 0) {
-                                                    await ControlServices().postControl2(context, control, token);
-                                                  } else{
-                                                    await ControlServices().putControl2(context, control, token);
-                                                  }
-                                                },
-                                              ),
-                                              // Botón Amarillo
-                                              IconButton(
-                                                icon: const Icon(Icons.check_circle, color: Colors.yellow),
-                                                onPressed: () async {
-                                                  actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
-                                                  control.claveRespuesta = 1;
-                                                  if(control.controlRegId == 0) {
-                                                    await ControlServices().postControl2(context, control, token);
-                                                  } else{
-                                                    await ControlServices().putControl2(context, control, token);
-                                                  }
-                                                },
-                                              ),
-                                              // Botón Rojo
-                                              IconButton(
-                                                icon: const Icon(Icons.check_circle, color: Colors.red),
-                                                onPressed: () async {
-                                                  actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
-                                                  control.claveRespuesta = 2;
-                                                  if(control.controlRegId == 0) {
-                                                    await ControlServices().postControl2(context, control, token);
-                                                  } else{
-                                                    await ControlServices().putControl2(context, control, token);
-                                                  }
-                                                },
-                                              ),
-                                              // Botón Limpiar
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.grey),
-                                                onPressed: ()  async {
-                                                  await ControlServices().deleteControl2(context, control, token);
-                                                  control.comentario = '';
-                                                  control.controlRegId = 0;
-                                                  actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                          subtitle: Text(
-                                            control.respuesta != '' ? control.respuesta : 'Sin selección',
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const Center(
-                                  child: Text('data'),
-                                ),
-                                const Center(
-                                  child: Text('data'),
-                                ),
-                                const Center(
-                                  child: Text('data'),
-                                ),
-                                const Center(
-                                  child: Text('data'),
-                                ),
+                                listaControles(controles),
+                                listaControles(controlesConformidad),
+                                listaControles(controlesDeNivel),
+                                listaControles(controlesSeguridad),
+                                listaControles(controlesSeVi),
                               ]
                             )
                           ),
@@ -640,7 +555,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     if(buttonIndex == 2) {
                       orden.comentarioCliente = notasController.text ;
                       orden.comentarioTrabajo = instruccionesController.text;
-                      // orden.km = kmController.text;
+                      orden.km = int.tryParse(kmController.text);
                       await showDialog(
                         context: context, 
                         builder: (context) {
@@ -722,6 +637,103 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           ),
         ),
       ),
+    );
+  }
+
+  ListView listaControles(List<Control> controles) {
+    return ListView.builder(
+      itemCount: controles.length,
+      itemBuilder: (context, index) {
+        final control = controles[index];
+        return GestureDetector(
+          onDoubleTap: () async {
+            if(control.controlRegId != 0){
+              await comentarioControl(context, control);
+            }
+          },
+          child: Card(
+            color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
+            child: ListTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: esMobile ? MediaQuery.of(context).size.width * 0.22 : MediaQuery.of(context).size.width * 0.35,
+                    child: Text(
+                      control.pregunta,
+                    ),
+                  ),
+                  SizedBox(
+                    width: esMobile ? MediaQuery.of(context).size.width * 0.20 : MediaQuery.of(context).size.width * 0.3,
+                    child: Text(
+                      control.comentario ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Botón Verde
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    onPressed: () async {
+                      actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
+                      control.claveRespuesta = 0;
+                      if(control.controlRegId == 0) {
+                        await ControlServices().postControl2(context, control, token);
+                      } else{
+                        await ControlServices().putControl2(context, control, token);
+                      }
+                    },
+                  ),
+                  // Botón Amarillo
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                    onPressed: () async {
+                      actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
+                      control.claveRespuesta = 1;
+                      if(control.controlRegId == 0) {
+                        await ControlServices().postControl2(context, control, token);
+                      } else{
+                        await ControlServices().putControl2(context, control, token);
+                      }
+                    },
+                  ),
+                  // Botón Rojo
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.red),
+                    onPressed: () async {
+                      actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
+                      control.claveRespuesta = 2;
+                      if(control.controlRegId == 0) {
+                        await ControlServices().postControl2(context, control, token);
+                      } else{
+                        await ControlServices().putControl2(context, control, token);
+                      }
+                    },
+                  ),
+                  // Botón Limpiar
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.grey),
+                    onPressed: ()  async {
+                      await ControlServices().deleteControl2(context, control, token);
+                      control.comentario = '';
+                      control.controlRegId = 0;
+                      actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
+                    },
+                  ),
+                ],
+              ),
+              subtitle: Text(
+                control.respuesta != '' ? control.respuesta : 'Sin selección',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

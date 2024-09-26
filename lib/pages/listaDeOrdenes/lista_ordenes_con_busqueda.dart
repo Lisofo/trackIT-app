@@ -133,6 +133,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     return Visibility(
                       visible: ordenesFiltradas.contains(ordenes[i]),
                       child: Card(
+                        color: orden.alerta ? Colors.red : Colors.white,
                         child: InkWell(
                           onTap: () {
                             Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
