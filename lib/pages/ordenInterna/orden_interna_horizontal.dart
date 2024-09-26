@@ -7,7 +7,6 @@ import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/control_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
-import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
@@ -39,7 +38,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   String token = '';
   final _ubicacionServices = UbicacionServices();
   final _ordenServices = OrdenServices();
-  final _revisionServices = RevisionServices();
   int? statusCode;
   final TextEditingController pinController = TextEditingController();
   bool pedirConfirmacion = true;
@@ -62,13 +60,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   late List<Control> controlesSeVi = [];
   Map<String, String?> valores = {};
   Map<String, Color> colores = {};
-  List<String> models = [];
-  List<String> grupos = [];
   bool esMobile = false;
   double heightMultiplierCliente = 0.13;
-
+  late String siguienteEstado = '';
   // Función para manejar el cambio de valor y color
-
   void actualizarValor(String concepto, Control control, String valor, Color color) {
     setState(() {
       control.respuesta = valor;
@@ -132,18 +127,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     kmController.text = orden.km.toString();
     controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId, token);
     controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
-    for(var i = 0; i < controles.length; i++){
-      models.add(controles[i].grupo);
-    }
-    Set<String> conjunto = Set.from(models);
-    grupos = conjunto.toList();
-    grupos.sort((a, b) => a.compareTo(b));
-    for(var grupo in grupos){
-      print(grupo);
-    }
-
     cargarListas();
-    
     var shortestSide = MediaQuery.of(context).size.shortestSide;
     esMobile = shortestSide < 600;
     if (esMobile) {
@@ -178,8 +162,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     }
   }
 
-  void _mostrarDialogoConfirmacion(String accion) {
+  void _mostrarDialogoConfirmacion(String accion) async {
     pinController.text = '';
+    late int accionId = accion == "recibir" ? 21 : 18;
+    siguienteEstado = await ordenServices.siguienteEstadoOrden(context, orden, accionId, token);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -188,7 +174,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             return AlertDialog(
               surfaceTintColor: Colors.white,
               title: const Text('Confirmación'),
-              content: Text('¿Estás seguro que deseas $accion la orden?'),
+              content: Text('¿Estás seguro que deseas pasar la OT al estado $siguienteEstado?'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -197,14 +183,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   child: const Text('Cancelar'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      if (accion == 'iniciar') {
-                        cambiarEstado('EN PROCESO');
-                      } else {
-                        cambiarEstado('FINALIZADA');
-                      }
-                    });
+                  onPressed: () async {
+                    cambiarEstado(accionId);
+                    setState(() {});
                     router.pop(context);
                   },
                   child: const Text('Confirmar'),
@@ -531,26 +512,19 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 buttonIndex = index;
                 switch (buttonIndex){
                   case 0: 
-                    if ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando){
-                      _mostrarDialogoConfirmacion('iniciar');
+                    if (!ejecutando){
+                      _mostrarDialogoConfirmacion('recibir');
                     } else {
                       null;
                     }
                   break;
                   case 1:
-                    if (marcaId != 0 && orden.estado == 'EN PROCESO'){
-                      router.push('/resumenOrden');
+                    if (!ejecutando){
+                      _mostrarDialogoConfirmacion('aprobar');
                     } else {
                       null;
                     }
-                  break;
-                  case 4:
-                    if (marcaId != 0 && orden.estado == 'EN PROCESO'){
-                      volverAPendiente(orden);
-                    } else {
-                      null;
-                    }  
-                  break;
+                  break;  
                   case 2:
                     if(buttonIndex == 2) {
                       orden.comentarioCliente = notasController.text ;
@@ -614,12 +588,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             unselectedItemColor: colors.primary,  
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.play_circle_outline),
+                icon: Icon(Icons.read_more),
                 label: 'Recibir',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.stop_circle_outlined),
-                label: 'Terminar',
+                icon: Icon(Icons.done_all),
+                label: 'Aprobar',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.save),
@@ -628,10 +602,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               BottomNavigationBarItem(
                 icon: Icon(Icons.print),
                 label: 'Imprimir',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.backspace_outlined),
-                label: 'Volver a Pendiente',
               ),
             ],
           ),
@@ -814,28 +784,15 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     );
   }
 
-  cambiarEstado(String estado) async {
+  cambiarEstado(int accionId) async {
     if (!ejecutando) {
       ejecutando = true;
-      await obtenerUbicacion();
-      if (statusCode == 1){
-        int ubicacionId = ubicacion.ubicacionId;
-        int uId = context.read<OrdenProvider>().uId;
-        String token = context.read<OrdenProvider>().token;
-        await _ordenServices.patchOrden(context, orden, estado, ubicacionId, token);
-        statusCode = await _ordenServices.getStatusCode();
-        await _ordenServices.resetStatusCode();
-        if (statusCode == 1) {
-          if (estado == 'EN PROCESO') {
-            await _revisionServices.postRevision(context, uId, orden, token);
-            statusCode = await _revisionServices.getStatusCode();
-            await _revisionServices.resetStatusCode();
-            if (statusCode == 1) {
-              await OrdenServices.showDialogs(context, 'Estado cambiado correctamente', false, false);
-            }
-          }
-          
-        }
+      String token = context.read<OrdenProvider>().token;
+      await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, token);
+      statusCode = await _ordenServices.getStatusCode();
+      await _ordenServices.resetStatusCode();
+      if(statusCode == 1){
+        orden.estado = siguienteEstado;
       }
       ejecutando = false;
       statusCode = null;
@@ -956,15 +913,16 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         });
       },
       onDoubleTap: () {
-        if(objeto is Linea) {
-          if (objeto.mo == 'MO'){
-            setState(() {
-              selectedTaskIndex = isSelected ? null : index; 
-            });
-            comenzarTarea(context, index);
+        if(orden.estado != 'PENDIENTE'){
+          if(objeto is Linea) {
+            if (objeto.mo == 'MO'){
+              setState(() {
+                selectedTaskIndex = isSelected ? null : index; 
+              });
+              comenzarTarea(context, index);
+            }
           }
         }
-        
       },
       child: Card(
         shadowColor: Colors.blue.withOpacity(0.3),
@@ -984,11 +942,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               if(objeto.mo == 'MO')...[
                 IconButton(
                   onPressed: (){
-                    if (objeto.mo == 'MO'){
-                      setState(() {
-                        selectedTaskIndex = isSelected ? null : index; 
-                      });
-                      comenzarTarea(context, index);
+                    if(orden.estado != 'PENDIENTE'){
+                      if (objeto.mo == 'MO'){
+                        setState(() {
+                          selectedTaskIndex = isSelected ? null : index; 
+                        });
+                        comenzarTarea(context, index);
+                      }
                     }
                   }, icon: const Icon(Icons.play_arrow)
                 ),
@@ -1074,7 +1034,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             TextButton(
               onPressed: () {
                 Provider.of<OrdenProvider>(context, listen: false).setToken('');
-                router.pushReplacement('/');
+                router.go('/');
               },
               child: const Text(
                 'Cerrar Sesion',

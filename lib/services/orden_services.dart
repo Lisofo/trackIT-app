@@ -418,4 +418,103 @@ class OrdenServices {
       } 
     }
   }
+
+  Future siguienteEstadoOrden(BuildContext context, Orden orden, int accionId, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/accion/$accionId';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        // Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(resp.data["estadoSiguiente"]);
+      } else {
+        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+      }
+
+      return resp.data["estadoSiguiente"];
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future patchOrdenCambioEstado(BuildContext context, Orden orden, int accionId, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}';
+
+    try {
+      var headers = {'Authorization': token};
+      var data = ({"accionId": accionId});
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'PATCH',
+          headers: headers,
+        ),
+        data: data
+      );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(resp.data["estado"]);
+        
+      } else {
+        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+      }
+
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
 }

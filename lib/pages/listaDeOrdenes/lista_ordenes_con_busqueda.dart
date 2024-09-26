@@ -133,7 +133,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     return Visibility(
                       visible: ordenesFiltradas.contains(ordenes[i]),
                       child: Card(
-                        color: orden.alerta ? Colors.red : Colors.white,
                         child: InkWell(
                           onTap: () {
                             Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
@@ -163,16 +162,27 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                     const SizedBox(
                                       width: 10,
                                     ),
+                                    Text(orden.descripcion),
                                     const Spacer(),
                                     Column(
                                       children: [
                                         if (MediaQuery.of(context).size.width < 1000)... [
+                                          if(orden.alerta)
+                                          const Icon(
+                                            Icons.flag,
+                                            color:Colors.red
+                                          ),
                                           Text(
                                             orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                           Text(orden.estado)
                                         ]
                                         else ... [
+                                          if(orden.alerta)
+                                          const Icon(
+                                            Icons.flag,
+                                            color:Colors.red
+                                          ),
                                           Text(
                                             orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
@@ -201,8 +211,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                     ],
                                   ),
                                 ],
-                                
-                                
                               ],
                             ),
                           ),
@@ -246,7 +254,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             TextButton(
               onPressed: () {
                 Provider.of<OrdenProvider>(context, listen: false).setToken('');
-                router.pushReplacement('/');
+                router.go('/');
               },
               child: const Text(
                 'Cerrar Sesion',

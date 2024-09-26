@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_typing_uninitialized_variables, use_build_context_synchronously, avoid_print
 
+import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,28 @@ class _LoginState extends State<Login> {
   final _loginServices = LoginServices();
   bool soloPin = true;
 
+Future<bool> _onWillPop() async {
+    // Aquí puedes mostrar un diálogo de confirmación si lo deseas
+    return (await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('¿Estás seguro?'),
+        content: Text('¿Quieres salir de la aplicación?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false), // No salir
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true), // Salir
+            child: Text('Sí'),
+          ),
+        ],
+      ),
+    )) ??
+    false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,124 +68,135 @@ class _LoginState extends State<Login> {
     return SafeArea(
       child: Scaffold(
       backgroundColor:  colors.primary,
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 40),
-            const CircleAvatar(
-              radius: 70.5,
-              backgroundImage: AssetImage('images/logo.jpg')
-            ),
-            const SizedBox(
-              height: 40,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    if(!soloPin)...[
-                      CustomTextFormField(
-                        controller: usernameController,
-                        hint: 'Ingrese su usuario',
-                        fillColor: Colors.white,
-                        preffixIcon: const Icon(Icons.person),
-                        prefixIconColor: colors.primary,
-                        maxLines: 1,
-                        validator: (value) {
-                          if (value!.isEmpty || value.trim().isEmpty) {
-                            return 'Ingrese un usuario valido';
-                          }
-                          return null;
-                        },
-                        onSaved: (newValue) => user = newValue!
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                    ],
-                    CustomTextFormField(
-                      controller: passwordController,
-                      obscure: isObscured,
-                      focusNode: passwordFocusNode,
-                      keyboard: TextInputType.number,
-                      maxLines: 1,
-                      fillColor: Colors.white,
-                      hint: soloPin ? 'Ingrese su PIN' : 'Ingrese su contraseña',
-                      preffixIcon: const Icon(Icons.lock),
-                      prefixIconColor: colors.primary,
-                      suffixIcon: IconButton(
-                        icon: isObscured
-                          ? const Icon(
-                              Icons.visibility_off,
-                              color: Colors.black,
-                            )
-                          : const Icon(
-                              Icons.visibility,
-                              color: Colors.black,
+      body: WillPopScope(
+        onWillPop: _onWillPop,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              const CircleAvatar(
+                radius: 110.5,
+                backgroundImage: AssetImage('images/logo.jpg')
+              ),
+              const SizedBox(
+                height: 70,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Form(
+                  key: _formKey,
+                  child: Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if(!soloPin)...[
+                          CustomTextFormField(
+                            controller: usernameController,
+                            hint: 'Ingrese su usuario',
+                            fillColor: Colors.white,
+                            preffixIcon: const Icon(Icons.person),
+                            prefixIconColor: colors.primary,
+                            maxLines: 1,
+                            validator: (value) {
+                              if (value!.isEmpty || value.trim().isEmpty) {
+                                return 'Ingrese un usuario valido';
+                              }
+                              return null;
+                            },
+                            onSaved: (newValue) => user = newValue!
+                          ),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                        ],
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          child: CustomTextFormField(
+                            controller: passwordController,
+                            obscure: isObscured,
+                            focusNode: passwordFocusNode,
+                            keyboard: TextInputType.number,
+                            maxLines: 1,
+                            fillColor: Colors.white,
+                            hint: soloPin ? 'Ingrese su PIN' : 'Ingrese su contraseña',
+                            preffixIcon: const Icon(Icons.lock),
+                            prefixIconColor: colors.primary,
+                            suffixIcon: IconButton(
+                              icon: isObscured
+                                ? const Icon(
+                                    Icons.visibility_off,
+                                    color: Colors.black,
+                                  )
+                                : const Icon(
+                                    Icons.visibility,
+                                    color: Colors.black,
+                                  ),
+                              onPressed: () {
+                                setState(() {
+                                  isObscured = !isObscured;
+                                });
+                              },
                             ),
-                        onPressed: () {
-                          setState(() {
-                            isObscured = !isObscured;
-                          });
-                        },
-                      ),
-                      validator: (value) {
-                        if (value!.isEmpty || value.trim().isEmpty) {
-                          return 'Ingrese su contraseña';
-                        }
-                        if (value.length < 6) {
-                          return 'Contraseña invalida';
-                        }
-                        return null;
-                      },
-                      onFieldSubmitted: (value) async {
-                        if(soloPin){
-                          await pin(context);
-                        } else{
-                          await login(context);
-                        }
-                      },
-                      onSaved: (newValue) => pass = newValue!
+                            validator: (value) {
+                              if (value!.isEmpty || value.trim().isEmpty) {
+                                return 'Ingrese su contraseña';
+                              }
+                              if (value.length < 6) {
+                                return 'Contraseña invalida';
+                              }
+                              return null;
+                            },
+                            onFieldSubmitted: (value) async {
+                              if(soloPin){
+                                await pin(context);
+                              } else{
+                                await login(context);
+                              }
+                            },
+                            onSaved: (newValue) => pass = newValue!
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 30,
+                        ),
+                        CustomButton(
+                          onPressed: () async {
+                            if(soloPin){
+                              await pin(context);
+                            } else{
+                              await login(context);
+                            }
+                          },
+                          text: 'Iniciar Sesión',
+                          tamano: 25,
+                        ),
+                        const SizedBox(
+                          height: 100,
+                        ),
+                        FutureBuilder(
+                          future: PackageInfo.fromPlatform(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<PackageInfo> snapshot) {
+                            if (snapshot.hasData) {
+                              return Text(
+                                'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
+                                style: const TextStyle(color: Colors.white),
+                              );
+                            } else {
+                              return const Text('Cargando la app...');
+                            }
+                          }
+                        )
+                      ],
                     ),
-                    const SizedBox(
-                      height: 30,
-                    ),
-                    CustomButton(
-                      onPressed: () async {
-                        if(soloPin){
-                          await pin(context);
-                        } else{
-                          await login(context);
-                        }
-                      },
-                      text: 'Iniciar Sesión',
-                      tamano: 25,
-                    ),
-                    const SizedBox(
-                      height: 100,
-                    ),
-                    FutureBuilder(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<PackageInfo> snapshot) {
-                        if (snapshot.hasData) {
-                          return Text(
-                            'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
-                            style: const TextStyle(color: Colors.white),
-                          );
-                        } else {
-                          return const Text('Cargando la app...');
-                        }
-                      }
-                    )
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Container(
@@ -219,7 +253,7 @@ class _LoginState extends State<Login> {
       var statusCode = await _loginServices.getStatusCode();
       await _loginServices.resetStatusCode();
       if (statusCode == 1) {
-        context.pushReplacement('/entradaSalida');
+        router.go('/entradaSalida');
       } else if (statusCode == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
