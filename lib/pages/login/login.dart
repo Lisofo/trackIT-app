@@ -105,7 +105,7 @@ class _LoginState extends State<Login> {
                           keyboard: TextInputType.number,
                           maxLines: 1,
                           fillColor: Colors.white,
-                          hint: soloPin ? 'Ingrese su PIN' : 'Ingrese su contraseña',
+                          hint: soloPin ? 'PIN' : 'Ingrese su contraseña',
                           preffixIcon: const Icon(Icons.lock),
                           prefixIconColor: colors.primary,
                           suffixIcon: IconButton(

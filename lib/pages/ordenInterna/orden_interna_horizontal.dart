@@ -306,44 +306,39 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     children: [
                       SingleChildScrollView(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 10),
                                 SizedBox(
-                                  width: screenWidth * 0.7,
-                                  height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.08,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Center(
-                                        child: Text(
-                                          'Cliente: ',
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                  width: screenWidth,
+                                  height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.092,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text(
+                                          'Cliente:',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                         ),
-                                      ),
-                                        Center(
-                                          child: Text(
-                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre}',
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.start,
-                                          ),
-                                        ),
-                                        Center(
-                                          child: Text(
-                                            'Telefono: ${orden.cliente.telefono1}',
-                                            style: const TextStyle(fontSize: 18),
-                                            textAlign: TextAlign.center,
-                                          ),
+                                        const SizedBox(width: 5,),
+                                        Text(
+                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                          style: const TextStyle(fontSize: 16),
                                         ),
                                       ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const Divider(),
                             Padding(
-                              padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,25,0,0),
+                              padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
                               child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,13 +353,17 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
                                   ],
                                 ],
-                              ):Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
-                                  const SizedBox(height: 10,),
-                                  ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                ],
+                              ):Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -426,7 +425,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             // Fixed header
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[400],
+                                color: Colors.grey[200],
                                 border: const Border(bottom: BorderSide(color: Colors.grey)),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -1091,7 +1090,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     );
   }
   
-
 }
 
 class ChildrenColumn1 extends StatelessWidget {
@@ -1118,11 +1116,11 @@ class ChildrenColumn1 extends StatelessWidget {
           children: [
             const Text(
               'Estado: ',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             Text(
               context.watch<OrdenProvider>().orden.estado,
-              style: const TextStyle(fontSize: 18,),
+              style: const TextStyle(fontSize: 14,),
             ),
           ],
         ), 
@@ -1131,12 +1129,12 @@ class ChildrenColumn1 extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Fecha de la orden: ',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              'Fecha: ',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             Text(
               DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-              style: const TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -1146,13 +1144,13 @@ class ChildrenColumn1 extends StatelessWidget {
           children: [
             const Center(
               child: Text(
-                'Fecha de Vencimiento: ',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                'Vencimiento: ',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
             Text(
               DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-              style: const TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -1163,13 +1161,13 @@ class ChildrenColumn1 extends StatelessWidget {
             children: [
               const Center(
                 child: Text(
-                  'Fecha de Entrega: ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  'Entrega: ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
               Text(
                 DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
-                style: const TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 14),
                 textAlign: TextAlign.start,
               ),
             ],
@@ -1179,7 +1177,6 @@ class ChildrenColumn1 extends StatelessWidget {
     );
   }
 }
-
 
 class ChildrenColumn2 extends StatelessWidget {
   const ChildrenColumn2({
@@ -1204,11 +1201,10 @@ class ChildrenColumn2 extends StatelessWidget {
     return OrientationBuilder(
       builder: (context, orientation) {
         return Column(
-        //mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            SizedBox(
               width: screenWidth,
-              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4, //! revisar, era * 0,2
               child: TextFormField(
                 minLines: 2,
                 maxLines: 20,
@@ -1223,9 +1219,8 @@ class ChildrenColumn2 extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10,),
-            Container(
+            SizedBox(
               width: screenWidth,
-              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
               child: TextFormField(
                 minLines: 2,
                 maxLines: 20,
@@ -1240,17 +1235,19 @@ class ChildrenColumn2 extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10,),
-            Container(
-              width: screenWidth * 0.2,
-              // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
+            SizedBox(
+              width: screenWidth * 0.3,
               child: TextFormField(
                 maxLines: 1,
                 style: const TextStyle(color: Colors.black),
                 controller: km,
                 textAlign: TextAlign.end,
-                
+                onTap: () {
+                  km.selection = TextSelection(baseOffset: 0, extentOffset: km.text.length);
+                },
                 keyboardType: const TextInputType.numberWithOptions(),
                 decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
                   label: Text('KM'),
                   fillColor: Colors.white,
                   filled: true,
