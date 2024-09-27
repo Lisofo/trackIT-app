@@ -243,13 +243,17 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   width: screenWidth,
                   child: TabBar(
                     labelColor: Colors.white,
-                    indicator: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(3)),
-                      color: Colors.cyan,
+                    indicator: BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(3)),
+                      color: colors.primary,
                     ),
-                    dividerColor: Colors.cyan,
+                    dividerColor: colors.secondary,
                     indicatorSize: TabBarIndicatorSize.tab,
                     controller: tabBarController,
+                    onTap: (value) {
+                      setState(() {});
+                    },
+                    
                     tabs: [
                       if (esMobile) ... [
                         const Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
@@ -458,11 +462,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             width: screenWidth,
                             child: TabBar(
                               labelColor: Colors.white,
-                              indicator: const BoxDecoration(
-                                borderRadius: BorderRadius.all(Radius.circular(3)),
-                                color: Colors.cyan,
+                              indicator: BoxDecoration(
+                                borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                color: colors.secondary,
                               ),
-                              dividerColor: Colors.cyan,
+                              dividerColor: colors.secondary,
                               indicatorSize: TabBarIndicatorSize.tab,
                               controller: tabBarController2,
                               tabs: const [
@@ -526,59 +530,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     }
                   break;  
                   case 2:
-                    if(buttonIndex == 2) {
-                      orden.comentarioCliente = notasController.text ;
-                      orden.comentarioTrabajo = instruccionesController.text;
-                      orden.km = int.tryParse(kmController.text);
-                      await showDialog(
-                        context: context, 
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Quiere marcar la OT en ALERTA?'),
-                            content: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: const Text(
-                                '(Responda SI si los comentarios en la OT son relevantes al momento de la facturación  del servicio.)', 
-                                style: TextStyle(fontSize: 18),
-                              )
-                            ),
-                            actions: [
-                              Row(
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      router.pop();
-                                    },
-                                    child: const Text('Cancelar')
-                                  ),
-                                  const Spacer(),
-                                  TextButton(
-                                    onPressed: () async {
-                                      orden.alerta = true;
-                                      await ordenServices.datosAdicionales(context, orden, token);
-                                      router.pop();
-                                    },
-                                    child: const Text('SI')
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      orden.alerta = false;
-                                      await ordenServices.datosAdicionales(context, orden, token);
-                                      router.pop();
-                                    },
-                                    child: const Text(
-                                      'NO',
-                                    )
-                                  ),
-                                ],
-                              ), 
-                            ],
-                          );
-                        }
-                      );
-                    }
+                    await botonGuardar(context);
                   break;
-                  case 3:  
+                  case 3:
+                    print(tabBarController.index);
+                    await botonImprimir(context, tabBarController.index);
                   break;
                 }
               setState(() {});
@@ -600,7 +556,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 label: 'Guardar',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.print),
+                icon: Icon(Icons.print,),
                 label: 'Imprimir',
               ),
             ],
@@ -608,6 +564,94 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         ),
       ),
     );
+  }
+
+  Future<dynamic> botonImprimir(BuildContext context, int index) {
+    return showDialog(
+      context: context, 
+      builder: (context) {
+        return AlertDialog(
+          title: Text(index == 0 ? 'Imprimir OT' : 'Imprimir controles'),
+          content: Text(
+            index == 0 ? 'Esta por imprimir la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirla?' : 'Esta por imprimir los controles de la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirlos?'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                router.pop();
+              },
+              child: const Text('Cancelar')
+            ),
+            TextButton(
+              onPressed: () async {
+                if(index == 0){
+                  await ordenServices.imprimirOT(context, orden, token);
+                } else if(index == 3){
+                  await ordenServices.imprimirControles(context, orden, token);
+                }
+              },
+              child: const Text(
+                'Imprimir',  
+              )
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  Future<void> botonGuardar(BuildContext context) async {
+    if(buttonIndex == 2) {
+      orden.comentarioCliente = notasController.text ;
+      orden.comentarioTrabajo = instruccionesController.text;
+      orden.km = int.tryParse(kmController.text);
+      await showDialog(
+        context: context, 
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Quiere marcar la OT en ALERTA?'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.4,
+              child: const Text(
+                '(Responda SI si los comentarios en la OT son relevantes al momento de la facturación  del servicio.)', 
+                style: TextStyle(fontSize: 18),
+              )
+            ),
+            actions: [
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      router.pop();
+                    },
+                    child: const Text('Cancelar')
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () async {
+                      orden.alerta = true;
+                      await ordenServices.datosAdicionales(context, orden, token);
+                      router.pop();
+                    },
+                    child: const Text('SI')
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      orden.alerta = false;
+                      await ordenServices.datosAdicionales(context, orden, token);
+                      router.pop();
+                    },
+                    child: const Text(
+                      'NO',
+                    )
+                  ),
+                ],
+              ), 
+            ],
+          );
+        }
+      );
+    }
   }
 
   ListView listaControles(List<Control> controles) {
@@ -942,14 +986,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               if(objeto.mo == 'MO')...[
                 IconButton(
                   onPressed: (){
-                    if(orden.estado != 'PENDIENTE'){
+                    // if(orden.estado != 'PENDIENTE'){
                       if (objeto.mo == 'MO'){
                         setState(() {
                           selectedTaskIndex = isSelected ? null : index; 
                         });
                         comenzarTarea(context, index);
                       }
-                    }
+                    // }
                   }, icon: const Icon(Icons.play_arrow)
                 ),
               ]
@@ -1067,122 +1111,68 @@ class ChildrenColumn1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: screenWidth,
-          height: screenHeight,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: colors.primary, width: 2),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Column(
-            //crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Text(
-                  'Estado: ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Text(
-                  context.watch<OrdenProvider>().orden.estado,
-                  style: const TextStyle(fontSize: 18,),
-                  textAlign: TextAlign.start,
-                ),
-              ),
-            ],
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Estado: ',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              context.watch<OrdenProvider>().orden.estado,
+              style: const TextStyle(fontSize: 18,),
+            ),
+          ],
         ), 
         const SizedBox(height: 10,),
-        Container(
-          width: screenWidth,
-          height: screenHeight,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: colors.primary, width: 2),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Text(
-                  'Fecha de la orden: ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Text(
-                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
-                  style: const TextStyle(fontSize: 18),
-                  textAlign: TextAlign.start,
-                ),
-              ),
-            ],
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Fecha de la orden: ',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+              style: const TextStyle(fontSize: 18),
+            ),
+          ],
         ),
         const SizedBox(height: 10),     
-        Container(
-          width: screenWidth,
-          height: screenHeight,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: colors.primary, width: 2),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Text(
-                  'Fecha de Vencimiento: ',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Center(
+              child: Text(
+                'Fecha de Vencimiento: ',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Text(
-                  DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
-                  style: const TextStyle(fontSize: 18),
-                  textAlign: TextAlign.start,
-                ),
-              ),
-            ],
-          ),
+            ),
+            Text(
+              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+              style: const TextStyle(fontSize: 18),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         if (orden.fechaEntrega != null) ... [
-          Container(
-            width: screenWidth,
-            height: screenHeight,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: colors.primary, width: 2),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Center(
-                  child: Text(
-                    'Fecha de Entrega: ',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Center(
+                child: Text(
+                  'Fecha de Entrega: ',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Text(
-                    DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
-                    style: const TextStyle(fontSize: 18),
-                    textAlign: TextAlign.start,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Text(
+                DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaEntrega!),
+                style: const TextStyle(fontSize: 18),
+                textAlign: TextAlign.start,
+              ),
+            ],
           ),
         ],      
       ],
@@ -1219,85 +1209,52 @@ class ChildrenColumn2 extends StatelessWidget {
             Container(
               width: screenWidth,
               // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4, //! revisar, era * 0,2
-              decoration: BoxDecoration(
-                border: Border.all(color: colors.primary, width: 2),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Notas del cliente: ',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  TextFormField(
-                    minLines: 2,
-                    maxLines: 20,
-                    controller: notas,
-                    style: const TextStyle(color: Colors.black),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      fillColor: Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                ],
+              child: TextFormField(
+                minLines: 2,
+                maxLines: 20,
+                controller: notas,
+                style: const TextStyle(color: Colors.black),
+                decoration: const InputDecoration(
+                  hintText: 'Notas del cliente',
+                  border: OutlineInputBorder(),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
               ),
             ),
             const SizedBox(height: 10,),
             Container(
               width: screenWidth,
               // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
-              decoration: BoxDecoration(
-                border: Border.all(color: colors.primary, width: 2),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Column(
-                
-                children: [
-                  const Text(
-                    'Instrucciones: ',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  TextFormField(
-                    minLines: 2,
-                    maxLines: 20,
-                    style: const TextStyle(color: Colors.black),
-                    controller: instrucciones,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      fillColor: Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                ],
+              child: TextFormField(
+                minLines: 2,
+                maxLines: 20,
+                style: const TextStyle(color: Colors.black),
+                controller: instrucciones,
+                decoration: const InputDecoration(
+                  hintText: 'Ingrese instrucciones',
+                  border: OutlineInputBorder(),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
               ),
             ),
             const SizedBox(height: 10,),
             Container(
               width: screenWidth * 0.2,
               // height: (MediaQuery.of(context).orientation == Orientation.landscape) ? screenHeight * 2 : screenHeight * 1.4,  //! revisar, era * 0,2
-              decoration: BoxDecoration(
-                border: Border.all(color: colors.primary, width: 2),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Column(
+              child: TextFormField(
+                maxLines: 1,
+                style: const TextStyle(color: Colors.black),
+                controller: km,
+                textAlign: TextAlign.end,
                 
-                children: [
-                  const Text(
-                    'KM: ',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  TextFormField(
-                    maxLines: 1,
-                    style: const TextStyle(color: Colors.black),
-                    controller: km,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      fillColor: Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                ],
+                keyboardType: const TextInputType.numberWithOptions(),
+                decoration: const InputDecoration(
+                  label: Text('KM'),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
               ),
             ),
           ],

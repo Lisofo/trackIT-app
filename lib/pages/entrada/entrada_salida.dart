@@ -88,7 +88,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    ultimaTareaController.text = 'OT: ${ultimaTarea?.ordenTrabajoId} ${ultimaTarea?.descripcion} \nTarea: ${ultimaTarea?.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.desde)} \nFin: ${ultimaTarea?.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.hasta!) : ''}';
+    ultimaTareaController.text = 'OT: ${ultimaTarea?.numeroOrdenTrabajo} ${ultimaTarea?.descripcion} \nTarea: ${ultimaTarea?.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.desde)} \nFin: ${ultimaTarea?.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.hasta!) : ''}';
     return SafeArea(
       child: Scaffold(
         backgroundColor: colors.primary,
@@ -165,26 +165,17 @@ class _EntradSalidaState extends State<EntradSalida> {
                   height: 15,
                 ),
                 if(parabrisas)...[
-                  Container(
+                  SizedBox(
                     width: MediaQuery.of(context).size.width * 0.7,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        width: 20,
-                        color: Colors.white
-                      ),
-                      borderRadius: BorderRadius.circular(5)
-                    ),
                     child: TextFormField(
                       decoration:  InputDecoration(
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(5))
-                        ),
                         label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
-                        labelStyle: TextStyle(color: Colors.grey[500], fontSize: 24),
-                        
+                        labelStyle: TextStyle(color: colors.onPrimary, fontSize: 26, fontWeight: FontWeight.bold),
+                        floatingLabelAlignment: FloatingLabelAlignment.center,
+                        border: InputBorder.none
                       ),
+                      style: TextStyle(color: colors.onPrimary),
+                      textAlign: TextAlign.center,
                       readOnly: true,
                       minLines: 5,
                       maxLines: 10,

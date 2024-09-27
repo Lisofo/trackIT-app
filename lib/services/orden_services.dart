@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
 
 import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
@@ -14,8 +15,7 @@ class OrdenServices {
   String apiLink = Config.APIURL;
   int? statusCode = 0;
 
-  static Future<void> showDialogs(BuildContext context, String errorMessage,
-      bool doblePop, bool triplePop) async {
+  static Future<void> showDialogs(BuildContext context, String errorMessage, bool doblePop, bool triplePop) async {
     showDialog(
       context: context,
       builder: (context) {
@@ -210,7 +210,7 @@ class OrdenServices {
               final errorMessages = errors.map((error) {
                 return "Error: ${error['message']}";
               }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
+              showDialogs(context, errorMessages.join('\n'), true, false);
             }
           } else {
             showErrorDialog(context, 'Error: ${e.response!.data}');
@@ -507,6 +507,101 @@ class OrdenServices {
                 return "Error: ${error['message']}";
               }).toList();
               showErrorDialog(context, errorMessages.join('\n'));
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future imprimirOT(BuildContext context, Orden orden, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/imprimirOT';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        router.pop();
+      } else {
+        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+      }
+
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showDialogs(context, errorMessages.join('\n'), true, false);
+            }
+          } else {
+            showErrorDialog(context, 'Error: ${e.response!.data}');
+          }
+        } else {
+          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+        } 
+      } 
+    }
+  }
+
+  Future imprimirControles(BuildContext context, Orden orden, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/imprimirControlesOT';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        router.pop();
+      } else {
+        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+      }
+      return;
+    } catch (e) {
+      statusCode = 0;
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response!.data;
+          if (responseData != null) {
+            if(e.response!.statusCode == 403){
+              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
+            }else if(e.response!.statusCode! >= 500) {
+              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
+            } else{
+              final errors = responseData['errors'] as List<dynamic>;
+              final errorMessages = errors.map((error) {
+                return "Error: ${error['message']}";
+              }).toList();
+              showDialogs(context, errorMessages.join('\n'), true, false);
             }
           } else {
             showErrorDialog(context, 'Error: ${e.response!.data}');
