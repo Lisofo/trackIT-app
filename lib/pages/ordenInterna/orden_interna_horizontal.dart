@@ -253,13 +253,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     onTap: (value) {
                       setState(() {});
                     },
-                    
                     tabs: [
                       if (isMobile) ... [
-                        const Icon(Icons.description),
-                        const Icon(Icons.article_outlined),
-                        const Icon(Icons.format_list_bulleted_outlined),
-                        const Icon(Icons.grading),
+                        const Icon(Icons.description, size: 40,),
+                        const Icon(Icons.article_outlined, size: 40,),
+                        const Icon(Icons.format_list_bulleted_outlined, size: 40,),
+                        const Icon(Icons.grading, size: 40,),
                       ] else ... [
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -396,6 +395,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ],
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
+                                  if(!isMobile)
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
                                 ],
                               ),
@@ -654,7 +654,102 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   ListView listaControles(List<Control> controles) {
-    return ListView.builder(
+    return isMobile ? ListView.builder(
+      itemCount: controles.length,
+      itemBuilder: (context, index) {
+        final control = controles[index];
+        return GestureDetector(
+          onDoubleTap: () async {
+            if(control.controlRegId != 0){
+              await comentarioControl(context, control);
+            }
+          },
+          child: Card(
+            color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8,8,0,0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        control.pregunta,
+                      ),
+                      Text(
+                        control.respuesta != '' ? control.respuesta : 'Sin selección',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: Text(
+                      control.comentario ?? '',
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Botón Verde
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
+                          control.claveRespuesta = 0;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Amarillo
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
+                          control.claveRespuesta = 1;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Rojo
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.red),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
+                          control.claveRespuesta = 2;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Limpiar
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.grey),
+                        onPressed: ()  async {
+                          await ControlServices().deleteControl2(context, control, token);
+                          control.comentario = '';
+                          control.controlRegId = 0;
+                          actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ) : ListView.builder(
       itemCount: controles.length,
       itemBuilder: (context, index) {
         final control = controles[index];
@@ -939,7 +1034,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         alignment: text != 'Codigo' ? Alignment.centerLeft : Alignment.center,
         child: Text(
           text,
-          style: isMobile ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 18) : const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: isMobile ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 15) : const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           textAlign: TextAlign.center,
         ),
       ),
@@ -982,6 +1077,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
+              if(!isMobile)
               if(objeto.mo == 'MO')...[
                 IconButton(
                   onPressed: (){
@@ -1010,7 +1106,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         padding: const EdgeInsets.all(8),
         alignment: alignment,
         child: Text(
-          style: const TextStyle(fontSize: 18),
+          style: TextStyle(fontSize: isMobile ? 15 : 18),
           text,
           textAlign: alignment == Alignment.center ? TextAlign.center : TextAlign.left,
         ),

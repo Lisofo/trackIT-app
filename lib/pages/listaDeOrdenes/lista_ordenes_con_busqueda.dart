@@ -75,8 +75,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     });
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
