@@ -150,13 +150,15 @@ class _EntradSalidaState extends State<EntradSalida> {
                 height: 15,
               ),
               if(parabrisas)...[
+                Text(
+                  ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...',
+                  style: TextStyle(color: colors.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.7,
                   child: TextFormField(
-                    decoration:  InputDecoration(
-                      label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
-                      labelStyle: TextStyle(color: colors.onPrimary, fontSize: 26, fontWeight: FontWeight.bold),
-                      floatingLabelAlignment: FloatingLabelAlignment.center,
+                    decoration:  const InputDecoration(
                       border: InputBorder.none
                     ),
                     style: TextStyle(color: colors.onPrimary),

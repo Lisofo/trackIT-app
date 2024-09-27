@@ -25,6 +25,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   List trabajodres = [];
   final TextEditingController buscador = TextEditingController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  bool isMobile = false;
 
   
 
@@ -48,6 +49,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), "Anteriores", "Anteriores", token);
       ordenesFiltradas = ordenes; // Inicializa la lista de filtradas con todas las órdenes
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
+      var shortestSide = MediaQuery.of(context).size.shortestSide;
+      isMobile = shortestSide < 600;
       setState(() {});
     } catch (e) {
       ordenes = [];
@@ -85,7 +88,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             color: colors.onPrimary
           ),
           title: const Text(
-            'Lista de Ordenes',
+            'Ordenes',
             style: TextStyle(color: Colors.white),
           ),
           actions: [
@@ -95,7 +98,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                 width: MediaQuery.of(context).size.width * 0.3,
                 child: SearchBar(
                   controller: buscador,
-                  hintText: 'Filtrar ordenes',
+                  hintText: 'Filtrar',
                   hintStyle: const WidgetStatePropertyAll(
                     TextStyle(
                       fontWeight: FontWeight.w300,
@@ -144,59 +147,121 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      orden.numeroOrdenTrabajo.toString(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    Text(
-                                      DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
-                                    ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    Text(orden.descripcion),
-                                    const Spacer(),
-                                    Column(
-                                      children: [
-                                        if (MediaQuery.of(context).size.width < 1000)... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
+                                if(isMobile)...[
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            orden.numeroOrdenTrabajo.toString(),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                            height: 10,
                                           ),
                                           Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
                                           ),
-                                          Text(orden.estado)
-                                        ]
-                                        else ... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
+                                          const SizedBox(
+                                            height: 10,
                                           ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                          SizedBox(
+                                            width: MediaQuery.of(context).size.width * 0.7,
+                                            child: Text(orden.descripcion)
                                           ),
                                         ],
-                                        
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      ),
+                                      const Spacer(),
+                                      Column(
+                                        children: [
+                                          if (MediaQuery.of(context).size.width < 1000)... [
+                                            if(orden.alerta)
+                                            const Icon(
+                                              Icons.flag,
+                                              color:Colors.red
+                                            ),
+                                            Text(
+                                              orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(orden.estado)
+                                          ]
+                                          else ... [
+                                            if(orden.alerta)
+                                            const Icon(
+                                              Icons.flag,
+                                              color:Colors.red
+                                            ),
+                                            Text(
+                                              orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ]
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ]else...[
+                                  Row(
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Text(
+                                            orden.numeroOrdenTrabajo.toString(),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        width: 10,
+                                      ),
+                                      Text(
+                                        DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                      ),
+                                      const SizedBox(
+                                        width: 10,
+                                      ),
+                                      Text(orden.descripcion),
+                                      const Spacer(),
+                                      Column(
+                                        children: [
+                                          if (MediaQuery.of(context).size.width < 1000)... [
+                                            if(orden.alerta)
+                                            const Icon(
+                                              Icons.flag,
+                                              color:Colors.red
+                                            ),
+                                            Text(
+                                              orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(orden.estado)
+                                          ]
+                                          else ... [
+                                            if(orden.alerta)
+                                            const Icon(
+                                              Icons.flag,
+                                              color:Colors.red
+                                            ),
+                                            Text(
+                                              orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 if (MediaQuery.of(context).size.width < 1000)... [
                                   Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
-                                  //const VerticalDivider(),
                                   Text(orden.comentarioCliente),
-                                  //const VerticalDivider(),
                                   Text(orden.comentarioTrabajo),
                                 ]else ... [
                                   Row(
