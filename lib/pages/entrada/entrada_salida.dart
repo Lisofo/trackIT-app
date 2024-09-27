@@ -7,8 +7,8 @@ import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
+import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -49,9 +49,19 @@ class _EntradSalidaState extends State<EntradSalida> {
   @override
   void initState() {
     super.initState();
+    BackButtonInterceptor.add(myInterceptor2);
     cargarDatos();
   }
 
+   @override
+  void dispose() {
+    BackButtonInterceptor.remove(myInterceptor2);
+    super.dispose();
+  }
+
+  Future<bool> myInterceptor2(bool stopDefaultButtonEvent, RouteInfo info) async {
+    return true;
+  }
   cargarDatos() async {
     nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
     tecnicoId = context.read<OrdenProvider>().tecnicoId;
@@ -60,29 +70,6 @@ class _EntradSalidaState extends State<EntradSalida> {
     // await obtenerObjeto();
     setState(() {});
   }
-
-  Future<bool> _onWillPop() async {
-    // Aquí puedes mostrar un diálogo de confirmación si lo deseas
-    return (await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('¿Estás seguro?'),
-        content: Text('¿Quieres salir de la aplicación?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false), // No salir
-            child: Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true), // Salir
-            child: Text('Sí'),
-          ),
-        ],
-      ),
-    )) ??
-    false;
-  }
-
 
 
   @override
@@ -110,115 +97,112 @@ class _EntradSalidaState extends State<EntradSalida> {
             )
           ],
         ),
-        body: WillPopScope(
-          onWillPop: _onWillPop,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: MediaQuery.sizeOf(context).width,
-                  height: MediaQuery.sizeOf(context).height * 0.2,
-                  child: Image.asset('images/banner.jpg')
+        body: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height * 0.2,
+                child: Image.asset('images/banner.jpg')
+              ),
+              const SizedBox(height: 20),
+              Text(
+                nombreUsuario,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 35,
+                  fontWeight: FontWeight.bold
                 ),
-                const SizedBox(height: 20),
+              ),
+              if(!parabrisas) ...[
                 Text(
-                  nombreUsuario,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold
-                  ),
+                  marca.marcaId != 0 ? 'Tiene una entrada iniciada a la hora ${marca.desde}' : 'No marcó entrada aún',
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
                 ),
-                if(!parabrisas) ...[
-                  Text(
-                    marca.marcaId != 0 ? 'Tiene una entrada iniciada a la hora ${marca.desde}' : 'No marcó entrada aún',
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  CustomButton(
-                    onPressed: marca.marcaId == 0 ? () {
-                      marcando = true;
-                      setState(() {});
-                      marcarEntrada();
-                    } : null,
-                    text: 'Marcar entrada',
-                    disabled: marca.marcaId != 0 || marcando,
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  CustomButton(
-                    onPressed: marca.marcaId != 0 ? () {
-                      marcando = true;
-                      setState(() {});
-                      marcarSalida();
-                    } : null,
-                    text: 'Marcar Salida',
-                    disabled: marca.marcaId == 0 || marcando,
-                  ),
-                ],              
                 const SizedBox(
-                  height: 15,
+                  height: 20,
                 ),
-                if(parabrisas)...[
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    child: TextFormField(
-                      decoration:  InputDecoration(
-                        label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
-                        labelStyle: TextStyle(color: colors.onPrimary, fontSize: 26, fontWeight: FontWeight.bold),
-                        floatingLabelAlignment: FloatingLabelAlignment.center,
-                        border: InputBorder.none
-                      ),
-                      style: TextStyle(color: colors.onPrimary),
-                      textAlign: TextAlign.center,
-                      readOnly: true,
-                      minLines: 5,
-                      maxLines: 10,
-                      controller: ultimaTareaController,
-                    ),
-                  ),
-                  const SizedBox(height: 10,),
-                  CustomButton(
-                    text: 'Detener tarea', 
-                    onPressed: () async {
-                      if(ultimaTarea?.hasta == null) {
-                        await finalizarTarea(context);
-                      }
-                    }
-                  ),
-                  const SizedBox(height: 10,),
-                ],
                 CustomButton(
-                  onPressed: !marcando ? () {
-                    router.push('/listaOrdenes');
-                  } : null ,
-                  text: 'Revisar Ordenes',
-                  disabled: marcando,
+                  onPressed: marca.marcaId == 0 ? () {
+                    marcando = true;
+                    setState(() {});
+                    marcarEntrada();
+                  } : null,
+                  text: 'Marcar entrada',
+                  disabled: marca.marcaId != 0 || marcando,
                 ),
                 const SizedBox(
-                  height: 50,
+                  height: 20,
                 ),
-                FutureBuilder(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
-                        style: const TextStyle(color: Colors.white),
-                      );
-                    } else {
-                      return const Text('Cargando la app...');
+                CustomButton(
+                  onPressed: marca.marcaId != 0 ? () {
+                    marcando = true;
+                    setState(() {});
+                    marcarSalida();
+                  } : null,
+                  text: 'Marcar Salida',
+                  disabled: marca.marcaId == 0 || marcando,
+                ),
+              ],              
+              const SizedBox(
+                height: 15,
+              ),
+              if(parabrisas)...[
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  child: TextFormField(
+                    decoration:  InputDecoration(
+                      label: Text(ultimaTarea == null ? 'No tiene registrado trabajo en curso...' : ultimaTarea?.hasta != null ? 'No tiene trabajo en curso, ultimo registro de trabajo en:' : 'Trabajo en curso...' ),
+                      labelStyle: TextStyle(color: colors.onPrimary, fontSize: 26, fontWeight: FontWeight.bold),
+                      floatingLabelAlignment: FloatingLabelAlignment.center,
+                      border: InputBorder.none
+                    ),
+                    style: TextStyle(color: colors.onPrimary),
+                    textAlign: TextAlign.center,
+                    readOnly: true,
+                    minLines: 5,
+                    maxLines: 10,
+                    controller: ultimaTareaController,
+                  ),
+                ),
+                const SizedBox(height: 10,),
+                CustomButton(
+                  text: 'Detener tarea', 
+                  onPressed: () async {
+                    if(ultimaTarea?.hasta == null) {
+                      await finalizarTarea(context);
                     }
                   }
                 ),
-                // const Expanded(child: Text('')),
+                const SizedBox(height: 10,),
               ],
-            ),
+              CustomButton(
+                onPressed: !marcando ? () {
+                  router.push('/listaOrdenes');
+                } : null ,
+                text: 'Revisar Ordenes',
+                disabled: marcando,
+              ),
+              const SizedBox(
+                height: 50,
+              ),
+              FutureBuilder(
+                future: PackageInfo.fromPlatform(),
+                builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+                  if (snapshot.hasData) {
+                    return Text(
+                      'Versión ${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})',
+                      style: const TextStyle(color: Colors.white),
+                    );
+                  } else {
+                    return const Text('Cargando la app...');
+                  }
+                }
+              ),
+              // const Expanded(child: Text('')),
+            ],
           ),
         ),
         bottomNavigationBar: Container(
