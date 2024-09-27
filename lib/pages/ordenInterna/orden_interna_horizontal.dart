@@ -256,10 +256,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     
                     tabs: [
                       if (esMobile) ... [
-                        const Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        const Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        const Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                        const Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                        const Icon(Icons.description),
+                        const Icon(Icons.article_outlined),
+                        const Icon(Icons.format_list_bulleted_outlined),
+                        const Icon(Icons.grading),
                       ] else ... [
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -272,7 +272,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.format_list_bulleted_outlined),
+                            Icon(Icons.article_outlined),
                             SizedBox(width: 10,),
                             Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
                           ],
