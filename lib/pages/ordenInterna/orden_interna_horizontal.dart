@@ -1086,35 +1086,47 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       },
       child: Card(
         shadowColor: Colors.blue.withOpacity(0.3),
-        color: (objeto is Linea && objeto.comentario != '') ? colors.primary.withOpacity(0.3) : null,
-        child: Row(
+        //color: (objeto is Linea && objeto.comentario != '') ? colors.primary.withOpacity(0.3) : null,
+        child: Column(
           children: [
-            if(objeto is Linea)...[
-              _buildDataCell(objeto.codItem, flex: 2, alignment: Alignment.center),
-              if (isMobile) ... [
-                _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
-              ]else ... [
-                _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+            (objeto is Linea && objeto.comentario != '') ?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.comment_outlined, color: colors.secondary, size: 20,),
+                const SizedBox(width: 20,),
               ],
-              if(!isMobile)
-              _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
-              _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.center),
-              if(!isMobile)
-              if(objeto.mo == 'MO')...[
-                IconButton(
-                  onPressed: (){
-                    // if(orden.estado != 'PENDIENTE'){
-                      if (objeto.mo == 'MO'){
-                        setState(() {
-                          selectedTaskIndex = isSelected ? null : index; 
-                        });
-                        comenzarTarea(context, index);
-                      }
-                    // }
-                  }, icon: const Icon(Icons.play_arrow)
-                ),
-              ]
-            ] 
+            ) : const SizedBox(),
+            Row(
+              children: [
+                if(objeto is Linea)...[
+                  _buildDataCell(objeto.codItem, flex: 2, alignment: Alignment.center),
+                  if (isMobile) ... [
+                    _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+                  ]else ... [
+                    _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+                  ],
+                  if(!isMobile)
+                  _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
+                  _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.center),
+                  if(!isMobile)
+                  if(objeto.mo == 'MO')...[
+                    IconButton(
+                      onPressed: (){
+                        // if(orden.estado != 'PENDIENTE'){
+                          if (objeto.mo == 'MO'){
+                            setState(() {
+                              selectedTaskIndex = isSelected ? null : index; 
+                            });
+                            comenzarTarea(context, index);
+                          }
+                        // }
+                      }, icon: const Icon(Icons.play_arrow)
+                    ),
+                  ]
+                ] 
+              ],
+            ),
           ],
         ),
       ),
