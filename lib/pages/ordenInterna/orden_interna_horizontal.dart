@@ -54,6 +54,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   final TextEditingController comentarioController = TextEditingController();
   final TextEditingController kmController = TextEditingController();
   late List<Control> controles = [];
+  List<String> grupos = [];
+  List<String> models = [];
   late List<Control> controlesConformidad = [];
   late List<Control> controlesDeNivel = [];
   late List<Control> controlesSeguridad = [];
@@ -71,8 +73,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     });
   }
 
+  Map<String, List<Control>> controlesPorGrupo = {};
   late TabController tabBarController;
-  late TabController tabBarController2;
+  late TabController tabBarController2 = TabController(length: 0, vsync: this);
+  late int cantidadDeGruposControles = 0;
 
   @override
   void initState() {
@@ -81,7 +85,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<OrdenProvider>().token;
     tabBarController = TabController(length: 4, vsync: this);
-    tabBarController2 = TabController(length: 5, vsync: this);
     tabBarController.addListener(handleTabSelection);
     tabBarController2.addListener(handleTabSelection2);
     cargarDatos();
@@ -127,40 +130,34 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     kmController.text = orden.km.toString();
     controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId, token);
     controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
+    for(var i = 0; i < controles.length; i++){
+      models.add(controles[i].grupo);
+    }
+    Set<String> conjunto = Set.from(models);
+    grupos = conjunto.toList();
+    grupos.sort((a, b) => a.compareTo(b));
+    cantidadDeGruposControles = grupos.length;
     cargarListas();
     var shortestSide = MediaQuery.of(context).size.shortestSide;
     isMobile = shortestSide < 600;
     if (isMobile) {
       heightMultiplierCliente = 0.18;
     }
+    tabBarController2 = TabController(length: cantidadDeGruposControles + 1, vsync: this);
     
     setState(() {});
   }
 
-   void cargarListas() {
-    controlesConformidad.clear();
-    controlesDeNivel.clear();
-    controlesSeguridad.clear();
-    controlesSeVi.clear();
-    for (var control in controles) {
-      switch (control.grupo.toLowerCase()) {
-        case 'conformidad':
-          controlesConformidad.add(control);
-        break;
-        case 'control de niveles':
-          controlesDeNivel.add(control);
-        break;
-        case 'seguridad':
-          controlesSeguridad.add(control);
-        break;
-        case 'señalización - visualizción':
-          controlesSeVi.add(control);
-        break;
-        default:
-        break;
-      }
+  void cargarListas() {
+  controlesPorGrupo.clear();
+  for (var control in controles) {
+    String grupoLower = control.grupo.toLowerCase();
+    if (!controlesPorGrupo.containsKey(grupoLower)) {
+      controlesPorGrupo[grupoLower] = [];
     }
+    controlesPorGrupo[grupoLower]?.add(control);
   }
+}
 
   void _mostrarDialogoConfirmacion(String accion) async {
     pinController.text = '';
@@ -238,7 +235,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: [  
                 SizedBox(
                   width: screenWidth,
                   child: TabBar(
@@ -457,45 +454,44 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                           ],
                         ),
                       ),
-                      Column(
-                        children: [
-                          SizedBox(
-                            width: screenWidth,
-                            child: TabBar(
-                              labelColor: Colors.white,
-                              indicator: BoxDecoration(
-                                borderRadius: const BorderRadius.all(Radius.circular(3)),
-                                color: colors.secondary,
+                      SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: screenWidth,
+                              child: TabBar(
+                                labelColor: Colors.white,
+                                indicator: BoxDecoration(
+                                  borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                  color: colors.secondary,
+                                ),
+                                dividerColor: colors.secondary,
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                controller: tabBarController2,
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.start,
+                                tabs: [
+                                  const Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                  for(var grupo in grupos)...[
+                                    Tab(child: Text(grupo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                  ]
+                                ],
                               ),
-                              dividerColor: colors.secondary,
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              controller: tabBarController2,
-                              isScrollable: true,
-                              tabAlignment: TabAlignment.start,
-                              tabs: const [
-                                Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                Tab(child: Text('Conformidad', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                Tab(child: Text('Control de Niveles', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                Tab(child: Text('Seguridad', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                Tab(child: Text('Señalización - Visualización', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                              ],
                             ),
-                          ),
-                          SizedBox(
-                            width: screenWidth * 0.9,
-                            height: screenHeight * 0.6,
-                            child: TabBarView(
-                              controller: tabBarController2,
-                              children: [
-                                listaControles(controles),
-                                listaControles(controlesConformidad),
-                                listaControles(controlesDeNivel),
-                                listaControles(controlesSeguridad),
-                                listaControles(controlesSeVi),
-                              ]
-                            )
-                          ),
-                        ],
+                            SizedBox(
+                              width: screenWidth * 0.9,
+                              height: screenHeight,
+                              child: TabBarView(
+                                controller: tabBarController2,
+                                children: [
+                                  listaControles(controles),
+                                  for (var grupo in grupos) 
+                                  listaControles(controlesPorGrupo[grupo.toLowerCase()] ?? []),
+                                ]
+                              )
+                            ),
+                          ],
+                        ),
                       ),
                     ]
                   ),
