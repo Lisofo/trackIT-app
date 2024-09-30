@@ -393,6 +393,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ] else ... [
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   ],
+                                  if(!isMobile)
                                   _buildHeaderCell('Comentario', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
                                   if(!isMobile)
@@ -431,14 +432,15 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  _buildHeaderCell('Codigo', flex: 1),
+                                  _buildHeaderCell('Codigo', flex: 2),
                                   if (isMobile) ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 1),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 3),
                                   ] else ...[
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 4),
                                   ],
+                                  if(!isMobile)
                                   _buildHeaderCell('Comentario', flex: 1),
-                                  _buildHeaderCell('Cantidad', flex: 1),
+                                  _buildHeaderCell('Cantidad', flex: 2),
                                 ],
                               ),
                             ),
@@ -468,6 +470,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               dividerColor: colors.secondary,
                               indicatorSize: TabBarIndicatorSize.tab,
                               controller: tabBarController2,
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
                               tabs: const [
                                 Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
                                 Tab(child: Text('Conformidad', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
@@ -1050,6 +1054,25 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           selectedTaskIndex = isSelected ? null : index; 
         });
       },
+      onLongPress: () async {
+        await showDialog(
+          context: context, 
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Comentario'),
+              content: Text(objeto.comentario ?? ''),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    router.pop();
+                  },
+                  child: const Text('Cerrar')
+                )
+              ],
+            );
+          }
+        );
+      },
       onDoubleTap: () {
         if(orden.estado != 'PENDIENTE'){
           if(objeto is Linea) {
@@ -1068,13 +1091,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         child: Row(
           children: [
             if(objeto is Linea)...[
-              _buildDataCell(objeto.codItem, flex: 1, alignment: Alignment.center),
+              _buildDataCell(objeto.codItem, flex: 2, alignment: Alignment.center),
               if (isMobile) ... [
-                _buildDataCell(objeto.descripcion, flex: 1, alignment: Alignment.centerLeft),
+                _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               ]else ... [
                 _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
               ],
-              
+              if(!isMobile)
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
               _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
               if(!isMobile)
