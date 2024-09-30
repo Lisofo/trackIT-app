@@ -296,7 +296,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 ),
                 SizedBox(
                   width: screenWidth,
-                  height: screenHeight * 0.7,
+                  height: screenHeight * 0.85,
                   child: TabBarView(
                     controller: tabBarController,
                     children: [
