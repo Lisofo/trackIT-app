@@ -72,6 +72,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       colores[concepto] = color;
     });
   }
+  bool cargando = false;
 
   Map<String, List<Control>> controlesPorGrupo = {};
   late TabController tabBarController;
@@ -123,6 +124,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
   
   cargarDatos() async {
+    cargando = true;
+    setState(() {});
     tareas = await TareasServices().getMO(context, orden, token);
     materiales = await MaterialesServices().getRepuestos(context, orden, token);
     notasController.text = orden.comentarioCliente;
@@ -144,7 +147,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       heightMultiplierCliente = 0.18;
     }
     tabBarController2 = TabController(length: cantidadDeGruposControles + 1, vsync: this);
-    
+    cargando = false;
     setState(() {});
   }
 
@@ -230,7 +233,16 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: cargando ? const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10,),
+              Text('Cargando...'),
+            ],
+          ),
+        ) : SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
