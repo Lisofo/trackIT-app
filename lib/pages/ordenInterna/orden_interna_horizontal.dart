@@ -384,9 +384,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  _buildHeaderCell('Codigo', flex: 1),
+                                  _buildHeaderCell('Codigo', flex: 2),
                                   if (isMobile) ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 1),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 3),
                                   ] else ... [
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
                                   ],
@@ -429,15 +429,17 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  _buildHeaderCell('Codigo', flex: 2),
+                                  
                                   if (isMobile) ... [
+                                    _buildHeaderCell('Codigo', flex: 2),
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 3),
                                   ] else ...[
+                                    _buildHeaderCell('Codigo', flex: 1),
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 4),
                                   ],
                                   if(!isMobile)
                                   _buildHeaderCell('Comentario', flex: 1),
-                                  _buildHeaderCell('Cantidad', flex: 2),
+                                  _buildHeaderCell('Cant', flex: 1),
                                 ],
                               ),
                             ),
@@ -1043,6 +1045,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
 
   Widget _buildDataRow(dynamic objeto, BuildContext context, int index) {
     final isSelected = index == selectedTaskIndex;
+    final colors = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () {
@@ -1083,7 +1086,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       },
       child: Card(
         shadowColor: Colors.blue.withOpacity(0.3),
-        color: isSelected ? Colors.blue.withOpacity(0.3) : null,
+        color: (objeto is Linea && objeto.comentario != '') ? colors.primary.withOpacity(0.3) : null,
         child: Row(
           children: [
             if(objeto is Linea)...[
@@ -1095,7 +1098,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               ],
               if(!isMobile)
               _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
-              _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.centerLeft),
+              _buildDataCell(objeto.mo == 'MO' ? objeto.getAvanceEnHorasMinutos() : objeto.cantidad.toString() , flex: 1, alignment: Alignment.center),
               if(!isMobile)
               if(objeto.mo == 'MO')...[
                 IconButton(
