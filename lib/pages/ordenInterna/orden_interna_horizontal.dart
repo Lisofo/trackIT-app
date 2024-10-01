@@ -1374,7 +1374,7 @@ class ChildrenColumn2 extends StatelessWidget {
                 controller: notas,
                 style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(
-                  hintText: 'Notas del cliente',
+                  hintText: 'Comentario del cliente',
                   border: OutlineInputBorder(),
                   fillColor: Colors.white,
                   filled: true,
@@ -1390,7 +1390,7 @@ class ChildrenColumn2 extends StatelessWidget {
                 style: const TextStyle(color: Colors.black),
                 controller: instrucciones,
                 decoration: const InputDecoration(
-                  hintText: 'Ingrese instrucciones',
+                  hintText: 'Comentarios del trabajo',
                   border: OutlineInputBorder(),
                   fillColor: Colors.white,
                   filled: true,
