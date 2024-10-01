@@ -595,8 +595,8 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     CustomTextFormField(
                       controller: codPuntoInspeccionController,
                       maxLines: 1,
-                      hint: 'Codigo punto de inspeccion',
-                      label: 'Codigo punto de inspeccion',
+                      hint: 'Código punto de inspeccion',
+                      label: 'Código punto de inspeccion',
                     ),
                     const SizedBox(height: 10,),
                     CustomDropdownFormMenu(
@@ -654,8 +654,8 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                     CustomTextFormField(
                       controller: codigoBarraController,
                       maxLines: 1,
-                      hint: 'Codigo de barras',
-                      label: 'Codigo de barras',
+                      hint: 'Código de barras',
+                      label: 'Código de barras',
                     ),
                   ],
                 ),

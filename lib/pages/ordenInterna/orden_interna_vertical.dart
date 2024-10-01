@@ -195,7 +195,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   height: 10,
                 ),
                 const Text(
-                  'Codigo del cliente: ',
+                  'Código del cliente: ',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(

@@ -168,7 +168,7 @@ class VisualizarAccion extends StatelessWidget {
               } else ...{
                 Text(revision!.trasladoNuevo[0].plagaObjetivo),
               },
-              const ContainerTituloPIRevision(titulo: 'Codigo de barras'),
+              const ContainerTituloPIRevision(titulo: 'Código de barras'),
               Text(revision!.codigoBarra),
             ],
             if (revision!.piAccionId == 1 ||

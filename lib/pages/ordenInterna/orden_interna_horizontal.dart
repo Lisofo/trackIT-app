@@ -400,14 +400,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  _buildHeaderCell('Codigo', flex: 2),
+                                  _buildHeaderCell('Código', flex: 2),
                                   if (isMobile) ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 3),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
                                   ] else ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 3) : _buildHeaderCell('Descripcion', flex: 2),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
                                   ],
                                   if(!isMobile)
-                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Com.', flex: 1),
                                   _buildHeaderCell('Avance', flex: 1),
                                   if(!isMobile)
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
@@ -447,14 +447,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 children: [
                                   
                                   if (isMobile) ... [
-                                    _buildHeaderCell('Codigo', flex: 2),
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 3),
+                                    _buildHeaderCell('Código', flex: 2),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
                                   ] else ...[
-                                    _buildHeaderCell('Codigo', flex: 1),
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripcion', flex: 4) : _buildHeaderCell('Descripcion', flex: 4),
+                                    _buildHeaderCell('Código', flex: 1),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 4),
                                   ],
                                   if(!isMobile)
-                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Com.', flex: 1),
                                   _buildHeaderCell('Cant', flex: 1),
                                 ],
                               ),
@@ -788,82 +788,84 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           },
           child: Card(
             color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
-            child: ListTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8,8,0,0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: isMobile ? MediaQuery.of(context).size.width * 0.22 : MediaQuery.of(context).size.width * 0.35,
-                    child: Text(
-                      control.pregunta,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        control.pregunta,
+                      ),
+                      Text(
+                        control.respuesta != '' ? control.respuesta : 'Sin selección',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   SizedBox(
-                    width: isMobile ? MediaQuery.of(context).size.width * 0.20 : MediaQuery.of(context).size.width * 0.3,
+                    width: MediaQuery.of(context).size.width,
                     child: Text(
                       control.comentario ?? '',
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  )
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Botón Verde
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
+                          control.claveRespuesta = 0;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Amarillo
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
+                          control.claveRespuesta = 1;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Rojo
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.red),
+                        onPressed: () async {
+                          actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
+                          control.claveRespuesta = 2;
+                          if(control.controlRegId == 0) {
+                            await ControlServices().postControl2(context, control, token);
+                          } else{
+                            await ControlServices().putControl2(context, control, token);
+                          }
+                        },
+                      ),
+                      // Botón Limpiar
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.grey),
+                        onPressed: ()  async {
+                          await ControlServices().deleteControl2(context, control, token);
+                          control.comentario = '';
+                          control.controlRegId = 0;
+                          actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
+                        },
+                      ),
+                    ],
+                  ),
                 ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Botón Verde
-                  IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    onPressed: () async {
-                      actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
-                      control.claveRespuesta = 0;
-                      if(control.controlRegId == 0) {
-                        await ControlServices().postControl2(context, control, token);
-                      } else{
-                        await ControlServices().putControl2(context, control, token);
-                      }
-                    },
-                  ),
-                  // Botón Amarillo
-                  IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.yellow),
-                    onPressed: () async {
-                      actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
-                      control.claveRespuesta = 1;
-                      if(control.controlRegId == 0) {
-                        await ControlServices().postControl2(context, control, token);
-                      } else{
-                        await ControlServices().putControl2(context, control, token);
-                      }
-                    },
-                  ),
-                  // Botón Rojo
-                  IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.red),
-                    onPressed: () async {
-                      actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
-                      control.claveRespuesta = 2;
-                      if(control.controlRegId == 0) {
-                        await ControlServices().postControl2(context, control, token);
-                      } else{
-                        await ControlServices().putControl2(context, control, token);
-                      }
-                    },
-                  ),
-                  // Botón Limpiar
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.grey),
-                    onPressed: ()  async {
-                      await ControlServices().deleteControl2(context, control, token);
-                      control.comentario = '';
-                      control.controlRegId = 0;
-                      actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
-                    },
-                  ),
-                ],
-              ),
-              subtitle: Text(
-                control.respuesta != '' ? control.respuesta : 'Sin selección',
-                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1062,7 +1064,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       flex: flex,
       child: Container(
         padding: const EdgeInsets.all(8),
-        alignment: text != 'Codigo' ? Alignment.centerLeft : Alignment.center,
+        alignment: text != 'Código' ? Alignment.centerLeft : Alignment.center,
         child: Text(
           text,
           style: isMobile ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 15) : const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
