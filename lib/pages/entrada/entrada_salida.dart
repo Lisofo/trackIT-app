@@ -42,7 +42,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   int? statusCode;
   bool marcando = false;
   final ordenServices = OrdenServices();
-  late UltimaTarea? ultimaTarea = UltimaTarea.empty();
+  late UltimaTarea? ultimaTarea = context.watch<OrdenProvider>().ultimaTarea;
   bool parabrisas = true;
   final TextEditingController ultimaTareaController = TextEditingController();
 
@@ -67,6 +67,7 @@ class _EntradSalidaState extends State<EntradSalida> {
     tecnicoId = context.read<OrdenProvider>().tecnicoId;
     token = context.read<OrdenProvider>().token;
     ultimaTarea = await ordenServices.ultimaTarea(context, token);
+    Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultimaTarea!);
     // await obtenerObjeto();
     setState(() {});
   }
@@ -75,6 +76,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    ultimaTarea = context.watch<OrdenProvider>().ultimaTarea;
     ultimaTareaController.text = 'OT: ${ultimaTarea?.numeroOrdenTrabajo} ${ultimaTarea?.descripcion} \nTarea: ${ultimaTarea?.descActividad} \nDesde: ${DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.desde)} \nFin: ${ultimaTarea?.hasta != null ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(ultimaTarea!.hasta!) : ''}';
     return SafeArea(
       child: Scaffold(
@@ -104,7 +106,7 @@ class _EntradSalidaState extends State<EntradSalida> {
               SizedBox(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height * 0.2,
-                child: Image.asset('images/banner.jpg')
+                child: Image.asset('images/lopezMotorsLogo.jpg')
               ),
               const SizedBox(height: 20),
               Text(
@@ -171,7 +173,8 @@ class _EntradSalidaState extends State<EntradSalida> {
                 ),
                 const SizedBox(height: 10,),
                 CustomButton(
-                  text: 'Detener tarea', 
+                  text: 'Detener tarea',
+                  disabled: ultimaTarea?.hasta != null ? true : false,
                   onPressed: () async {
                     if(ultimaTarea?.hasta == null) {
                       await finalizarTarea(context);
@@ -440,14 +443,14 @@ class _EntradSalidaState extends State<EntradSalida> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cerrar sesion'),
-          content: const Text('Esta seguro de querer cerrar sesion?'),
+          title: const Text('Cerrar sesión'),
+          content: const Text('Esta seguro de querer cerrar sesión?'),
           actions: [
             TextButton(
               onPressed: () {
                 router.pop();
               },
-              child: const Text('Cancelar')
+              child: const Text('CANCELAR')
             ),
             TextButton(
               onPressed: () {
@@ -455,7 +458,7 @@ class _EntradSalidaState extends State<EntradSalida> {
                 router.go('/');
               },
               child: const Text(
-                'Cerrar Sesion',
+                'CERRAR SESIÓN',
                 style: TextStyle(color: Colors.red),
               )
             ),

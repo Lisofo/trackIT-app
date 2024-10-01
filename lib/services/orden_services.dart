@@ -189,7 +189,8 @@ class OrdenServices {
       );
       statusCode = 1;
       if (resp.statusCode == 200) {
-        
+        final UltimaTarea ultima = await ultimaTarea(context, token);
+        Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultima);
       } else {
         showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
@@ -237,7 +238,8 @@ class OrdenServices {
       );
       statusCode = 1;
       if (resp.statusCode == 200) {
-        
+        final UltimaTarea ultima = await ultimaTarea(context, token);
+        Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultima);
       } else {
         showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }

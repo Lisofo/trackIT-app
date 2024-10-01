@@ -305,14 +305,14 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cerrar sesion'),
-          content: const Text('Esta seguro de querer cerrar sesion?'),
+          title: const Text('Cerrar sesión'),
+          content: const Text('Esta seguro de querer cerrar sesión?'),
           actions: [
             TextButton(
               onPressed: () {
                 router.pop();
               },
-              child: const Text('Cancelar')
+              child: const Text('CANCELAR')
             ),
             TextButton(
               onPressed: () {
@@ -320,7 +320,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                 router.go('/');
               },
               child: const Text(
-                'Cerrar Sesion',
+                'CERRAR SESIÓN',
                 style: TextStyle(color: Colors.red),
               )
             ),

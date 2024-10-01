@@ -166,6 +166,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     pinController.text = '';
     late int accionId = accion == "recibir" ? 21 : 18;
     siguienteEstado = await ordenServices.siguienteEstadoOrden(context, orden, accionId, token);
+    final colors = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -180,7 +181,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   onPressed: () {
                     router.pop(context);
                   },
-                  child: const Text('Cancelar'),
+                  child: const Text('CANCELAR'),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -188,7 +189,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     setState(() {});
                     router.pop(context);
                   },
-                  child: const Text('Confirmar'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.onError,
+                  ),
+                  child: const Text('CONFIRMAR'),
                 ),
               ],
             );
@@ -537,6 +541,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   break;
                   case 1:
                     if (!ejecutando){
+                      
                       _mostrarDialogoConfirmacion('aprobar');
                     } else {
                       null;
@@ -580,6 +585,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   Future<dynamic> botonImprimir(BuildContext context, int index) {
+    final colors = Theme.of(context).colorScheme;
     return showDialog(
       context: context, 
       builder: (context) {
@@ -593,7 +599,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               onPressed: () {
                 router.pop();
               },
-              child: const Text('Cancelar')
+              child: const Text('CANCELAR')
             ),
             TextButton(
               onPressed: () async {
@@ -603,8 +609,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   await ordenServices.imprimirControles(context, orden, token);
                 }
               },
+              style: TextButton.styleFrom(
+                foregroundColor: colors.onError,
+              ),
               child: const Text(
-                'Imprimir',  
+                'IMPRIMIR',
               )
             ),
           ],
@@ -614,6 +623,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   Future<void> botonGuardar(BuildContext context) async {
+    final colors = Theme.of(context).colorScheme;
     if(buttonIndex == 2) {
       orden.comentarioCliente = notasController.text ;
       orden.comentarioTrabajo = instruccionesController.text;
@@ -637,7 +647,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     onPressed: () {
                       router.pop();
                     },
-                    child: const Text('Cancelar')
+                    child: const Text('CANCELAR')
                   ),
                   const Spacer(),
                   TextButton(
@@ -646,6 +656,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                       await ordenServices.datosAdicionales(context, orden, token);
                       router.pop();
                     },
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.onError,
+                    ),
                     child: const Text('SI')
                   ),
                   TextButton(
@@ -656,7 +669,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     },
                     child: const Text(
                       'NO',
-                    )
+                    ),
                   ),
                 ],
               ), 
@@ -860,6 +873,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   Future<dynamic> comentarioControl(BuildContext context, Control control) {
+    final colors = Theme.of(context).colorScheme;
     if(control.comentario != null){
       comentarioController.text = control.comentario!;
     } else {
@@ -878,7 +892,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               onPressed: () {
                 router.pop();
               },
-              child: const Text('Cancelar')
+              child: const Text('CANCELAR')
             ),
             TextButton(
               onPressed: () async {
@@ -887,8 +901,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 setState(() {});
                 router.pop();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: colors.onError,
+              ),
               child: const Text(
-                'Guardar',  
+                'GUARDAR',  
               )
             ),
           ],
@@ -1077,7 +1094,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   onPressed: () {
                     router.pop();
                   },
-                  child: const Text('Cerrar')
+                  child: const Text('CERRAR')
                 )
               ],
             );
@@ -1161,6 +1178,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   }
 
   void comenzarTarea(BuildContext context, int i) {
+    final colors = Theme.of(context).colorScheme;
     late int? statusCode;
     pinController.text = '';
     showDialog(
@@ -1183,7 +1201,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
               ),
               TextButton(
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
+                  foregroundColor: colors.onError,
                 ),
                 onPressed: () async {
                   await ordenServices.iniciarTrabajo(context, orden, tareas[i].lineaId, token);
@@ -1191,6 +1209,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                   await ordenServices.resetStatusCode();
                   if(statusCode == 1){
                     MenuServices.showDialogs2(context, 'Tarea comenzada', true, false, false, false);
+                    
                   }
                 }, 
                 child: const Text("COMENZAR")
@@ -1207,14 +1226,14 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cerrar sesion'),
-          content: const Text('Esta seguro de querer cerrar sesion?'),
+          title: const Text('Cerrar sesión'),
+          content: const Text('Esta seguro de querer cerrar sesión?'),
           actions: [
             TextButton(
               onPressed: () {
                 router.pop();
               },
-              child: const Text('Cancelar')
+              child: const Text('CANCELAR')
             ),
             TextButton(
               onPressed: () {
@@ -1222,7 +1241,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 router.go('/');
               },
               child: const Text(
-                'Cerrar Sesion',
+                'CERRAR SESIÓN',
                 style: TextStyle(color: Colors.red),
               )
             ),

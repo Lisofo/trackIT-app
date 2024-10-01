@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
@@ -18,6 +19,7 @@ class OrdenProvider with ChangeNotifier {
   String _modo = '';
   int _tecnicoId = 0;
   List<Orden> ordenesEnProceso = [];
+  UltimaTarea _ultimaTarea = UltimaTarea.empty();
   Orden get orden => _orden;
   String get menu => _menu;
   String get token => _token;
@@ -34,6 +36,13 @@ class OrdenProvider with ChangeNotifier {
   RevisionPtoInspeccion get revisionPtoInspeccion => _revisionPtoInspeccion;
   String get modo => _modo;
   int get tecnicoId => _tecnicoId;
+  UltimaTarea get ultimaTarea => _ultimaTarea;
+
+
+  void setUltimaTarea(UltimaTarea ultima) {
+    _ultimaTarea = ultima;
+    notifyListeners();
+  }
 
   void setPendiente(bool pendi) {
     _pendientes = pendi;
