@@ -215,6 +215,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
+            
             backgroundColor: colors.primary,
             iconTheme: IconThemeData(
               color: colors.onPrimary
@@ -403,7 +404,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                  
                                   _buildHeaderCell('Código', flex: 2),
                                   if (isMobile) ... [
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
@@ -411,7 +412,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
                                   ],
                                   if(!isMobile)
-                                  _buildHeaderCell('Comentario', flex: 1),
+                                  if(screenWidth > screenHeight) ... [
+                                    _buildHeaderCell('Comentario', flex: 1),
+                                  ] else ... [
+                                    _buildHeaderCell('Com.', flex: 1),
+                                  ],
+                                  
                                   _buildHeaderCell('Avance', flex: 1),
                                   if(!isMobile)
                                   IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
@@ -449,16 +455,20 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                               ),
                               child: Row(
                                 children: [
-                                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                  
                                   if (isMobile) ... [
                                     _buildHeaderCell('Código', flex: 2),
                                     screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
                                   ] else ...[
                                     _buildHeaderCell('Código', flex: 2),
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 4),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
                                   ],
                                   if(!isMobile)
-                                  _buildHeaderCell('Comentario', flex: 1),
+                                  if(screenWidth > screenHeight) ... [
+                                    _buildHeaderCell('Comentario', flex: 1),
+                                  ] else ... [
+                                    _buildHeaderCell('Com.', flex: 1),
+                                  ],
                                   _buildHeaderCell('Cant', flex: 1),
                                 ],
                               ),
@@ -1131,7 +1141,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         //color: (objeto is Linea && objeto.comentario != '') ? colors.primary.withOpacity(0.3) : null,
         child: Column(
           children: [
-            (objeto is Linea && objeto.comentario != '') ?
+            (objeto is Linea && objeto.comentario != '' && isMobile) ?
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1142,12 +1152,16 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             Row(
               children: [
                 if(objeto is Linea)...[
-                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                  
                   _buildDataCell(objeto.codItem, flex: 2, alignment: Alignment.center),
                   if (isMobile) ... [
                     _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
                   ]else ... [
-                    _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+                    if (MediaQuery.of(context).size.width > MediaQuery.of(context).size.height) ... [
+                      _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
+                    ] else ... [
+                      _buildDataCell(objeto.descripcion, flex: 2, alignment: Alignment.centerLeft),
+                    ]
                   ],
                   if(!isMobile)
                   _buildDataCell(objeto.comentario, flex: 1, alignment: Alignment.centerLeft),
