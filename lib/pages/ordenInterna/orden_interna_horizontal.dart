@@ -94,11 +94,13 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
 
   void handleTabSelection() {
     if (tabBarController.indexIsChanging) {
+      FocusScope.of(context).unfocus();
       print('Tab ${tabBarController.index} is being selected');
     }
   }
   void handleTabSelection2() {
     if (tabBarController2.indexIsChanging) {
+      FocusScope.of(context).unfocus();
       print('Tab ${tabBarController2.index} is being selected');
     }
   }
@@ -207,377 +209,380 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     final colors = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: colors.primary,
-          iconTheme: IconThemeData(
-            color: colors.onPrimary
-          ),
-          leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.arrow_back_ios_new),
-          ),
-          title: Text(
-            'Orden ${orden.numeroOrdenTrabajo} ${orden.descripcion} ',
-            style: const TextStyle(color: Colors.white),
-          ),
-          actions: [
-            IconButton(
-              onPressed: () async {
-                logout();
-              }, 
-              icon: const Icon(
-                Icons.logout,
-                size: 34,
-              )
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: colors.primary,
+            iconTheme: IconThemeData(
+              color: colors.onPrimary
             ),
-          ],
-        ),
-        body: cargando ? const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 10,),
-              Text('Cargando...'),
+            leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.arrow_back_ios_new),
+            ),
+            title: Text(
+              'Orden ${orden.numeroOrdenTrabajo} ${orden.descripcion} ',
+              style: const TextStyle(color: Colors.white),
+            ),
+            actions: [
+              IconButton(
+                onPressed: () async {
+                  logout();
+                }, 
+                icon: const Icon(
+                  Icons.logout,
+                  size: 34,
+                )
+              ),
             ],
           ),
-        ) : SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
+          body: cargando ? const Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [  
-                SizedBox(
-                  width: screenWidth,
-                  child: TabBar(
-                    labelColor: Colors.white,
-                    indicator: BoxDecoration(
-                      borderRadius: const BorderRadius.all(Radius.circular(3)),
-                      color: colors.primary,
-                    ),
-                    dividerColor: colors.secondary,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    controller: tabBarController,
-                    onTap: (value) {
-                      setState(() {});
-                    },
-                    tabs: [
-                      if (isMobile) ... [
-                        const Icon(Icons.description, size: 40,),
-                        const Icon(Icons.article_outlined, size: 40,),
-                        const Icon(Icons.format_list_bulleted_outlined, size: 40,),
-                        const Icon(Icons.grading, size: 40,),
-                      ] else ... [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.description),
-                            SizedBox(width: 10,),
-                            Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                          ],
-                        ),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.article_outlined),
-                            SizedBox(width: 10,),
-                            Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                          ],
-                        ),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.format_list_bulleted_outlined),
-                            SizedBox(width: 10,),
-                            Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                          ],
-                        ),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.grading),
-                            SizedBox(width: 10,),
-                            Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                          ],
-                        ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 10,),
+                Text('Cargando...'),
+              ],
+            ),
+          ) : SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [  
+                  SizedBox(
+                    width: screenWidth,
+                    child: TabBar(
+                      labelColor: Colors.white,
+                      indicator: BoxDecoration(
+                        borderRadius: const BorderRadius.all(Radius.circular(3)),
+                        color: colors.primary,
+                      ),
+                      dividerColor: colors.secondary,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      controller: tabBarController,
+                      onTap: (value) {
+                        setState(() {});
+                      },
+                      tabs: [
+                        if (isMobile) ... [
+                          const Icon(Icons.description, size: 40,),
+                          const Icon(Icons.article_outlined, size: 40,),
+                          const Icon(Icons.format_list_bulleted_outlined, size: 40,),
+                          const Icon(Icons.grading, size: 40,),
+                        ] else ... [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.description),
+                              SizedBox(width: 10,),
+                              Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                            ],
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.article_outlined),
+                              SizedBox(width: 10,),
+                              Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                            ],
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.format_list_bulleted_outlined),
+                              SizedBox(width: 10,),
+                              Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                            ],
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.grading),
+                              SizedBox(width: 10,),
+                              Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                            ],
+                          ),
+                        ],
+                        
                       ],
-                      
-                    ],
+                    ),
                   ),
-                ),
-                SizedBox(
-                  width: screenWidth,
-                  height: screenHeight * 0.85,
-                  child: TabBarView(
-                    controller: tabBarController,
-                    children: [
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: screenWidth,
-                                  height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.092,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text(
-                                          'Cliente:',
-                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                        ),
-                                        const SizedBox(width: 5,),
-                                        Text(
-                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                          style: const TextStyle(fontSize: 16),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            Padding(
-                              padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
-                              child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  SizedBox(
+                    width: screenWidth,
+                    height: screenHeight * 0.85,
+                    child: TabBarView(
+                      controller: tabBarController,
+                      children: [
+                        SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (isMobile) ... [
-                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
-                                    const SizedBox(height: 10,),
-                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                  ]else ... [
-                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
-                                    const SizedBox(height: 10,),
-                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                  ],
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: screenWidth,
+                                    height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.092,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'Cliente:',
+                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                          ),
+                                          const SizedBox(width: 5,),
+                                          Text(
+                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                            style: const TextStyle(fontSize: 16),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ],
-                              ):Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
+                              ),
+                              const Divider(),
+                              Padding(
+                                padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
+                                child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
-                                    const SizedBox(height: 10,),
-                                    ChildrenColumn2(screenWidth: screenWidth, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                    if (isMobile) ... [
+                                      ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
+                                      const SizedBox(height: 10,),
+                                      ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                    ]else ... [
+                                      ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
+                                      const SizedBox(height: 10,),
+                                      ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                    ],
                                   ],
+                                ):Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
+                                      const SizedBox(height: 10,),
+                                      ChildrenColumn2(screenWidth: screenWidth, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      Container(
-                        width: screenWidth * 0.9,
-                        height: screenHeight * 0.6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: colors.onPrimary,
-                        ),
-                        child: Column(
-                          children: [
-                            // Fixed header
-                            const SizedBox(height: 5,),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  _buildHeaderCell('Código', flex: 2),
-                                  if (isMobile) ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
-                                  ] else ... [
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
-                                  ],
-                                  if(!isMobile)
-                                  _buildHeaderCell('Com.', flex: 1),
-                                  _buildHeaderCell('Avance', flex: 1),
-                                  if(!isMobile)
-                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
-                                ],
-                              ),
-                            ),
-                            // Scrollable content
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: tareas.asMap().entries.map((entry) => 
-                                    _buildDataRow(entry.value, context, entry.key)
-                                  ).toList(),
+                        Container(
+                          width: screenWidth * 0.9,
+                          height: screenHeight * 0.6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: colors.onPrimary,
+                          ),
+                          child: Column(
+                            children: [
+                              // Fixed header
+                              const SizedBox(height: 5,),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: screenWidth * 0.9,
-                        height: screenHeight * 0.6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: colors.onPrimary,
-                        ),
-                        child: Column(
-                          children: [
-                            // Fixed header
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  
-                                  if (isMobile) ... [
+                                child: Row(
+                                  children: [
                                     _buildHeaderCell('Código', flex: 2),
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
-                                  ] else ...[
-                                    _buildHeaderCell('Código', flex: 1),
-                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 4),
+                                    if (isMobile) ... [
+                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
+                                    ] else ... [
+                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
+                                    ],
+                                    if(!isMobile)
+                                    _buildHeaderCell('Com.', flex: 1),
+                                    _buildHeaderCell('Avance', flex: 1),
+                                    if(!isMobile)
+                                    IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
                                   ],
-                                  if(!isMobile)
-                                  _buildHeaderCell('Com.', flex: 1),
-                                  _buildHeaderCell('Cant', flex: 1),
-                                ],
-                              ),
-                            ),
-                            // Scrollable content
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: materiales.asMap().entries.map((entry) => 
-                                    _buildDataRow(entry.value, context, entry.key)
-                                  ).toList(),
                                 ),
                               ),
-                            ),
-                          ],
+                              // Scrollable content
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: tareas.asMap().entries.map((entry) => 
+                                      _buildDataRow(entry.value, context, entry.key)
+                                    ).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: screenWidth,
-                              child: TabBar(
-                                labelColor: Colors.white,
-                                indicator: BoxDecoration(
-                                  borderRadius: const BorderRadius.all(Radius.circular(3)),
-                                  color: colors.secondary,
+                        Container(
+                          width: screenWidth * 0.9,
+                          height: screenHeight * 0.6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: colors.onPrimary,
+                          ),
+                          child: Column(
+                            children: [
+                              // Fixed header
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                dividerColor: colors.secondary,
-                                indicatorSize: TabBarIndicatorSize.tab,
-                                controller: tabBarController2,
-                                isScrollable: true,
-                                tabAlignment: TabAlignment.start,
-                                tabs: [
-                                  const Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                  for(var grupo in grupos)...[
-                                    Tab(child: Text(grupo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                child: Row(
+                                  children: [
+                                    
+                                    if (isMobile) ... [
+                                      _buildHeaderCell('Código', flex: 2),
+                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
+                                    ] else ...[
+                                      _buildHeaderCell('Código', flex: 1),
+                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 4),
+                                    ],
+                                    if(!isMobile)
+                                    _buildHeaderCell('Com.', flex: 1),
+                                    _buildHeaderCell('Cant', flex: 1),
+                                  ],
+                                ),
+                              ),
+                              // Scrollable content
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: materiales.asMap().entries.map((entry) => 
+                                      _buildDataRow(entry.value, context, entry.key)
+                                    ).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                width: screenWidth,
+                                child: TabBar(
+                                  labelColor: Colors.white,
+                                  indicator: BoxDecoration(
+                                    borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                    color: colors.secondary,
+                                  ),
+                                  dividerColor: colors.secondary,
+                                  indicatorSize: TabBarIndicatorSize.tab,
+                                  controller: tabBarController2,
+                                  isScrollable: true,
+                                  tabAlignment: TabAlignment.start,
+                                  tabs: [
+                                    const Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                    for(var grupo in grupos)...[
+                                      Tab(child: Text(grupo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
+                                    ]
+                                  ],
+                                ),
+                              ),
+                              SizedBox(
+                                width: screenWidth * 0.9,
+                                height: screenHeight,
+                                child: TabBarView(
+                                  controller: tabBarController2,
+                                  children: [
+                                    listaControles(controles),
+                                    for (var grupo in grupos) 
+                                    listaControles(controlesPorGrupo[grupo.toLowerCase()] ?? []),
                                   ]
-                                ],
+                                )
                               ),
-                            ),
-                            SizedBox(
-                              width: screenWidth * 0.9,
-                              height: screenHeight,
-                              child: TabBarView(
-                                controller: tabBarController2,
-                                children: [
-                                  listaControles(controles),
-                                  for (var grupo in grupos) 
-                                  listaControles(controlesPorGrupo[grupo.toLowerCase()] ?? []),
-                                ]
-                              )
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ]
+                      ]
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: colors.primary,
+                    width: 1,
+                  ),
+                ),
+              ),
+            child: BottomNavigationBar(
+              currentIndex: buttonIndex,
+              onTap: (index) async {
+                  buttonIndex = index;
+                  switch (buttonIndex){
+                    case 0: 
+                      if (!ejecutando){
+                        _mostrarDialogoConfirmacion('recibir');
+                      } else {
+                        null;
+                      }
+                    break;
+                    case 1:
+                      if (!ejecutando){
+                        
+                        _mostrarDialogoConfirmacion('aprobar');
+                      } else {
+                        null;
+                      }
+                    break;  
+                    case 2:
+                      await botonGuardar(context);
+                    break;
+                    case 3:
+                      print(tabBarController.index);
+                      await botonImprimir(context, tabBarController.index);
+                    break;
+                  }
+                setState(() {});
+              },
+              showUnselectedLabels: true,
+              selectedItemColor: colors.primary,
+              unselectedItemColor: colors.primary,  
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.read_more),
+                  label: 'Recibir',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.done_all),
+                  label: 'Aprobar',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.save),
+                  label: 'Guardar',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.print,),
+                  label: 'Imprimir',
                 ),
               ],
             ),
-          ),
-        ),
-        bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: colors.primary,
-                  width: 1,
-                ),
-              ),
-            ),
-          child: BottomNavigationBar(
-            currentIndex: buttonIndex,
-            onTap: (index) async {
-                buttonIndex = index;
-                switch (buttonIndex){
-                  case 0: 
-                    if (!ejecutando){
-                      _mostrarDialogoConfirmacion('recibir');
-                    } else {
-                      null;
-                    }
-                  break;
-                  case 1:
-                    if (!ejecutando){
-                      
-                      _mostrarDialogoConfirmacion('aprobar');
-                    } else {
-                      null;
-                    }
-                  break;  
-                  case 2:
-                    await botonGuardar(context);
-                  break;
-                  case 3:
-                    print(tabBarController.index);
-                    await botonImprimir(context, tabBarController.index);
-                  break;
-                }
-              setState(() {});
-            },
-            showUnselectedLabels: true,
-            selectedItemColor: colors.primary,
-            unselectedItemColor: colors.primary,  
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.read_more),
-                label: 'Recibir',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.done_all),
-                label: 'Aprobar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.save),
-                label: 'Guardar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.print,),
-                label: 'Imprimir',
-              ),
-            ],
           ),
         ),
       ),

@@ -12,7 +12,7 @@
 
 
     <application
-        android:label="APP Track IT"
+        android:label="López Motors"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
