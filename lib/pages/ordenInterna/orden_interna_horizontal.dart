@@ -250,277 +250,271 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                 Text('Cargando...'),
               ],
             ),
-          ) : SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [  
-                  SizedBox(
-                    width: screenWidth,
-                    child: TabBar(
-                      labelColor: Colors.white,
-                      indicator: BoxDecoration(
-                        borderRadius: const BorderRadius.all(Radius.circular(3)),
-                        color: colors.primary,
-                      ),
-                      dividerColor: colors.secondary,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      controller: tabBarController,
-                      onTap: (value) {
-                        setState(() {});
-                      },
-                      tabs: [
-                        if (isMobile) ... [
-                          const Icon(Icons.description, size: 40,),
-                          const Icon(Icons.article_outlined, size: 40,),
-                          const Icon(Icons.format_list_bulleted_outlined, size: 40,),
-                          const Icon(Icons.grading, size: 40,),
-                        ] else ... [
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.description),
-                              SizedBox(width: 10,),
-                              Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                            ],
-                          ),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.article_outlined),
-                              SizedBox(width: 10,),
-                              Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                            ],
-                          ),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.format_list_bulleted_outlined),
-                              SizedBox(width: 10,),
-                              Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                            ],
-                          ),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.grading),
-                              SizedBox(width: 10,),
-                              Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
-                            ],
-                          ),
-                        ],
-                        
-                      ],
+          ) : Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [  
+                SizedBox(
+                  width: screenWidth,
+                  child: TabBar(
+                    labelColor: Colors.white,
+                    indicator: BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(3)),
+                      color: colors.primary,
                     ),
+                    dividerColor: colors.secondary,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    controller: tabBarController,
+                    onTap: (value) {
+                      setState(() {});
+                    },
+                    tabs: [
+                      if (isMobile) ... [
+                        const Icon(Icons.description, size: 40,),
+                        const Icon(Icons.article_outlined, size: 40,),
+                        const Icon(Icons.format_list_bulleted_outlined, size: 40,),
+                        const Icon(Icons.grading, size: 40,),
+                      ] else ... [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.description),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Datos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.article_outlined),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Tareas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.format_list_bulleted_outlined),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Materiales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.grading),
+                            SizedBox(width: 10,),
+                            Tab(child: Text('Control', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),),),
+                          ],
+                        ),
+                      ],
+                      
+                    ],
                   ),
-                  SizedBox(
-                    width: screenWidth,
-                    height: screenHeight * 0.85,
-                    child: TabBarView(
-                      controller: tabBarController,
-                      children: [
-                        SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: screenWidth,
-                                    height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.092,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text(
-                                            'Cliente:',
-                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                          ),
-                                          const SizedBox(width: 5,),
-                                          Text(
-                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
-                                            style: const TextStyle(fontSize: 16),
-                                          ),
-                                        ],
-                                      ),
+                ),
+                SizedBox(
+                  width: screenWidth,
+                  height: screenWidth > screenHeight ? screenHeight * 0.76 : screenHeight * 0.85,
+                  child: TabBarView(
+                    controller: tabBarController,
+                    children: [
+                      SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: screenWidth,
+                                  height: (screenWidth > screenHeight) ? screenHeight * heightMultiplierCliente : screenHeight * 0.092,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text(
+                                          'Cliente:',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(width: 5,),
+                                        Text(
+                                          '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                ),
+                              ],
+                            ),
+                            const Divider(), 
+                            Padding(
+                              padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
+                              child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (isMobile) ... [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                  ]else ... [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                  ],
+                                ],
+                              ):Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
+                                    const SizedBox(height: 10,),
+                                    ChildrenColumn2(screenWidth: screenWidth, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: screenWidth * 0.9,
+                        height: screenHeight * 0.6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: colors.onPrimary,
+                        ),
+                        child: Column(
+                          children: [
+                            // Fixed header
+                            const SizedBox(height: 5,),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                  _buildHeaderCell('Código', flex: 2),
+                                  if (isMobile) ... [
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
+                                  ] else ... [
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
+                                  ],
+                                  if(!isMobile)
+                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Avance', flex: 1),
+                                  if(!isMobile)
+                                  IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
                                 ],
                               ),
-                              const Divider(), 
-                              Padding(
-                                padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
-                                child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (isMobile) ... [
-                                      ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, orden: orden),
-                                      const SizedBox(height: 10,),
-                                      ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                    ]else ... [
-                                      ChildrenColumn1(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.11, colors: colors, orden: orden),
-                                      const SizedBox(height: 10,),
-                                      ChildrenColumn2(screenWidth: screenWidth * 0.4, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                    ],
-                                  ],
-                                ):Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      ChildrenColumn1(screenWidth: screenWidth * 0.7, screenHeight: screenHeight * 0.07, colors: colors, orden: orden),
-                                      const SizedBox(height: 10,),
-                                      ChildrenColumn2(screenWidth: screenWidth, screenHeight: screenHeight * 0.15, colors: colors, notas: notasController, instrucciones: instruccionesController, km: kmController,)
-                                    ],
-                                  ),
+                            ),
+                            // Scrollable content
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: tareas.asMap().entries.map((entry) => 
+                                    _buildDataRow(entry.value, context, entry.key)
+                                  ).toList(),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        Container(
-                          width: screenWidth * 0.9,
-                          height: screenHeight * 0.6,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: colors.onPrimary,
-                          ),
-                          child: Column(
-                            children: [
-                              // Fixed header
-                              const SizedBox(height: 5,),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                      ),
+                      Container(
+                        width: screenWidth * 0.9,
+                        height: screenHeight * 0.6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: colors.onPrimary,
+                        ),
+                        child: Column(
+                          children: [
+                            // Fixed header
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                border: const Border(bottom: BorderSide(color: Colors.grey)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                  if (isMobile) ... [
                                     _buildHeaderCell('Código', flex: 2),
-                                    if (isMobile) ... [
-                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
-                                    ] else ... [
-                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
-                                    ],
-                                    if(!isMobile)
-                                    _buildHeaderCell('Comentario', flex: 1),
-                                    _buildHeaderCell('Avance', flex: 1),
-                                    if(!isMobile)
-                                    IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
+                                  ] else ...[
+                                    _buildHeaderCell('Código', flex: 2),
+                                    screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 4),
                                   ],
+                                  if(!isMobile)
+                                  _buildHeaderCell('Comentario', flex: 1),
+                                  _buildHeaderCell('Cant', flex: 1),
+                                ],
+                              ),
+                            ),
+                            // Scrollable content
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: materiales.asMap().entries.map((entry) => 
+                                    _buildDataRow(entry.value, context, entry.key)
+                                  ).toList(),
                                 ),
                               ),
-                              // Scrollable content
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    children: tareas.asMap().entries.map((entry) => 
-                                      _buildDataRow(entry.value, context, entry.key)
-                                    ).toList(),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        Container(
-                          width: screenWidth * 0.9,
-                          height: screenHeight * 0.6,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: colors.onPrimary,
+                      ),
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: screenWidth,
+                            child: TabBar(
+                              labelColor: Colors.white,
+                              indicator: BoxDecoration(
+                                borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                color: colors.secondary,
+                              ),
+                              dividerColor: colors.secondary,
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              controller: tabBarController2,
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
+                              tabs: [
+                                const Tab(child: Text('Todos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                for(var grupo in grupos)...[
+                                  Tab(child: Text(grupo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                ]
+                              ],
+                            ),
                           ),
-                          child: Column(
-                            children: [
-                              // Fixed header
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  border: const Border(bottom: BorderSide(color: Colors.grey)),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-                                    if (isMobile) ... [
-                                      _buildHeaderCell('Código', flex: 2),
-                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
-                                    ] else ...[
-                                      _buildHeaderCell('Código', flex: 2),
-                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 4),
-                                    ],
-                                    if(!isMobile)
-                                    _buildHeaderCell('Comentario', flex: 1),
-                                    _buildHeaderCell('Cant', flex: 1),
-                                  ],
-                                ),
-                              ),
-                              // Scrollable content
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    children: materiales.asMap().entries.map((entry) => 
-                                      _buildDataRow(entry.value, context, entry.key)
-                                    ).toList(),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Expanded(
+                            child: TabBarView(
+                              controller: tabBarController2,
+                              children: [
+                                listaControles(controles),
+                                for (var grupo in grupos) 
+                                listaControles(controlesPorGrupo[grupo.toLowerCase()] ?? []),
+                              ]
+                            ),
                           ),
-                        ),
-                        SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: screenWidth,
-                                child: TabBar(
-                                  labelColor: Colors.white,
-                                  indicator: BoxDecoration(
-                                    borderRadius: const BorderRadius.all(Radius.circular(3)),
-                                    color: colors.secondary,
-                                  ),
-                                  dividerColor: colors.secondary,
-                                  indicatorSize: TabBarIndicatorSize.tab,
-                                  controller: tabBarController2,
-                                  isScrollable: true,
-                                  tabAlignment: TabAlignment.start,
-                                  tabs: [
-                                    const Tab(child: Text('Todos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
-                                    for(var grupo in grupos)...[
-                                      Tab(child: Text(grupo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
-                                    ]
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                width: screenWidth * 0.9,
-                                height: screenHeight,
-                                child: TabBarView(
-                                  controller: tabBarController2,
-                                  children: [
-                                    listaControles(controles),
-                                    for (var grupo in grupos) 
-                                    listaControles(controlesPorGrupo[grupo.toLowerCase()] ?? []),
-                                  ]
-                                )
-                              ),
-                            ],
-                          ),
-                        ),
-                      ]
-                    ),
+                        ],
+                      ),
+                    ]
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           bottomNavigationBar: Container(
