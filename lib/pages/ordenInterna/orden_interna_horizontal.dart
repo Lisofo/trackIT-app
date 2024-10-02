@@ -1395,52 +1395,64 @@ class ChildrenColumn2 extends StatelessWidget {
           children: [
             SizedBox(
               width: screenWidth,
-              child: TextFormField(
-                minLines: 2,
-                maxLines: 20,
-                controller: notas,
-                style: const TextStyle(color: Colors.black),
-                decoration: const InputDecoration(
-                  hintText: 'Comentario del cliente',
-                  border: OutlineInputBorder(),
-                  fillColor: Colors.white,
-                  filled: true,
+              child: KeyboardListener(
+                focusNode: FocusNode(canRequestFocus: false),
+                child: TextFormField(
+                  autofocus: false,
+                  minLines: 2,
+                  maxLines: 20,
+                  controller: notas,
+                  style: const TextStyle(color: Colors.black),
+                  decoration: const InputDecoration(
+                    hintText: 'Comentario del cliente',
+                    border: OutlineInputBorder(),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 10,),
             SizedBox(
               width: screenWidth,
-              child: TextFormField(
-                minLines: 2,
-                maxLines: 20,
-                style: const TextStyle(color: Colors.black),
-                controller: instrucciones,
-                decoration: const InputDecoration(
-                  hintText: 'Comentarios del trabajo',
-                  border: OutlineInputBorder(),
-                  fillColor: Colors.white,
-                  filled: true,
+              child: KeyboardListener(
+                focusNode: FocusNode(canRequestFocus: false),
+                child: TextFormField(
+                  autofocus: false,
+                  minLines: 2,
+                  maxLines: 20,
+                  style: const TextStyle(color: Colors.black),
+                  controller: instrucciones,
+                  decoration: const InputDecoration(
+                    hintText: 'Comentarios del trabajo',
+                    border: OutlineInputBorder(),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 10,),
             SizedBox(
               width: screenWidth * 0.3,
-              child: TextFormField(
-                maxLines: 1,
-                style: const TextStyle(color: Colors.black),
-                controller: km,
-                textAlign: TextAlign.end,
-                onTap: () {
-                  km.selection = TextSelection(baseOffset: 0, extentOffset: km.text.length);
-                },
-                keyboardType: const TextInputType.numberWithOptions(),
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  label: Text('KM'),
-                  fillColor: Colors.white,
-                  filled: true,
+              child: KeyboardListener(
+                focusNode: FocusNode(canRequestFocus: false),
+                child: TextFormField(
+                  autofocus: false,
+                  maxLines: 1,
+                  style: const TextStyle(color: Colors.black),
+                  controller: km,
+                  textAlign: TextAlign.end,
+                  onTap: () {
+                    km.selection = TextSelection(baseOffset: 0, extentOffset: km.text.length);
+                  },
+                  keyboardType: const TextInputType.numberWithOptions(),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    label: Text('KM'),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
                 ),
               ),
             ),
