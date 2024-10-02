@@ -477,33 +477,33 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             ],
                           ),
                         ),
-                        Column(
-                          children: [
-                            SizedBox(
-                              width: screenWidth,
-                              child: TabBar(
-                                labelColor: Colors.white,
-                                indicator: BoxDecoration(
-                                  borderRadius: const BorderRadius.all(Radius.circular(3)),
-                                  color: colors.secondary,
+                        SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                width: screenWidth,
+                                child: TabBar(
+                                  labelColor: Colors.white,
+                                  indicator: BoxDecoration(
+                                    borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                    color: colors.secondary,
+                                  ),
+                                  dividerColor: colors.secondary,
+                                  indicatorSize: TabBarIndicatorSize.tab,
+                                  controller: tabBarController2,
+                                  isScrollable: true,
+                                  tabAlignment: TabAlignment.start,
+                                  tabs: [
+                                    const Tab(child: Text('Todos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                    for(var grupo in grupos)...[
+                                      Tab(child: Text(grupo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                    ]
+                                  ],
                                 ),
-                                dividerColor: colors.secondary,
-                                indicatorSize: TabBarIndicatorSize.tab,
-                                controller: tabBarController2,
-                                isScrollable: true,
-                                tabAlignment: TabAlignment.start,
-                                tabs: [
-                                  const Tab(child: Text('Todos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
-                                  for(var grupo in grupos)...[
-                                    Tab(child: Text(grupo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
-                                  ]
-                                ],
                               ),
-                            ),
-                            SingleChildScrollView(
-                              child: SizedBox(
+                              SizedBox(
                                 width: screenWidth * 0.9,
-                                height: screenHeight > screenWidth ? screenHeight * 0.8 : screenHeight * 0.7,
+                                height: screenHeight,
                                 child: TabBarView(
                                   controller: tabBarController2,
                                   children: [
@@ -513,8 +513,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ]
                                 )
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ]
                     ),
