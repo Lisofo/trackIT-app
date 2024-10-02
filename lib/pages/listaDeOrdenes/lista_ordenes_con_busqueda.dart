@@ -264,11 +264,20 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                 ]else ... [
                                   Row(
                                     children: [
-                                      Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width *0.2,
+                                        child: Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',)
+                                        ),
                                       const VerticalDivider(),
-                                      Text(orden.comentarioCliente),
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width *0.3,
+                                        child: Text(orden.comentarioCliente)
+                                      ),
                                       const VerticalDivider(),
-                                      Text(orden.comentarioTrabajo),
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width *0.3,
+                                        child: Text(orden.comentarioTrabajo)
+                                      ),
                                       const Spacer(),
                                       Text(orden.estado)
                                     ],

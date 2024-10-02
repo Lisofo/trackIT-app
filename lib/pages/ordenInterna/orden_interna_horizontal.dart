@@ -352,7 +352,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ),
                                 ],
                               ),
-                              const Divider(),
+                              const Divider(), 
                               Padding(
                                 padding: (MediaQuery.of(context).orientation == Orientation.landscape) ? const EdgeInsets.fromLTRB(0,20,0,0) : const EdgeInsets.fromLTRB(0,5,0,0),
                                 child: (MediaQuery.of(context).orientation == Orientation.landscape) ? Row(
@@ -404,6 +404,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 ),
                                 child: Row(
                                   children: [
+                                    //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                                     _buildHeaderCell('Código', flex: 2),
                                     if (isMobile) ... [
                                       screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 3),
@@ -411,7 +412,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                       screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 2),
                                     ],
                                     if(!isMobile)
-                                    _buildHeaderCell('Com.', flex: 1),
+                                    _buildHeaderCell('Comentario', flex: 1),
                                     _buildHeaderCell('Avance', flex: 1),
                                     if(!isMobile)
                                     IconButton(onPressed: null, icon: Icon(Icons.play_arrow,color: Colors.grey[200],)),
@@ -449,16 +450,16 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                 ),
                                 child: Row(
                                   children: [
-                                    
+                                    //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                                     if (isMobile) ... [
                                       _buildHeaderCell('Código', flex: 2),
                                       screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 3),
                                     ] else ...[
-                                      _buildHeaderCell('Código', flex: 1),
-                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 4) : _buildHeaderCell('Descripción', flex: 4),
+                                      _buildHeaderCell('Código', flex: 2),
+                                      screenWidth > screenHeight ? _buildHeaderCell('Descripción', flex: 3) : _buildHeaderCell('Descripción', flex: 4),
                                     ],
                                     if(!isMobile)
-                                    _buildHeaderCell('Com.', flex: 1),
+                                    _buildHeaderCell('Comentario', flex: 1),
                                     _buildHeaderCell('Cant', flex: 1),
                                   ],
                                 ),
@@ -476,33 +477,33 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                             ],
                           ),
                         ),
-                        SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: screenWidth,
-                                child: TabBar(
-                                  labelColor: Colors.white,
-                                  indicator: BoxDecoration(
-                                    borderRadius: const BorderRadius.all(Radius.circular(3)),
-                                    color: colors.secondary,
-                                  ),
-                                  dividerColor: colors.secondary,
-                                  indicatorSize: TabBarIndicatorSize.tab,
-                                  controller: tabBarController2,
-                                  isScrollable: true,
-                                  tabAlignment: TabAlignment.start,
-                                  tabs: [
-                                    const Tab(child: Text('Todos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                    for(var grupo in grupos)...[
-                                      Tab(child: Text(grupo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),),
-                                    ]
-                                  ],
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: screenWidth,
+                              child: TabBar(
+                                labelColor: Colors.white,
+                                indicator: BoxDecoration(
+                                  borderRadius: const BorderRadius.all(Radius.circular(3)),
+                                  color: colors.secondary,
                                 ),
+                                dividerColor: colors.secondary,
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                controller: tabBarController2,
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.start,
+                                tabs: [
+                                  const Tab(child: Text('Todos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                  for(var grupo in grupos)...[
+                                    Tab(child: Text(grupo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),),
+                                  ]
+                                ],
                               ),
-                              SizedBox(
+                            ),
+                            SingleChildScrollView(
+                              child: SizedBox(
                                 width: screenWidth * 0.9,
-                                height: screenHeight,
+                                height: screenHeight > screenWidth ? screenHeight * 0.8 : screenHeight * 0.7,
                                 child: TabBarView(
                                   controller: tabBarController2,
                                   children: [
@@ -512,8 +513,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                   ]
                                 )
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ]
                     ),
@@ -794,82 +795,93 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
           child: Card(
             color: control.respuesta == 'Largo Plazo' ? Colors.green[100] : control.respuesta == 'Corto Plazo' ? Colors.yellow[100] : control.respuesta == 'Inmediato' ? Colors.red[100] : Colors.white, // Default color
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8,8,0,0),
+              padding: const EdgeInsets.fromLTRB(8,0,0,8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        control.pregunta,
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        child: Text(
+                          control.pregunta,
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
-                      Text(
-                        control.respuesta != '' ? control.respuesta : 'Sin selección',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          // Botón Verde
+                          IconButton(
+                            icon: const Icon(Icons.check_circle, color: Colors.green),
+                            onPressed: () async {
+                              actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
+                              control.claveRespuesta = 0;
+                              if(control.controlRegId == 0) {
+                                await ControlServices().postControl2(context, control, token);
+                              } else{
+                                await ControlServices().putControl2(context, control, token);
+                              }
+                            },
+                          ),
+                          // Botón Amarillo
+                          IconButton(
+                            icon: const Icon(Icons.check_circle, color: Colors.yellow),
+                            onPressed: () async {
+                              actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
+                              control.claveRespuesta = 1;
+                              if(control.controlRegId == 0) {
+                                await ControlServices().postControl2(context, control, token);
+                              } else{
+                                await ControlServices().putControl2(context, control, token);
+                              }
+                            },
+                          ),
+                          // Botón Rojo
+                          IconButton(
+                            icon: const Icon(Icons.check_circle, color: Colors.red),
+                            onPressed: () async {
+                              actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
+                              control.claveRespuesta = 2;
+                              if(control.controlRegId == 0) {
+                                await ControlServices().postControl2(context, control, token);
+                              } else{
+                                await ControlServices().putControl2(context, control, token);
+                              }
+                            },
+                          ),
+                          // Botón Limpiar
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.grey),
+                            onPressed: ()  async {
+                              await ControlServices().deleteControl2(context, control, token);
+                              control.comentario = '';
+                              control.controlRegId = 0;
+                              actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                  // Column(
+                  //   crossAxisAlignment: CrossAxisAlignment.start,
+                  //   children: [
+                  //     Text(
+                  //       control.respuesta != '' ? control.respuesta : 'Sin selección',
+                  //       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  //     ),
+                  //   ],
+                  // ),
+                  if (control.comentario != '')
                   SizedBox(
                     width: MediaQuery.of(context).size.width,
                     child: Text(
                       control.comentario ?? '',
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // Botón Verde
-                      IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.green),
-                        onPressed: () async {
-                          actualizarValor(control.pregunta, control, 'Largo Plazo', Colors.green[100]!);
-                          control.claveRespuesta = 0;
-                          if(control.controlRegId == 0) {
-                            await ControlServices().postControl2(context, control, token);
-                          } else{
-                            await ControlServices().putControl2(context, control, token);
-                          }
-                        },
-                      ),
-                      // Botón Amarillo
-                      IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.yellow),
-                        onPressed: () async {
-                          actualizarValor(control.pregunta, control, 'Corto Plazo', Colors.yellow[100]!);
-                          control.claveRespuesta = 1;
-                          if(control.controlRegId == 0) {
-                            await ControlServices().postControl2(context, control, token);
-                          } else{
-                            await ControlServices().putControl2(context, control, token);
-                          }
-                        },
-                      ),
-                      // Botón Rojo
-                      IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.red),
-                        onPressed: () async {
-                          actualizarValor(control.pregunta, control, 'Inmediato', Colors.red[100]!);
-                          control.claveRespuesta = 2;
-                          if(control.controlRegId == 0) {
-                            await ControlServices().postControl2(context, control, token);
-                          } else{
-                            await ControlServices().putControl2(context, control, token);
-                          }
-                        },
-                      ),
-                      // Botón Limpiar
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.grey),
-                        onPressed: ()  async {
-                          await ControlServices().deleteControl2(context, control, token);
-                          control.comentario = '';
-                          control.controlRegId = 0;
-                          actualizarValor(control.pregunta, control, 'Sin selección', Colors.white);
-                        },
-                      ),
-                    ],
-                  ),
+                  
                 ],
               ),
             ),
@@ -1069,7 +1081,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       flex: flex,
       child: Container(
         padding: const EdgeInsets.all(8),
-        alignment: text != 'Código' ? Alignment.centerLeft : Alignment.center,
+        alignment: (text == 'Código' || text == 'Avance' || text == 'Cant') ? Alignment.center : Alignment.centerLeft,
         child: Text(
           text,
           style: isMobile ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 15) : const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
@@ -1136,6 +1148,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             Row(
               children: [
                 if(objeto is Linea)...[
+                  //! ACAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                   _buildDataCell(objeto.codItem, flex: 2, alignment: Alignment.center),
                   if (isMobile) ... [
                     _buildDataCell(objeto.descripcion, flex: 3, alignment: Alignment.centerLeft),
