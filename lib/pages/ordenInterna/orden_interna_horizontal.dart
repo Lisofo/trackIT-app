@@ -215,7 +215,6 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            
             backgroundColor: colors.primary,
             iconTheme: IconThemeData(
               color: colors.onPrimary
