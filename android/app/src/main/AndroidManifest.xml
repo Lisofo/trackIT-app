@@ -12,7 +12,7 @@
 
 
     <application
-        android:label="López Motors"
+        android:label="Parabrisas Ejido"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

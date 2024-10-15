@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 final colorList = <Color>[
-  const Color.fromARGB(255, 33, 79, 119),
-  // const Color.fromARGB(255, 0, 145, 60),
+  // const Color.fromARGB(255, 33, 79, 119),
+  const Color.fromARGB(255, 0, 145, 60),
 ];
 
 class AppTheme{
@@ -14,7 +14,8 @@ class AppTheme{
       brightness: Brightness.light,
       primary: colorList[selectedColor],
       onPrimary: Colors.white, 
-      secondary: Colors.blue,
+      secondary: Colors.green,
+      // secondary: Colors.blue,
       onSecondary: Colors.white, 
       error: Colors.white, 
       onError: Colors.red, 
