@@ -10,11 +10,11 @@ import 'package:app_tec_sedel/services/ptos_services.dart';
 import 'package:app_tec_sedel/widgets/custom_form_dropdown.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/bottomSheets_opciones.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
 class PtosInspeccionPage extends StatefulWidget {
   const PtosInspeccionPage({super.key});
@@ -52,12 +52,18 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
 
   readQRCode() async {
     ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
-    String code = await FlutterBarcodeScanner.scanBarcode('#FFFFFF', 'Cancelar', false, ScanMode.QR);
+    String? code = await SimpleBarcodeScanner.scanBarcode(
+      context,
+      lineColor: '#FFFFFF',
+      cancelButtonText: 'Cancelar',
+      scanType: ScanType.qr,
+      isShowFlashIcon: false,
+    );
     print('el codigo escaneado es $code');
     if (code == '') {
       return null;
     } else {
-      Provider.of<OrdenProvider>(context, listen: false).filtrarPuntosInspeccion2(code);
+      Provider.of<OrdenProvider>(context, listen: false).filtrarPuntosInspeccion2(code!);
     }
   }
 

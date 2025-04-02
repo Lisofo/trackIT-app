@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.app_tecnicos_sedel"
-    compileSdk flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -33,7 +33,8 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_1_8
+        freeCompilerArgs += ['-Xjvm-default=all']
     }
 
     sourceSets {
@@ -70,4 +71,5 @@ flutter {
 dependencies {
     // Añadir multidex como dependencia
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
