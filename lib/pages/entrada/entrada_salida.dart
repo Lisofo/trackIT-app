@@ -87,6 +87,7 @@ class _EntradSalidaState extends State<EntradSalida> {
           iconTheme: IconThemeData(
             color: colors.onPrimary
           ),
+          
           actions: [
             IconButton(
               onPressed: () async {
@@ -194,6 +195,13 @@ class _EntradSalidaState extends State<EntradSalida> {
                 } : null ,
                 text: 'Revisar Ordenes',
                 disabled: marcando,
+              ),
+              const SizedBox(height: 10,),
+              CustomButton(
+                text: 'Administración',
+                onPressed: () {
+                  router.push('/admin');
+                }
               ),
               const SizedBox(
                 height: 50,
