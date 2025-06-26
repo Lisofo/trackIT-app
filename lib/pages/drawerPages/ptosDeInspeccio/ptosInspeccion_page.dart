@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/bottomSheets_opciones.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+// import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
 class PtosInspeccionPage extends StatefulWidget {
   const PtosInspeccionPage({super.key});
@@ -51,20 +51,20 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   bool cargando = true;
 
   readQRCode() async {
-    ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
-    String? code = await SimpleBarcodeScanner.scanBarcode(
-      context,
-      lineColor: '#FFFFFF',
-      cancelButtonText: 'Cancelar',
-      scanType: ScanType.qr,
-      isShowFlashIcon: false,
-    );
-    print('el codigo escaneado es $code');
-    if (code == '') {
-      return null;
-    } else {
-      Provider.of<OrdenProvider>(context, listen: false).filtrarPuntosInspeccion2(code!);
-    }
+    // ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
+    // String? code = await SimpleBarcodeScanner.scanBarcode(
+    //   context,
+    //   lineColor: '#FFFFFF',
+    //   cancelButtonText: 'Cancelar',
+    //   scanType: ScanType.qr,
+    //   isShowFlashIcon: false,
+    // );
+    // print('el codigo escaneado es $code');
+    // if (code == '') {
+    //   return null;
+    // } else {
+    //   Provider.of<OrdenProvider>(context, listen: false).filtrarPuntosInspeccion2(code!);
+    // }
   }
 
   List<ZonaPI> zonas = [

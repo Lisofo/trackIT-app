@@ -115,7 +115,7 @@ class LoginServices {
         print(response.statusMessage);
       }
     } catch (e) {
-      // statusCode = 0;
+      statusCode = 0;
       if (e is DioException) {
         if (e.response != null) {
           statusCode = e.response!.statusCode;
