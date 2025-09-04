@@ -56,7 +56,7 @@ class LoginServices {
         Provider.of<OrdenProvider>(context, listen: false).setToken(response.data['token']);
         Provider.of<OrdenProvider>(context, listen: false).setUsuarioId(response.data['uid']);
         Provider.of<OrdenProvider>(context, listen: false).setNombreUsuario(response.data['name']);
-        Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
+        // Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
       } else {
         print(response.statusMessage);
       }
@@ -110,7 +110,7 @@ class LoginServices {
         Provider.of<OrdenProvider>(context, listen: false).setToken(response.data['token']);
         Provider.of<OrdenProvider>(context, listen: false).setUsuarioId(response.data['uid']);
         Provider.of<OrdenProvider>(context, listen: false).setNombreUsuario(response.data['name']);
-        Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
+        // Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
       } else {
         print(response.statusMessage);
       }

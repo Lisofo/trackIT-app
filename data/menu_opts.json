@@ -5,7 +5,7 @@
             "camino": "Admin",
             "opciones": [
                 {
-                    "ruta": "/mantenimientoOrden",
+                    "ruta": "/listaOrdenes",
                     "icon": "calendar_month",
                     "texto": "Ordenes"
                 },
