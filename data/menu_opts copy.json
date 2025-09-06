@@ -15,14 +15,9 @@
                     "texto": "Monitor de ordenes"
                 },
                 {
-                    "ruta": "/monitorClientes",
+                    "ruta": "/registroMarca",
                     "icon": "calendar_month",
-                    "texto": "Monitor de clientes"
-                },
-                {
-                    "ruta": "/monitorVehiculos",
-                    "icon": "calendar_month",
-                    "texto": "Monitor de vehiculos"
+                    "texto": "Registro de vehículo"
                 }
             ]
         }

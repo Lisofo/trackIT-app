@@ -107,7 +107,7 @@ class _EntradSalidaState extends State<EntradSalida> {
               SizedBox(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height * 0.2,
-                child: Image.asset('images/banner.jpg')
+                child: Image.asset('images/automotoraLogo.jpg')
               ),
               // SizedBox(
               //   width: MediaQuery.sizeOf(context).width,

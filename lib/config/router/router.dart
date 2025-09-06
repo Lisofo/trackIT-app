@@ -1,5 +1,7 @@
 import 'package:app_tec_sedel/pages/admin/admin.dart';
 import 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_busqueda.dart';
+import 'package:app_tec_sedel/pages/monitor/monitor_cliente.dart';
+import 'package:app_tec_sedel/pages/monitor/monitor_vehiculo.dart';
 import 'package:app_tec_sedel/pages/monitorOrdenes/monitor_ordenes.dart';
 import 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +28,8 @@ final router = GoRouter(
     GoRoute(path: '/resumenOrden', builder: (context, state) => const ResumenOrden()),
     GoRoute(path: '/admin', builder: (context, state) => const AdmingPage(),),
     GoRoute(path: '/monitorOrdenes', builder: (context, state) => const MonitorOrdenes(),),
+    GoRoute(path: '/monitorClientes', builder: (context, state) => const MonitorClientes(),),
+    GoRoute(path: '/monitorVehiculos', builder: (context, state) => const MonitorVehiculos(),),
     
   ]
 );

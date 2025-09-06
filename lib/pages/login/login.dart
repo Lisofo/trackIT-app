@@ -60,15 +60,20 @@ class _LoginState extends State<Login> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 40),
-            const CircleAvatar(
-              radius: 110.5,
-              backgroundImage: AssetImage('images/logo.jpg')
-            ),
+            // const CircleAvatar(
+            //   radius: 110.5,
+            //   backgroundImage: AssetImage('images/logo.jpg')
+            // ),
             // SizedBox(
             //   width: MediaQuery.sizeOf(context).width,
             //   height: MediaQuery.sizeOf(context).height * 0.2,
             //   child: Image.asset('images/lopezMotorsLogo.jpg')
             // ),
+            SizedBox(
+              width: MediaQuery.sizeOf(context).width,
+              height: MediaQuery.sizeOf(context).height * 0.2,
+              child: Image.asset('images/automotoraLogo.jpg')
+            ),
             const SizedBox(
               height: 70,
             ),

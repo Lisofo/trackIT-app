@@ -10,9 +10,10 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- android:label="Parabrisas Ejido" -->
 
     <application
-        android:label="Parabrisas Ejido"
+        android:label="Taller"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
