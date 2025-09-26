@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:app_tec_sedel/models/unidad.dart';
+
 import 'cliente.dart';
 import 'servicio_ordenes.dart';
 import 'tecnico.dart';
@@ -44,6 +46,7 @@ class Orden {
   late TipoOrden tipoOrden;
   late Cliente cliente;
   late Tecnico tecnico;
+  late Unidad unidad;
   late List<ServicioOrdenes> servicio;
   late int otRevisionId;
   late int planoId;
@@ -85,6 +88,7 @@ class Orden {
     required this.otRevisionId,
     required this.planoId,
     required this.alerta,
+    required this.unidad,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -119,6 +123,7 @@ class Orden {
     tipoOrden: TipoOrden.fromJson(json["tipoOrden"]),
     cliente: Cliente.fromJson(json["cliente"]),
     tecnico: Tecnico.fromJson(json["tecnico"]),
+    unidad: json["unidad"] == null ? Unidad.empty() : Unidad.fromJson(json["unidad"]),
     servicio: [],//List<ServicioOrdenes>.from(json["servicios"].map((x) => ServicioOrdenes.fromJson(x))),
     otRevisionId: json["otRevisionId"] as int? ?? 0,
     planoId: json["planoId"] as int? ?? 0,
@@ -157,6 +162,7 @@ class Orden {
     "tipoOrden": tipoOrden.toMap(),
     "cliente": cliente.toMap(),
     "tecnico": tecnico.toMap(),
+    "unidad": unidad.toJson(),
     "otRevisionId": otRevisionId,
     "planoId": planoId,
     "alerta": alerta,
@@ -195,6 +201,8 @@ class Orden {
     tipoOrden = TipoOrden.empty();
     cliente = Cliente.empty();
     tecnico = Tecnico.empty();
+    unidad = Unidad.empty();
+    servicio = [];
     otRevisionId = 0;
     planoId = 0;
     alerta = false;

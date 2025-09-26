@@ -1,6 +1,12 @@
 // monitor_vehiculo.dart
-import 'package:app_tec_sedel/models/cliente_chapa_pintura.dart';
+import 'package:app_tec_sedel/models/marca.dart';
+import 'package:app_tec_sedel/models/modelo.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/codigueras_services.dart';
+import 'package:app_tec_sedel/services/unidades_services.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class MonitorVehiculos extends StatefulWidget {
   const MonitorVehiculos({super.key});
@@ -11,17 +17,24 @@ class MonitorVehiculos extends StatefulWidget {
 
 class MonitorVehiculosState extends State<MonitorVehiculos> {
   
-  List<Vehiculo> vehiculos = SharedData.vehiculos;
-  List<Vehiculo> vehiculosFiltrados = [];
+  List<Unidad> unidades = [];
+  List<Unidad> unidadesFiltradas = [];
   TextEditingController searchController = TextEditingController();
-  String? selectedMarca;
-  List<String> modelosDisponibles = [];
+  final UnidadesServices _unidadesServices = UnidadesServices();
+  final CodiguerasServices _codiguerasServices = CodiguerasServices();
+  late String token = '';
+  bool _isLoading = true;
+
+  // Variables para marcas y modelos (se cargan al iniciar)
+  List<Marca> _marcas = [];
+  bool _cargandoMarcas = false;
 
   @override
   void initState() {
     super.initState();
-    vehiculosFiltrados = vehiculos;
-    searchController.addListener(_filtrarVehiculos);
+    _cargarUnidades();
+    _cargarMarcas(); // Cargar marcas al iniciar la pantalla
+    searchController.addListener(_filtrarUnidades);
   }
 
   @override
@@ -30,46 +43,79 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
     super.dispose();
   }
 
-  void _filtrarVehiculos() {
+  Future<void> _cargarUnidades() async {
+    token = context.read<OrdenProvider>().token;
+    try {
+      final listaUnidades = await _unidadesServices.getUnidades(context, token);
+      
+      setState(() {
+        unidades = listaUnidades;
+        unidadesFiltradas = unidades;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // El error ya fue manejado por Carteles().errorManagment en el servicio
+    }
+  }
+
+  Future<void> _cargarMarcas() async {
+    if (_marcas.isNotEmpty) return; // Ya están cargadas
+    
+    setState(() {
+      _cargandoMarcas = true;
+    });
+
+    try {
+      final listaMarcas = await _codiguerasServices.getMarcas(context, token);
+      setState(() {
+        _marcas = listaMarcas;
+        _cargandoMarcas = false;
+      });
+    } catch (e) {
+      setState(() {
+        _cargandoMarcas = false;
+      });
+    }
+  }
+
+  Future<List<Modelo>> _cargarModelos(int marcaId) async {
+    try {
+      return await _codiguerasServices.getModelos(context, token, marcaId: marcaId);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  void _filtrarUnidades() {
     final query = searchController.text.toLowerCase();
     
     if (query.isEmpty) {
       setState(() {
-        vehiculosFiltrados = vehiculos;
+        unidadesFiltradas = unidades;
       });
       return;
     }
 
     setState(() {
-      vehiculosFiltrados = vehiculos.where((vehiculo) {
-        return vehiculo.marca.toLowerCase().contains(query) ||
-            vehiculo.matricula.toLowerCase().contains(query) ||
-            vehiculo.modelo.toLowerCase().contains(query) ||
-            vehiculo.ano.toString().contains(query) ||
-            vehiculo.nroMotor.toLowerCase().contains(query) ||
-            vehiculo.nroChasis.toLowerCase().contains(query) ||
-            vehiculo.displayInfo.toLowerCase().contains(query);
+      unidadesFiltradas = unidades.where((unidad) {
+        return unidad.marca.toLowerCase().contains(query) ||
+            (unidad.matricula.toLowerCase().contains(query)) ||
+            unidad.modelo.toLowerCase().contains(query) ||
+            unidad.anio.toString().contains(query) ||
+            unidad.motor.toLowerCase().contains(query) ||
+            unidad.chasis.toLowerCase().contains(query) ||
+            unidad.descripcion.toLowerCase().contains(query) ||
+            unidad.codItem.toLowerCase().contains(query) ||
+            _getDisplayInfo(unidad).toLowerCase().contains(query);
       }).toList();
     });
   }
 
-  void _actualizarModelos(String? marca) {
-    setState(() {
-      selectedMarca = marca;
-      if (marca != null) {
-        final marcaObj = SharedData.marcas.firstWhere(
-          (m) => m.nombre == marca,
-          orElse: () => Marca(id: 0, nombre: '', modelos: []),
-        );
-        modelosDisponibles = marcaObj.modelos;
-      } else {
-        modelosDisponibles = [];
-      }
-    });
-  }
-
-  bool _matriculaExiste(String matricula) {
-    return vehiculos.any((v) => v.matricula.toLowerCase() == matricula.toLowerCase());
+  String _getDisplayInfo(Unidad unidad) {
+    return '${unidad.marca} ${unidad.modelo} - ${unidad.matricula}';
   }
 
   @override
@@ -83,120 +129,179 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.2),
       ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: 'Buscar vehículo',
-                prefixIcon: Icon(Icons.search, color: colors.primary),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              ),
-            ),
-          ),
-          Expanded(
-            child: vehiculosFiltrados.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.directions_car_outlined, size: 64, color: colors.onSurface.withOpacity(0.5)),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No hay vehículos registrados',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: colors.onSurface.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Buscar vehículo',
+                      prefixIcon: Icon(Icons.search, color: colors.primary),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.primary, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                     ),
-                  )
-                : ListView.separated(
-                    itemCount: vehiculosFiltrados.length,
-                    separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
-                    itemBuilder: (context, index) {
-                      final vehiculo = vehiculosFiltrados[index];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            vehiculo.displayInfo,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: colors.onSurface,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                Expanded(
+                  child: unidadesFiltradas.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 4),
+                              Icon(Icons.directions_car_outlined, size: 64, color: colors.onSurface.withOpacity(0.5)),
+                              const SizedBox(height: 16),
                               Text(
-                                'Año: ${vehiculo.ano}',
+                                unidades.isEmpty ? 'No hay vehículos registrados' : 'No se encontraron resultados',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 18,
                                   color: colors.onSurface.withOpacity(0.7),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Motor: ${vehiculo.nroMotor}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colors.onSurface.withOpacity(0.7),
+                              if (unidades.isEmpty) 
+                                TextButton(
+                                  onPressed: _cargarUnidades,
+                                  child: Text('Reintentar', style: TextStyle(color: colors.primary)),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Chasis: ${vehiculo.nroChasis}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colors.onSurface.withOpacity(0.7),
-                                ),
-                              ),
                             ],
                           ),
-                          leading: CircleAvatar(
-                            backgroundColor: colors.primary.withOpacity(0.2),
-                            child: Text(
-                              vehiculo.marca[0],
-                              style: TextStyle(
-                                color: colors.primary,
-                                fontWeight: FontWeight.bold,
+                        )
+                      : ListView.separated(
+                          itemCount: unidadesFiltradas.length,
+                          separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
+                          itemBuilder: (context, index) {
+                            final unidad = unidadesFiltradas[index];
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: ListTile(
+                                title: Text(
+                                  _getDisplayInfo(unidad),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.onSurface,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Año: ${unidad.anio}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Motor: ${unidad.motor}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Chasis: ${unidad.chasis}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    if (unidad.color.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Color: ${unidad.color}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.onSurface.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                    if (unidad.descripcion.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Descripción: ${unidad.descripcion}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.onSurface.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                    if (unidad.codItem.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Código: ${unidad.codItem}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.onSurface.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                    if (unidad.consignado) ...[
+                                      const SizedBox(height: 2),
+                                      const Text(
+                                        'Consignado: Sí',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                    if (unidad.averias) ...[
+                                      const SizedBox(height: 2),
+                                      const Text(
+                                        'Averías: Sí',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                leading: CircleAvatar(
+                                  backgroundColor: colors.primary.withOpacity(0.2),
+                                  child: Text(
+                                    unidad.marca.isNotEmpty ? unidad.marca[0] : 'V',
+                                    style: TextStyle(
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _mostrarDialogoNuevoVehiculo(context);
+          _mostrarDialogoNuevaUnidad(context);
         },
         backgroundColor: colors.primary,
         elevation: 4,
@@ -205,22 +310,31 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
     );
   }
 
-  void _mostrarDialogoNuevoVehiculo(BuildContext context) {
+  void _mostrarDialogoNuevaUnidad(BuildContext context) {
     final matriculaController = TextEditingController();
-    final anoController = TextEditingController();
-    final nroMotorController = TextEditingController();
-    final nroChasisController = TextEditingController();
+    final anioController = TextEditingController();
+    final motorController = TextEditingController();
+    final chasisController = TextEditingController();
+    final colorController = TextEditingController();
+    final comentarioController = TextEditingController();
+    final descripcionController = TextEditingController();
     final colors = Theme.of(context).colorScheme;
     final formKey = GlobalKey<FormState>();
     
-    String? selectedMarcaLocal;
-    String? selectedModelo;
+    bool consignado = false;
+    bool averias = false;
+
+    // Variables para los dropdowns
+    List<Modelo> modelos = [];
+    Marca? marcaSeleccionada;
+    Modelo? modeloSeleccionado;
+    bool cargandoModelos = false;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateBd) {
             return Dialog(
               insetPadding: const EdgeInsets.all(20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -237,7 +351,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                           Icon(Icons.directions_car, size: 28, color: colors.primary),
                           const SizedBox(width: 12),
                           Text(
-                            'Nuevo Vehículo',
+                            'Nueva Unidad',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -251,7 +365,28 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                         key: formKey,
                         child: Column(
                           children: [
-                            // Matrícula (primer campo)
+                            // Descripción
+                            TextFormField(
+                              controller: descripcionController,
+                              decoration: InputDecoration(
+                                labelText: 'Descripción',
+                                prefixIcon: Icon(Icons.description, color: colors.primary),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: colors.primary, width: 2),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Por favor ingrese la descripción';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Matrícula (opcional)
                             TextFormField(
                               controller: matriculaController,
                               decoration: InputDecoration(
@@ -263,21 +398,11 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                                   borderSide: BorderSide(color: colors.primary, width: 2),
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese una matrícula';
-                                }
-                                if (_matriculaExiste(value)) {
-                                  return 'Esta matrícula ya existe';
-                                }
-                                return null;
-                              },
                             ),
                             const SizedBox(height: 16),
                             
-                            // Marca (Dropdown)
-                            DropdownButtonFormField<String>(
-                              value: selectedMarcaLocal,
+                            // Dropdown de Marcas
+                            DropdownButtonFormField<Marca>(
                               decoration: InputDecoration(
                                 labelText: 'Marca',
                                 prefixIcon: Icon(Icons.branding_watermark_outlined, color: colors.primary),
@@ -287,21 +412,42 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                                   borderSide: BorderSide(color: colors.primary, width: 2),
                                 ),
                               ),
-                              items: SharedData.marcas.map((marca) {
-                                return DropdownMenuItem<String>(
-                                  value: marca.nombre,
-                                  child: Text(marca.nombre),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedMarcaLocal = value;
-                                  selectedModelo = null;
-                                  _actualizarModelos(value);
-                                });
-                              },
+                              value: marcaSeleccionada,
+                              items: [
+                                // Opción vacía inicial
+                                const DropdownMenuItem<Marca>(
+                                  value: null,
+                                  child: Text('Seleccione una marca'),
+                                ),
+                                // Opciones de marcas (usando las ya cargadas)
+                                ..._marcas.map((Marca marca) {
+                                  return DropdownMenuItem<Marca>(
+                                    value: marca,
+                                    child: Text(marca.descripcion),
+                                  );
+                                }),
+                              ],
+                              onChanged: _cargandoMarcas 
+                                  ? null 
+                                  : (Marca? nuevaMarca) async {
+                                      setStateBd(() {
+                                        marcaSeleccionada = nuevaMarca;
+                                        modeloSeleccionado = null; // Resetear modelo al cambiar marca
+                                        modelos = []; // Limpiar modelos anteriores
+                                        cargandoModelos = nuevaMarca != null;
+                                      });
+                                      
+                                      // Cargar modelos cuando se selecciona una marca
+                                      if (nuevaMarca != null) {
+                                        final listaModelos = await _cargarModelos(nuevaMarca.marcaId);
+                                        setStateBd(() {
+                                          modelos = listaModelos;
+                                          cargandoModelos = false;
+                                        });
+                                      }
+                                    },
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
+                                if (value == null) {
                                   return 'Por favor seleccione una marca';
                                 }
                                 return null;
@@ -309,9 +455,8 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                             ),
                             const SizedBox(height: 16),
                             
-                            // Modelo (Dropdown dependiente de la marca)
-                            DropdownButtonFormField<String>(
-                              value: selectedModelo,
+                            // Dropdown de Modelos
+                            DropdownButtonFormField<Modelo>(
                               decoration: InputDecoration(
                                 labelText: 'Modelo',
                                 prefixIcon: Icon(Icons.model_training_outlined, color: colors.primary),
@@ -321,19 +466,30 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                                   borderSide: BorderSide(color: colors.primary, width: 2),
                                 ),
                               ),
-                              items: modelosDisponibles.map((modelo) {
-                                return DropdownMenuItem<String>(
-                                  value: modelo,
-                                  child: Text(modelo),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedModelo = value;
-                                });
-                              },
+                              value: modeloSeleccionado,
+                              items: [
+                                // Opción vacía inicial
+                                DropdownMenuItem<Modelo>(
+                                  value: null,
+                                  child: Text(cargandoModelos ? 'Cargando modelos...' : 'Seleccione un modelo'),
+                                ),
+                                // Opciones de modelos
+                                ...modelos.map((Modelo modelo) {
+                                  return DropdownMenuItem<Modelo>(
+                                    value: modelo,
+                                    child: Text(modelo.descripcion),
+                                  );
+                                }),
+                              ],
+                              onChanged: (marcaSeleccionada == null || cargandoModelos)
+                                  ? null
+                                  : (Modelo? nuevoModelo) {
+                                      setStateBd(() {
+                                        modeloSeleccionado = nuevoModelo;
+                                      });
+                                    },
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
+                                if (value == null) {
                                   return 'Por favor seleccione un modelo';
                                 }
                                 return null;
@@ -343,7 +499,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                             
                             // Año
                             TextFormField(
-                              controller: anoController,
+                              controller: anioController,
                               decoration: InputDecoration(
                                 labelText: 'Año',
                                 prefixIcon: Icon(Icons.calendar_today_outlined, color: colors.primary),
@@ -373,7 +529,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                             
                             // Número de Motor
                             TextFormField(
-                              controller: nroMotorController,
+                              controller: motorController,
                               decoration: InputDecoration(
                                 labelText: 'Número de Motor',
                                 prefixIcon: Icon(Icons.engineering_outlined, color: colors.primary),
@@ -394,7 +550,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                             
                             // Número de Chasis
                             TextFormField(
-                              controller: nroChasisController,
+                              controller: chasisController,
                               decoration: InputDecoration(
                                 labelText: 'Número de Chasis',
                                 prefixIcon: Icon(Icons.build_outlined, color: colors.primary),
@@ -404,12 +560,71 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                                   borderSide: BorderSide(color: colors.primary, width: 2),
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese el número de chasis';
-                                }
-                                return null;
-                              },
+                              // validator: (value) {
+                              //   if (value == null || value.isEmpty) {
+                              //     return 'Por favor ingrese el número de chasis';
+                              //   }
+                              //   return null;
+                              // },
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Color
+                            TextFormField(
+                              controller: colorController,
+                              decoration: InputDecoration(
+                                labelText: 'Color',
+                                prefixIcon: Icon(Icons.color_lens_outlined, color: colors.primary),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: colors.primary, width: 2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Checkboxes para Consignado y Averías
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('Consignado'),
+                                    value: consignado,
+                                    onChanged: (value) {
+                                      setStateBd(() {
+                                        consignado = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    title: const Text('Averías'),
+                                    value: averias,
+                                    onChanged: (value) {
+                                      setStateBd(() {
+                                        averias = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            // Comentario
+                            TextFormField(
+                              controller: comentarioController,
+                              decoration: InputDecoration(
+                                labelText: 'Comentario (Opcional)',
+                                prefixIcon: Icon(Icons.comment_outlined, color: colors.primary),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: colors.primary, width: 2),
+                                ),
+                              ),
+                              maxLines: 3,
                             ),
                           ],
                         ),
@@ -432,34 +647,56 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                           ),
                           const SizedBox(width: 12),
                           ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (formKey.currentState!.validate()) {
-                                final nuevoVehiculo = Vehiculo(
-                                  id: SharedData.vehiculos.length + 1,
+                                // Crear nueva unidad con los campos actualizados
+                                final nuevaUnidad = Unidad(
+                                  unidadId: 0,
+                                  itemId: null,
+                                  codItem: '',
+                                  descripcion: descripcionController.text,
+                                  modeloId: modeloSeleccionado?.modeloId ?? 0,
+                                  codModelo: modeloSeleccionado?.codMarca ?? '',
+                                  modelo: modeloSeleccionado?.descripcion ?? '',
+                                  marcaId: marcaSeleccionada?.marcaId ?? 0,
+                                  codMarca: marcaSeleccionada?.descripcion ?? '',
+                                  marca: marcaSeleccionada?.descripcion ?? '',
+                                  chasis: chasisController.text,
+                                  motor: motorController.text,
+                                  anio: int.parse(anioController.text),
+                                  colorId: 1,
+                                  color: colorController.text,
+                                  consignado: consignado,
+                                  averias: averias,
                                   matricula: matriculaController.text,
-                                  marca: selectedMarcaLocal!,
-                                  modelo: selectedModelo!,
-                                  ano: int.parse(anoController.text),
-                                  nroMotor: nroMotorController.text,
-                                  nroChasis: nroChasisController.text, 
-                                  clienteId: 0,
+                                  km: 0,
+                                  comentario: comentarioController.text,
+                                  recibidoPorId: 113,
+                                  recibidoPor: '',
+                                  transportadoPor: '',
+                                  clienteId: null,
+                                  padron: '',
                                 );
+                                await _unidadesServices.crearUnidad(context, nuevaUnidad, token);
                                 
-                                setState(() {
-                                  SharedData.vehiculos.add(nuevoVehiculo);
-                                  vehiculos = SharedData.vehiculos;
-                                  vehiculosFiltrados = vehiculos;
-                                });
-                                
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('Vehículo agregado correctamente'),
-                                    backgroundColor: colors.primary,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                );
+                                // Recargar la lista
+                                final status = await _unidadesServices.getStatusCode();
+                                if (status == 0) {
+                                  // Error al crear unidad
+                                  return;
+                                } else {
+                                  await _cargarUnidades();
+                                  Future.delayed(const Duration(milliseconds: 500));
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Unidad agregada correctamente'),
+                                      backgroundColor: colors.primary,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -468,7 +705,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            child: const Text('Guardar Vehículo'),
+                            child: const Text('Guardar Unidad'),
                           ),
                         ],
                       ),
