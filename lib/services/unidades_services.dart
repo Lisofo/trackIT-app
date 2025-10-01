@@ -61,4 +61,28 @@ class UnidadesServices {
       return null;
     }
   }
+
+  Future editarUnidad(BuildContext context, Unidad unidad, String token) async {
+    String link = '${apiUrl}api/v1/unidades/${unidad.unidadId}';
+
+    try {
+      var headers = {'Authorization': token};
+      var data = unidad.toJson();
+      var resp = await _dio.request(
+        link,
+        data: data,
+        options: Options(
+          method: 'PUT',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      return resp.data;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      return null;
+    }
+  }
 }

@@ -13,7 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
-import 'package:app_tec_sedel/models/marcas.dart';
+import 'package:app_tec_sedel/models/marcas_sedel.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/marcas_services.dart';

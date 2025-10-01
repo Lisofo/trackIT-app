@@ -4,7 +4,7 @@ import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:app_tec_sedel/config/config.dart';
-import 'package:app_tec_sedel/models/marcas.dart';
+import 'package:app_tec_sedel/models/marcas_sedel.dart';
 import 'package:provider/provider.dart';
 
 class MarcasServices {
