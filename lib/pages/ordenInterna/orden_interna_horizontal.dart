@@ -9,6 +9,7 @@ import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -1046,7 +1047,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                     statusCode = await _ordenServices.getStatusCode();
                     await _ordenServices.resetStatusCode();
                     if (statusCode == 1){
-                      await OrdenServices.showDialogs(context, 'Estado cambiado a Pendiente', true, true);
+                      await Carteles.showDialogs(context, 'Estado cambiado a Pendiente', true, true, false);
                     }
                   }
                 }

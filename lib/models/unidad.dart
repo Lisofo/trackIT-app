@@ -151,7 +151,7 @@ class Unidad {
     "comentario": comentario,
     "recibidoPorId": recibidoPorId,
     "transportadoPor": transportadoPor,
-    "clienteId": null,
+    "clienteId": clienteId,
     "padron": padron,
   };
 

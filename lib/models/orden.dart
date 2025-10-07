@@ -50,6 +50,7 @@ class Orden {
   late List<ServicioOrdenes> servicio;
   late int otRevisionId;
   late int planoId;
+  late int? tecnicoId;
   late bool alerta;
 
   Orden({
@@ -89,6 +90,7 @@ class Orden {
     required this.planoId,
     required this.alerta,
     required this.unidad,
+    this.tecnicoId,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -166,6 +168,26 @@ class Orden {
     "otRevisionId": otRevisionId,
     "planoId": planoId,
     "alerta": alerta,
+  };
+
+  Map<String, dynamic> toMapCyP() => {
+    "tipoOrdenId": 5,
+    "clienteId": cliente.clienteId,
+    "tecnicoId": tecnicoId,
+    "unidadId": unidad.unidadId,
+    "numeroOrdenTrabajo": numeroOrdenTrabajo,
+    "descripcion": descripcion,
+    "fechaOrdenTrabajo": fechaOrdenTrabajo,
+    "fechaDesde": fechaDesde,
+    "fechaHasta": fechaHasta,
+    "monedaId": 1,
+    "totalOrdenTrabajo": totalOrdenTrabajo,
+    "comentarioCliente": comentarioCliente,
+    "comentarios": comentarios,
+    "comentarioTrabajo": comentarioTrabajo,
+    "km": km,
+    "instrucciones": instrucciones,
+    "plantilla": false,
   };
 
   Orden.empty() {

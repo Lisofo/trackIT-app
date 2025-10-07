@@ -17,7 +17,9 @@ class UnidadesServices {
     statusCode = null;
   }
   
-  Future<List<Unidad>> getUnidades(BuildContext context, String token) async {
+  Future<List<Unidad>> getUnidades(BuildContext context, String token, {String? matricula}) async {
+    Map<String, dynamic> queryParams = {};
+    if (matricula != null) queryParams['matricula'] = matricula;
     String link = '${apiUrl}api/v1/unidades';
     try {
       var headers = {'Authorization': token};
@@ -27,6 +29,7 @@ class UnidadesServices {
           method: 'GET',
           headers: headers,
         ),
+        queryParameters: queryParams
       );
 
       statusCode = 1;
@@ -64,7 +67,7 @@ class UnidadesServices {
 
   Future editarUnidad(BuildContext context, Unidad unidad, String token) async {
     String link = '${apiUrl}api/v1/unidades/${unidad.unidadId}';
-
+    print(unidad.toJson());
     try {
       var headers = {'Authorization': token};
       var data = unidad.toJson();
@@ -85,4 +88,27 @@ class UnidadesServices {
       return null;
     }
   }
-}
+  
+  Future<List<Unidad>> getUnidadesDeCliente(BuildContext context, int clienteId, String token) async {
+    String link = '${apiUrl}api/v1/unidades/?clienteId=$clienteId';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      final List<dynamic> unidadesList = resp.data;
+      return unidadesList.map((json) => Unidad.fromJson(json)).toList();
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      return [];
+    }
+  }
+} 

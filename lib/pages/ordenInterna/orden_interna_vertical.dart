@@ -5,6 +5,7 @@ import 'package:app_tec_sedel/models/ubicacion.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:flutter/material.dart';
@@ -431,7 +432,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
             statusCode = await _revisionServices.getStatusCode();
             await _revisionServices.resetStatusCode();
             if (statusCode == 1) {
-              await OrdenServices.showDialogs(context, 'Estado cambiado correctamente', false, false);
+              await Carteles.showDialogs(context, 'Estado cambiado correctamente', false, false, false);
             }
           }
           
@@ -496,7 +497,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                     statusCode = await _ordenServices.getStatusCode();
                     await _ordenServices.resetStatusCode();
                     if (statusCode == 1){
-                      await OrdenServices.showDialogs(context, 'Estado cambiado a Pendiente', true, true);
+                      await Carteles.showDialogs(context, 'Estado cambiado a Pendiente', true, true, false);
                     }
                   }
                 }

@@ -110,6 +110,13 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
               ),
             ),
             IconButton(
+              onPressed: () {
+                router.push('/monitorOrdenes');
+              },
+              icon: const Icon(Icons.add),
+              tooltip: "Nueva orden",
+            ),
+            IconButton(
               onPressed: () async {
                 logout();
               }, 

@@ -72,7 +72,8 @@ class MaterialesServices {
   }
 
   Future getMateriales(BuildContext context,String token) async {
-    String link = '${apiUrl}api/v1/materiales/?enAppTecnico=S&enUso=S&sort=descripcion';
+    String link = '${apiUrl}api/v1/materiales/';
+    // String link = '${apiUrl}api/v1/materiales/?enAppTecnico=S&enUso=S&sort=descripcion';
     try {
       var headers = {'Authorization': token};
       var resp = await _dio.request(

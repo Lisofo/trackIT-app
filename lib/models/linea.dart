@@ -32,6 +32,14 @@ class Linea {
   late int gruInvId;
   late int? avance;
   late String mo;
+  late int? accionId;
+  late int? piezaId;
+  late double? chapaHs;
+  late double? chapaMonto;
+  late double? pinturaMonto;
+  late double? mecanicaHs;
+  late double? mecanicaMonto;
+  late double? repSinIva;
 
   Linea({
     required this.lineaId,
@@ -86,29 +94,47 @@ class Linea {
   );
 
   Map<String, dynamic> toJson() => {
-    "LineaId": lineaId,
-    "OrdenTrabajoId": ordenTrabajoId,
-    "ItemId": itemId,
-    "CodItem": codItem,
-    "Descripcion": descripcion,
-    "MacroFamilia": macroFamilia,
-    "Familia": familia,
-    "GrupoInventario": grupoInventario,
-    "Ordinal": ordinal,
-    "Cantidad": cantidad,
-    "CostoUnitario": costoUnitario,
-    "Descuento1": descuento1,
-    "Descuento2": descuento2,
-    "Descuento3": descuento3,
-    "PrecioVenta": precioVenta,
-    "Comentario": comentario,
-    "IvaId": ivaId,
+    "itemId": itemId,
+    "codItem": codItem,
+    "descripcion": descripcion,
+    "macroFamilia": macroFamilia,
+    "familia": familia,
+    "grupoInventario": grupoInventario,
+    "ordinal": ordinal,
+    "cantidad": cantidad,
+    "costoUnitario": costoUnitario,
+    "descuento1": descuento1,
+    "descuento2": descuento2,
+    "descuento3": descuento3,
+    "precioVenta": precioVenta,
+    "comentario": comentario,
+    "ivaId": ivaId,
     "IVA": iva,
-    "Valor": valor,
-    "CodGruInv": codGruInv,
-    "GruInvId": gruInvId,
-    "Avance": avance,
+    "valor": valor,
+    "codGruInv": codGruInv,
+    "gruInvId": gruInvId,
+    "avance": avance,
     "MO": mo,
+  };
+
+  Map<String, dynamic> toJsonCyP() => {
+    "itemId": itemId,
+    "ordinal": ordinal,
+    "cantidad": cantidad,
+    "costoUnitario": costoUnitario,
+    "descuento1": descuento1,
+    "descuento2": descuento2,
+    "descuento3": descuento3,
+    "precioVenta": precioVenta,
+    "comentario": comentario,
+    "accionId": accionId,
+    "piezaId": piezaId,
+    "chapaHs": chapaHs,
+    "chapaMonto": chapaMonto,
+    "pinturaMonto": pinturaMonto,
+    "mecanicaHs": mecanicaHs,
+    "mecanicaMonto": mecanicaMonto,
+    "repSinIva": repSinIva != 0.0 ? "S" : "N",
   };
 
   Linea.empty(){

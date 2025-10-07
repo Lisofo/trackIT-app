@@ -1,13 +1,23 @@
-import 'package:app_tec_sedel/models/cliente_chapa_pintura.dart';
+import 'package:app_tec_sedel/models/cliente.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
+import 'package:app_tec_sedel/models/tarea.dart';
+import 'package:app_tec_sedel/models/material.dart';
+import 'package:app_tec_sedel/models/linea.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/tareas_services.dart';
+import 'package:app_tec_sedel/services/materiales_services.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// Agregar esta clase al final del archivo, antes del cierre de la última llave
 class DetallePiezasScreen extends StatefulWidget {
-  final ClienteCP cliente;
-  final Vehiculo vehiculo;
+  final Cliente cliente;
+  final Unidad vehiculo;
   final DateTime fecha;
   final bool condIva;
+  final Orden ordenPrevia;
 
   const DetallePiezasScreen({
     super.key,
@@ -15,6 +25,7 @@ class DetallePiezasScreen extends StatefulWidget {
     required this.vehiculo,
     required this.fecha,
     required this.condIva,
+    required this.ordenPrevia,
   });
 
   @override
@@ -22,12 +33,179 @@ class DetallePiezasScreen extends StatefulWidget {
 }
 
 class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
-  // Lista para almacenar los detalles de las piezas
-  List<Map<String, dynamic>> piezas = [];
+  List<Linea> lineas = []; // Cambiado de Map<String, dynamic> a Linea
+  List<Tarea> tareas = [];
+  List<Materiales> materiales = [];
+  bool isLoadingTareas = false;
+  bool isLoadingMateriales = false;
+  int ordinalCounter = 1; // Contador para el ordinal de las líneas
+
+  // Métodos para calcular totales - ahora basados en Linea
+  double get _totalChapa {
+    double total = 0;
+    for (var linea in lineas) {
+      total += (linea.chapaMonto ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  double get _totalPintura {
+    double total = 0;
+    for (var linea in lineas) {
+      total += (linea.pinturaMonto ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  double get _totalMecanica {
+    double total = 0;
+    for (var linea in lineas) {
+      total += (linea.mecanicaMonto ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  double get _totalRepuestos {
+    double total = 0;
+    for (var linea in lineas) {
+      total += (linea.repSinIva ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  double get _totalGeneral {
+    return _totalChapa + _totalPintura + _totalMecanica + _totalRepuestos;
+  }
+
+  // Métodos para calcular costos reales
+  double get _costoRealChapa {
+    return _totalChapa * 1.0;
+  }
+
+  double get _costoRealPintura {
+    return _totalPintura * 1.0;
+  }
+
+  double get _costoRealMecanica {
+    return _totalMecanica * 1.0;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarTareasYMateriales();
+  }
+
+  Future<void> _cargarTareasYMateriales() async {
+    final token = context.read<OrdenProvider>().token;
+    
+    setState(() {
+      isLoadingTareas = true;
+      isLoadingMateriales = true;
+    });
+
+    try {
+      final tareasService = TareasServices();
+      final materialesService = MaterialesServices();
+      
+      final tareasList = await tareasService.getTareas(context, token);
+      final materialesList = await materialesService.getMateriales(context, token);
+      
+      setState(() {
+        tareas = tareasList;
+        materiales = materialesList;
+        isLoadingTareas = false;
+        isLoadingMateriales = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingTareas = false;
+        isLoadingMateriales = false;
+      });
+    }
+  }
+
+  void _actualizarOrdenConLineas() {
+    // Actualizar la descripción con información de las líneas
+    if (lineas.isNotEmpty) {
+      final descripcionLineas = lineas.map((linea) => 
+        linea.descripcion
+      ).join(', ');
+      
+      widget.ordenPrevia.descripcion = 'Reparación: $descripcionLineas';
+    }
+    
+    // Actualizar el total con la suma de todos los montos
+    widget.ordenPrevia.totalOrdenTrabajo = _totalGeneral;
+    
+    // Agregar comentarios sobre los trabajos
+    final comentariosTrabajo = '''
+Chapa: ${NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(_totalChapa)}
+Pintura: ${NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(_totalPintura)}
+Mecánica: ${NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(_totalMecanica)}
+Repuestos: ${NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(_totalRepuestos)}
+Total: ${NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(_totalGeneral)}
+''';
+    
+    widget.ordenPrevia.comentarioTrabajo = comentariosTrabajo;
+  }
+
+  Future<void> _crearOrden() async {
+    try {
+      // Actualizar la orden con los datos de las líneas
+      _actualizarOrdenConLineas();
+      
+      final ordenServices = OrdenServices();
+      final token = context.read<OrdenProvider>().token;
+      
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Llamar al servicio para crear la orden
+      final ordenCreada = await ordenServices.postOrden(
+        context, 
+        token, 
+        widget.ordenPrevia
+      );
+      
+      // Cerrar el diálogo de carga
+      Navigator.of(context).pop();
+      
+      if (ordenCreada != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Orden #${ordenCreada.numeroOrdenTrabajo} creada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navegar al inicio
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      
+    } catch (e) {
+      // Cerrar el diálogo de carga en caso de error
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al crear la orden: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +226,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Cliente: ${widget.cliente.nombreCompleto}', 
+                    Text('Cliente: ${widget.cliente.nombre}', 
                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
                     Text('Vehículo: ${widget.vehiculo.displayInfo}'),
@@ -67,7 +245,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             
             const SizedBox(height: 24),
             
-            // Tabla de detalles de piezas
+            // Tabla de detalles de líneas
             const Text(
               'Detalle de Piezas',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -102,8 +280,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                       DataColumn(label: Text('Mec. (H)', textAlign: TextAlign.center)),
                       DataColumn(label: Text('Mec. (M)', textAlign: TextAlign.center)),
                       DataColumn(label: Text('Repto. s/iva', textAlign: TextAlign.center)),
+                      DataColumn(label: Text('Eliminar', textAlign: TextAlign.center)),
                     ],
-                    rows: piezas.isEmpty
+                    rows: lineas.isEmpty
                         ? [
                             const DataRow(cells: [
                               DataCell(Center(child: Text('-'))),
@@ -114,11 +293,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                               DataCell(Center(child: Text('-'))),
                               DataCell(Center(child: Text('-'))),
                               DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
                             ])
                           ]
-                        : piezas.asMap().entries.map((entry) {
+                        : lineas.asMap().entries.map((entry) {
                             final index = entry.key;
-                            final pieza = entry.value;
+                            final linea = entry.value;
                             return DataRow(
                               color: MaterialStateProperty.resolveWith<Color?>(
                                 (Set<MaterialState> states) {
@@ -126,14 +306,24 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                                 },
                               ),
                               cells: [
-                                DataCell(Center(child: Text(pieza['accion']?.toString() ?? '-'))),
-                                DataCell(Text(pieza['pieza']?.toString() ?? '-')),
-                                DataCell(Center(child: Text(pieza['chapaH']?.toStringAsFixed(1) ?? '0.0'))),
-                                DataCell(Center(child: Text(pieza['chapaM']?.toStringAsFixed(2) ?? '0.00'))),
-                                DataCell(Center(child: Text(pieza['pintura']?.toStringAsFixed(2) ?? '0.00'))),
-                                DataCell(Center(child: Text(pieza['mecH']?.toStringAsFixed(1) ?? '0.0'))),
-                                DataCell(Center(child: Text(pieza['mecM']?.toStringAsFixed(2) ?? '0.00'))),
-                                DataCell(Center(child: Text(pieza['repto']?.toStringAsFixed(2) ?? '0.00'))),
+                                DataCell(Center(child: Text(linea.descripcion))), // Acción
+                                DataCell(Text(linea.comentario)), // Pieza
+                                DataCell(Center(child: Text(linea.chapaHs?.toStringAsFixed(1) ?? '0.0'))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.chapaMonto ?? 0)))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.pinturaMonto ?? 0)))),
+                                DataCell(Center(child: Text(linea.mecanicaHs?.toStringAsFixed(1) ?? '0.0'))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.mecanicaMonto ?? 0)))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.repSinIva ?? 0)))),
+                                DataCell(
+                                  Center(
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        _eliminarLinea(index);
+                                      },
+                                    ),
+                                  ),
+                                ),
                               ],
                             );
                           }).toList(),
@@ -144,11 +334,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             
             const SizedBox(height: 16),
             
-            // Botón para agregar nueva pieza
+            // Botón para agregar nueva línea
             Center(
               child: ElevatedButton.icon(
                 onPressed: () {
-                  _mostrarDialogoNuevaPieza(context);
+                  _mostrarDialogoNuevaLinea(context);
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Agregar Pieza'),
@@ -173,11 +363,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildTotalItem('Chapa:', '\$0.00'),
-                        _buildTotalItem('Pintura:', '\$0.00'),
-                        _buildTotalItem('Mecánica:', '\$0.00'),
-                        _buildTotalItem('Repuestos:', '\$0.00'),
-                        _buildTotalItem('TOTAL:', '\$0.00', isTotal: true),
+                        _buildTotalItem('Chapa:', formatCurrency.format(_totalChapa)),
+                        _buildTotalItem('Pintura:', formatCurrency.format(_totalPintura)),
+                        _buildTotalItem('Mecánica:', formatCurrency.format(_totalMecanica)),
+                        _buildTotalItem('Repuestos:', formatCurrency.format(_totalRepuestos)),
+                        _buildTotalItem('TOTAL:', formatCurrency.format(_totalGeneral), isTotal: true),
                       ],
                     ),
                   ],
@@ -203,9 +393,53 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildTotalItem('Chapa:', '\$0.00'),
-                        _buildTotalItem('Pintura:', '\$0.00'),
-                        _buildTotalItem('Mecánica:', '\$0.00'),
+                        _buildTotalItem('Chapa:', formatCurrency.format(_costoRealChapa)),
+                        _buildTotalItem('Pintura:', formatCurrency.format(_costoRealPintura)),
+                        _buildTotalItem('Mecánica:', formatCurrency.format(_costoRealMecanica)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Botón para crear la orden
+            Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Finalizar Orden',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _crearOrden,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Crear Orden'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          icon: const Icon(Icons.cancel),
+                          label: const Text('Cancelar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -233,48 +467,27 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  void _mostrarDialogoNuevaPieza(BuildContext context) {
-    // Lista de acciones predefinidas
-    final List<String> acciones = [
-      'Reparar',
-      'Resetear',
-      'Revisar',
-      'Rotar',
-      'S/Acción',
-      'Sac y Colocar',
-      'Sac/Col/Reparar',
-      'Sacabollos'
-    ];
+  void _eliminarLinea(int index) {
+    setState(() {
+      lineas.removeAt(index);
+      // Recalcular ordinales si es necesario
+      for (int i = 0; i < lineas.length; i++) {
+        lineas[i].ordinal = i + 1;
+      }
+      ordinalCounter = lineas.length + 1;
+    });
     
-    // Lista de piezas de auto predefinidas
-    final List<String> piezasAuto = [
-      'Capot',
-      'Paragolpes delantero',
-      'Paragolpes trasero',
-      'Puerta delantera derecha',
-      'Puerta delantera izquierda',
-      'Puerta trasera derecha',
-      'Puerta trasera izquierda',
-      'Tapa de baúl',
-      'Guardabarro delantero derecho',
-      'Guardabarro delantero izquierdo',
-      'Guardabarro trasero derecho',
-      'Guardabarro trasero izquierdo',
-      'Techo',
-      'Espejo retrovisor derecho',
-      'Espejo retrovisor izquierdo',
-      'Farol delantero derecho',
-      'Farol delantero izquierdo',
-      'Farol trasero derecho',
-      'Farol trasero izquierdo',
-      'Ventanilla derecha',
-      'Ventanilla izquierda',
-      'Luna delantera',
-      'Luna trasera'
-    ];
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Línea eliminada correctamente')),
+    );
+  }
+
+  void _mostrarDialogoNuevaLinea(BuildContext context) {
+    int? accionIdSeleccionado;
+    int? piezaIdSeleccionado;
+    String? accionDescripcionSeleccionada;
+    String? piezaDescripcionSeleccionada;
     
-    String? accionSeleccionada;
-    String? piezaSeleccionada;
     final chapaHorasController = TextEditingController();
     final chapaMontoController = TextEditingController();
     final pinturaController = TextEditingController();
@@ -291,44 +504,64 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Dropdown para Acción
-                DropdownButtonFormField<String>(
-                  value: accionSeleccionada,
-                  decoration: const InputDecoration(
-                    labelText: 'Acción',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                // Dropdown para Acción (Tareas)
+                if (isLoadingTareas)
+                  const CircularProgressIndicator()
+                else
+                  DropdownButtonFormField<String>(
+                    value: accionDescripcionSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Acción',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: tareas.map((Tarea tarea) {
+                      return DropdownMenuItem<String>(
+                        value: tarea.descripcion,
+                        child: Text(tarea.descripcion),
+                      );
+                    }).toList(),
+                    onChanged: (String? nuevaAccion) {
+                      final tareaSeleccionada = tareas.firstWhere(
+                        (t) => t.descripcion == nuevaAccion,
+                        orElse: () => Tarea.empty()
+                      );
+                      if (tareaSeleccionada.tareaId != 0) {
+                        accionIdSeleccionado = tareaSeleccionada.tareaId;
+                        accionDescripcionSeleccionada = tareaSeleccionada.descripcion;
+                      }
+                    },
                   ),
-                  items: acciones.map((String accion) {
-                    return DropdownMenuItem<String>(
-                      value: accion,
-                      child: Text(accion),
-                    );
-                  }).toList(),
-                  onChanged: (String? nuevaAccion) {
-                    accionSeleccionada = nuevaAccion;
-                  },
-                ),
                 const SizedBox(height: 12),
                 
-                // Dropdown para Pieza
-                DropdownButtonFormField<String>(
-                  value: piezaSeleccionada,
-                  decoration: const InputDecoration(
-                    labelText: 'Pieza',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                // Dropdown para Pieza (Materiales)
+                if (isLoadingMateriales)
+                  const CircularProgressIndicator()
+                else
+                  DropdownButtonFormField<String>(
+                    value: piezaDescripcionSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Pieza',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: materiales.map((Materiales material) {
+                      return DropdownMenuItem<String>(
+                        value: material.descripcion,
+                        child: Text(material.descripcion),
+                      );
+                    }).toList(),
+                    onChanged: (String? nuevaPieza) {
+                      final materialSeleccionado = materiales.firstWhere(
+                        (m) => m.descripcion == nuevaPieza,
+                        orElse: () => Materiales.empty()
+                      );
+                      if (materialSeleccionado.materialId != 0) {
+                        piezaIdSeleccionado = materialSeleccionado.materialId;
+                        piezaDescripcionSeleccionada = materialSeleccionado.descripcion;
+                      }
+                    },
                   ),
-                  items: piezasAuto.map((String pieza) {
-                    return DropdownMenuItem<String>(
-                      value: pieza,
-                      child: Text(pieza),
-                    );
-                  }).toList(),
-                  onChanged: (String? nuevaPieza) {
-                    piezaSeleccionada = nuevaPieza;
-                  },
-                ),
                 const SizedBox(height: 12),
                 
                 // Campos en fila para Chapa (Horas y Monto)
@@ -425,31 +658,54 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (accionSeleccionada == null || piezaSeleccionada == null) {
+                if (accionIdSeleccionado == null || piezaIdSeleccionado == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Debe seleccionar una acción y una pieza')),
                   );
                   return;
                 }
                 
-                final nuevaPieza = {
-                  'accion': accionSeleccionada,
-                  'pieza': piezaSeleccionada,
-                  'chapaH': double.tryParse(chapaHorasController.text),
-                  'chapaM': double.tryParse(chapaMontoController.text),
-                  'pintura': double.tryParse(pinturaController.text),
-                  'mecH': double.tryParse(mechHorasController.text),
-                  'mecM': double.tryParse(mechMontoController.text),
-                  'repto': double.tryParse(reptoController.text),
-                };
+                final nuevaLinea = Linea(
+                  lineaId: 0,
+                  ordenTrabajoId: 0,
+                  itemId: 0,
+                  codItem: '',
+                  descripcion: accionDescripcionSeleccionada ?? '',
+                  macroFamilia: '',
+                  familia: '',
+                  grupoInventario: '',
+                  ordinal: ordinalCounter++,
+                  cantidad: 1.0,
+                  costoUnitario: 0.0,
+                  descuento1: 0,
+                  descuento2: 0,
+                  descuento3: 0,
+                  precioVenta: 0.0,
+                  comentario: piezaDescripcionSeleccionada ?? '',
+                  ivaId: 0,
+                  iva: '',
+                  valor: 0,
+                  codGruInv: '',
+                  gruInvId: 0,
+                  avance: 0,
+                  mo: '',
+                )
+                ..accionId = accionIdSeleccionado
+                ..piezaId = piezaIdSeleccionado
+                ..chapaHs = double.tryParse(chapaHorasController.text) ?? 0.0
+                ..chapaMonto = double.tryParse(chapaMontoController.text) ?? 0.0
+                ..pinturaMonto = double.tryParse(pinturaController.text) ?? 0.0
+                ..mecanicaHs = double.tryParse(mechHorasController.text) ?? 0.0
+                ..mecanicaMonto = double.tryParse(mechMontoController.text) ?? 0.0
+                ..repSinIva = double.tryParse(reptoController.text) ?? 0.0;
                 
                 setState(() {
-                  piezas.add(nuevaPieza);
+                  lineas.add(nuevaLinea);
                 });
                 
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pieza agregada correctamente')),
+                  const SnackBar(content: Text('Línea agregada correctamente')),
                 );
               },
               child: const Text('Agregar'),

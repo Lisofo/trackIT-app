@@ -6,6 +6,7 @@ import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,52 +15,6 @@ class OrdenServices {
   final _dio = Dio();
   String apiLink = Config.APIURL;
   int? statusCode = 0;
-
-  static Future<void> showDialogs(BuildContext context, String errorMessage, bool doblePop, bool triplePop) async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          surfaceTintColor: Colors.white,
-          title: const Text('Mensaje'),
-          content: Text(errorMessage),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (doblePop) {
-                  Navigator.of(context).pop();
-                }
-                if (triplePop) {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> showErrorDialog(BuildContext context, String mensaje) async {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        surfaceTintColor: Colors.white,
-        title: const Text('Error'),
-        content: Text(mensaje),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future getOrden(BuildContext context, String tecnicoId, String desde, String hasta, String token) async {
     String link = apiLink;
@@ -86,28 +41,34 @@ class OrdenServices {
       return retorno;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500){
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        }
-      } 
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future postOrden(BuildContext context, String token, Orden orden) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/';
+    var data = orden.toMapCyP();
+    print(data);
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'POST',
+          headers: headers,
+        ),
+        data: data
+      );
+      statusCode = 1;
+      
+      print(resp.data);
+      var retorno = Orden.fromJson(resp.data);
+      return retorno;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -141,34 +102,13 @@ class OrdenServices {
         Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(estado);
         
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -192,34 +132,13 @@ class OrdenServices {
         final UltimaTarea ultima = await ultimaTarea(context, token);
         Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultima);
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showDialogs(context, errorMessages.join('\n'), true, false);
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -241,34 +160,13 @@ class OrdenServices {
         final UltimaTarea ultima = await ultimaTarea(context, token);
         Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultima);
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -296,28 +194,7 @@ class OrdenServices {
       return ultimaTarea;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -340,28 +217,7 @@ class OrdenServices {
       return controlesList.map((obj) => Control.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-              return "Error: ${error['message']}";
-            }).toList();
-            showErrorDialog(context, errorMessages.join('\n'));
-          }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        }
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -390,34 +246,13 @@ class OrdenServices {
       if (resp.statusCode == 200) {
         // Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(estado);
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -438,34 +273,13 @@ class OrdenServices {
       if (resp.statusCode == 200) {
         // Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(resp.data["estadoSiguiente"]);
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return resp.data["estadoSiguiente"];
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -489,34 +303,13 @@ class OrdenServices {
         Provider.of<OrdenProvider>(context, listen: false).cambiarEstadoOrden(resp.data["estado"]);
         
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -537,34 +330,13 @@ class OrdenServices {
       if (resp.statusCode == 200) {
         router.pop();
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showDialogs(context, errorMessages.join('\n'), true, false);
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -585,33 +357,12 @@ class OrdenServices {
       if (resp.statusCode == 200) {
         router.pop();
       } else {
-        showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
       return;
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showDialogs(context, errorMessages.join('\n'), true, false);
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 }

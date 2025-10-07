@@ -33,6 +33,8 @@ class Cliente {
   late int tipoClienteId;
   late int tecnicoId;
   late String notas;
+  late int pagoId;
+  late int vendedorId;
 
   Cliente({
     required this.clienteId,
@@ -52,6 +54,8 @@ class Cliente {
     required this.departamento,
     required this.tipoCliente,
     required this.notas,
+    required this.pagoId,
+    required this.vendedorId,
   });
 
   factory Cliente.fromJson(Map<String, dynamic> json) => Cliente(
@@ -69,15 +73,11 @@ class Cliente {
         estado: json["estado"] as String? ?? '',
         coordenadas: json["coordenadas"] as String? ?? '',
         notas: json["notas"] as String? ?? '',
-        tecnico: json["tecnico"] != null
-            ? Tecnico.fromJson(json["tecnico"])
-            : Tecnico.empty(),
-        departamento: json["departamento"] != null
-            ? Departamento.fromJson(json["departamento"])
-            : Departamento.empty(),
-        tipoCliente: json["tipoCliente"] != null
-            ? TipoCliente.fromJson(json["tipoCliente"])
-            : TipoCliente.empty(),
+        tecnico: json["tecnico"] != null ? Tecnico.fromJson(json["tecnico"]) : Tecnico.empty(),
+        departamento: json["departamento"] != null ? Departamento.fromJson(json["departamento"]) : Departamento.empty(),
+        tipoCliente: json["tipoCliente"] != null ? TipoCliente.fromJson(json["tipoCliente"]) : TipoCliente.empty(),
+        pagoId: json["pagoId"] as int? ?? 0,
+        vendedorId: json["vendedorId"] as int? ?? 0,
       );
 
   Map<String, dynamic> toMap() => {
@@ -94,13 +94,14 @@ class Cliente {
         "ruc": ruc,
         "estado": estado,
         "coordenadas": coordenadas,
-        "tecnico": tecnico.toMap(),
         "departamento": departamento.toMap(),
         "tipoCliente": tipoCliente.toMap(),
-        "tecnicoId": tecnicoId,
+        "tecnicoId": 2,
         "departamentoId": departamentoId,
         "tipoClienteId": tipoClienteId,
         "notas": notas,
+        "pagoId": 1,
+        "vendedorId": 1,
       };
 
   Cliente.empty() {
@@ -124,6 +125,8 @@ class Cliente {
     departamentoId = 0;
     tipoClienteId = 0;
     notas = '';
+    pagoId = 0;
+    vendedorId = 0;
   }
 }
 

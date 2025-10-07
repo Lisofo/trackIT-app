@@ -13,6 +13,7 @@ import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/ptos_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/visualizar_accion.dart';
 import 'package:flutter/material.dart';
@@ -250,7 +251,7 @@ class _ResumenOrdenState extends State<ResumenOrden> {
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
         if(statusCode == 1){
-          await OrdenServices.showDialogs(context, 'Estado cambiado correctamente', true, false);
+          await Carteles.showDialogs(context, 'Estado cambiado correctamente', true, false, false);
         }
       }
       statusCode = null;

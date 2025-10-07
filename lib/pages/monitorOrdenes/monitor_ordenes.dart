@@ -1,62 +1,114 @@
-import 'package:app_tec_sedel/models/cliente_chapa_pintura.dart';
+import 'package:app_tec_sedel/models/tecnico.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'package:app_tec_sedel/models/cliente.dart';
+import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
+import 'package:provider/provider.dart';
 import 'detlla_piezas_screen.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
+import 'package:app_tec_sedel/services/unidades_services.dart';
+import 'package:app_tec_sedel/models/orden.dart';
 
 class MonitorOrdenes extends StatefulWidget {
-  const MonitorOrdenes({super.key});
+
+  const MonitorOrdenes({
+    super.key,
+  });
 
   @override
   State<MonitorOrdenes> createState() => _MonitorOrdenesState();
 }
 
 class _MonitorOrdenesState extends State<MonitorOrdenes> {
-  // Usamos SharedData en lugar de lista local
-  List<ClienteCP> get clientes => SharedData.clientes;
+  List<Cliente> clientesLocales = [];
+  List<Unidad> unidades = [];
   
-  List<Vehiculo> vehiculos = [];
-  
-  // Controladores
   DateTime fecha = DateTime.now();
   bool condIva = true;
-  ClienteCP? clienteSeleccionado;
-  Vehiculo? vehiculoSeleccionado;
-  String? selectedMarca;
-  List<String> modelosDisponibles = [];
-  bool tipoDocumentoCI = true;
+  Cliente? clienteSeleccionado;
+  Unidad? unidadSeleccionada;
+  final ClientServices clientServices = ClientServices();
+  final UnidadesServices unidadesServices = UnidadesServices();
+  String token = '';
 
   @override
   void initState() {
     super.initState();
-    // Inicializar vehículos si hay un cliente seleccionado por defecto
-    if (clientes.isNotEmpty) {
-      clienteSeleccionado = clientes.first;
-      vehiculos = _getVehiculosPorCliente(clienteSeleccionado!.id);
-    }
-  }
-
-  void _actualizarModelos(String? marca) {
-    setState(() {
-      selectedMarca = marca;
-      if (marca != null) {
-        final marcaObj = SharedData.marcas.firstWhere(
-          (m) => m.nombre == marca,
-          orElse: () => Marca(id: 0, nombre: '', modelos: []),
-        );
-        modelosDisponibles = marcaObj.modelos;
-      } else {
-        modelosDisponibles = [];
-      }
-    });
+    token = context.read<OrdenProvider>().token;
   }
 
   bool _telefonoExiste(String telefono) {
-    return clientes.any((c) => c.telefono == telefono);
+    return clientesLocales.any((c) => c.telefono1 == telefono);
   }
 
-  bool _matriculaExiste(String matricula) {
-    return SharedData.vehiculos.any((v) => v.matricula.toLowerCase() == matricula.toLowerCase());
+  void _abrirBusquedaCliente(BuildContext context) async {
+    final Cliente? resultado = await showSearch<Cliente>(
+      context: context,
+      delegate: ClienteSearchDelegate(
+        token: token,
+        clientService: clientServices,
+      ),
+    );
+
+    if (resultado != null && resultado.clienteId != 0) {
+      // Obtener las unidades del cliente desde la API
+      List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
+        context, 
+        resultado.clienteId, 
+        token
+      );
+      setState(() {
+        clienteSeleccionado = resultado;
+        unidades = unidadesDelCliente;
+        unidadSeleccionada = null;
+      });
+    }
+  }
+
+  Orden _crearOrdenEnMemoria() {
+    final ordenProvider = context.read<OrdenProvider>();
+    
+    return Orden(
+      ordenTrabajoId: 0,
+      numeroOrdenTrabajo: 0, // Se asignará desde el servidor
+      descripcion: 'Orden de trabajo para ${clienteSeleccionado!.nombre}',
+      fechaOrdenTrabajo: fecha,
+      fechaVencimiento: fecha.add(const Duration(days: 30)),
+      fechaEntrega: null,
+      fechaDesde: fecha,
+      fechaHasta: fecha.add(const Duration(days: 7)),
+      ruc: clienteSeleccionado!.ruc,
+      monedaId: 1,
+      codMoneda: 'PYG',
+      descMoneda: 'Guaraní',
+      signo: '₲',
+      totalOrdenTrabajo: 0.0, // Se calculará en la siguiente pantalla
+      comentarioCliente: '',
+      comentarios: '',
+      comentarioTrabajo: '',
+      estado: 'PENDIENTE',
+      presupuestoIdPlantilla: null,
+      numeroPresupuesto: null,
+      descripcionPresupuesto: null,
+      totalPresupuesto: null,
+      plantilla: false,
+      unidadId: unidadSeleccionada!.unidadId,
+      matricula: unidadSeleccionada!.matricula,
+      km: 0,
+      regHs: false,
+      instrucciones: '',
+      tipoOrden: TipoOrden.empty(),
+      cliente: clienteSeleccionado!,
+      tecnico: Tecnico.empty(),
+      unidad: unidadSeleccionada!,
+      servicio: [],
+      otRevisionId: 0,
+      planoId: 0,
+      alerta: false,
+      tecnicoId: ordenProvider.tecnicoId, // Obtener del provider
+    );
   }
   
   @override
@@ -65,7 +117,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.primary,
-        title: Text('Registro de Vehículo', style: TextStyle(color: colors.onPrimary),),
+        title: Text('Registro de Orden', style: TextStyle(color: colors.onPrimary),),
         iconTheme: IconThemeData(color: colors.onPrimary),
       ),
       body: SingleChildScrollView(
@@ -133,31 +185,28 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             
             const SizedBox(height: 24),
             
-            // Datos del cliente
+            // Datos del cliente - SearchDelegate
             const Text(
               'Datos del Cliente',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<ClienteCP>(
-              value: clienteSeleccionado,
+            
+            // Campo de búsqueda de cliente
+            TextFormField(
+              readOnly: true,
               decoration: const InputDecoration(
+                labelText: 'Buscar cliente...',
                 border: OutlineInputBorder(),
-                labelText: 'Seleccione un cliente',
+                suffixIcon: Icon(Icons.search),
               ),
-              items: clientes.map((ClienteCP cliente) {
-                return DropdownMenuItem<ClienteCP>(
-                  value: cliente,
-                  child: Text(cliente.nombreCompleto),
-                );
-              }).toList(),
-              onChanged: (ClienteCP? nuevoCliente) {
-                setState(() {
-                  clienteSeleccionado = nuevoCliente;
-                  // Filtrar vehículos por cliente seleccionado
-                  vehiculos = _getVehiculosPorCliente(nuevoCliente?.id ?? 0);
-                  vehiculoSeleccionado = null;
-                });
+              controller: TextEditingController(
+                text: clienteSeleccionado != null 
+                    ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}'
+                    : '',
+              ),
+              onTap: () {
+                _abrirBusquedaCliente(context);
               },
             ),
             
@@ -188,7 +237,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: clienteSeleccionado!.telefono,
+                initialValue: clienteSeleccionado!.telefono1,
                 decoration: const InputDecoration(
                   labelText: 'Teléfono',
                   border: OutlineInputBorder(),
@@ -197,7 +246,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: clienteSeleccionado!.correo,
+                initialValue: clienteSeleccionado!.email,
                 decoration: const InputDecoration(
                   labelText: 'Correo electrónico',
                   border: OutlineInputBorder(),
@@ -206,7 +255,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: '${clienteSeleccionado!.tipoDocumento}: ${clienteSeleccionado!.documento}',
+                initialValue: 'RUC: ${clienteSeleccionado!.ruc}',
                 decoration: const InputDecoration(
                   labelText: 'Documento',
                   border: OutlineInputBorder(),
@@ -225,21 +274,21 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<Vehiculo>(
-                    value: vehiculoSeleccionado,
+                  child: DropdownButtonFormField<Unidad>(
+                    value: unidadSeleccionada,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Seleccione un vehículo',
                     ),
-                    items: vehiculos.map((Vehiculo vehiculo) {
-                      return DropdownMenuItem<Vehiculo>(
-                        value: vehiculo,
-                        child: Text(vehiculo.displayInfo),
+                    items: unidades.map((Unidad unidad) {
+                      return DropdownMenuItem<Unidad>(
+                        value: unidad,
+                        child: Text(unidad.displayInfo),
                       );
                     }).toList(),
-                    onChanged: (Vehiculo? nuevoVehiculo) {
+                    onChanged: (Unidad? nuevaUnidad) {
                       setState(() {
-                        vehiculoSeleccionado = nuevoVehiculo;
+                        unidadSeleccionada = nuevaUnidad;
                       });
                     },
                   ),
@@ -248,21 +297,21 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: () {
-                    _mostrarDialogoNuevoVehiculo(context);
+                    _mostrarDialogoNuevaUnidad(context);
                   },
                 ),
               ],
             ),
             
             // Campos de visualización del vehículo
-            if (vehiculoSeleccionado != null) ...[
+            if (unidadSeleccionada != null) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       readOnly: true,
-                      initialValue: vehiculoSeleccionado!.marca,
+                      initialValue: unidadSeleccionada!.marca,
                       decoration: const InputDecoration(
                         labelText: 'Marca',
                         border: OutlineInputBorder(),
@@ -273,7 +322,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   Expanded(
                     child: TextFormField(
                       readOnly: true,
-                      initialValue: vehiculoSeleccionado!.modelo,
+                      initialValue: unidadSeleccionada!.modelo,
                       decoration: const InputDecoration(
                         labelText: 'Modelo',
                         border: OutlineInputBorder(),
@@ -285,7 +334,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: vehiculoSeleccionado!.matricula,
+                initialValue: unidadSeleccionada!.matricula,
                 decoration: const InputDecoration(
                   labelText: 'Matrícula',
                   border: OutlineInputBorder(),
@@ -294,7 +343,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: vehiculoSeleccionado!.nroMotor,
+                initialValue: unidadSeleccionada!.motor,
                 decoration: const InputDecoration(
                   labelText: 'Número de Motor',
                   border: OutlineInputBorder(),
@@ -303,7 +352,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: vehiculoSeleccionado!.nroChasis,
+                initialValue: unidadSeleccionada!.chasis,
                 decoration: const InputDecoration(
                   labelText: 'Número de Chasis',
                   border: OutlineInputBorder(),
@@ -312,7 +361,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: vehiculoSeleccionado!.ano.toString(),
+                initialValue: unidadSeleccionada!.anio.toString(),
                 decoration: const InputDecoration(
                   labelText: 'Año',
                   border: OutlineInputBorder(),
@@ -324,21 +373,25 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  if (clienteSeleccionado == null || vehiculoSeleccionado == null) {
+                  if (clienteSeleccionado == null || unidadSeleccionada == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
                     );
                     return;
                   }
                   
+                  // Crear la orden en memoria
+                  final ordenCreada = _crearOrdenEnMemoria();
+                  
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => DetallePiezasScreen(
                         cliente: clienteSeleccionado!,
-                        vehiculo: vehiculoSeleccionado!,
+                        vehiculo: unidadSeleccionada!,
                         fecha: fecha,
                         condIva: condIva,
+                        ordenPrevia: ordenCreada, // Pasar la orden creada
                       ),
                     ),
                   );
@@ -352,21 +405,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  List<Vehiculo> _getVehiculosPorCliente(int clienteId) {
-    // Usamos SharedData para obtener los vehículos
-    return SharedData.vehiculos.where((vehiculo) => vehiculo.clienteId == clienteId).toList();
-  }
-
   void _mostrarDialogoNuevoCliente(BuildContext context) {
     final telefonoController = TextEditingController();
     final nombreController = TextEditingController();
-    final apellidoController = TextEditingController();
-    final documentoController = TextEditingController();
+    final nombreFantasiaController = TextEditingController();
+    final rucController = TextEditingController();
     final correoController = TextEditingController();
     final direccionController = TextEditingController();
+    final barrioController = TextEditingController();
+    final localidadController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    bool tipoDocumentoCI = true;
-    final colors = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
@@ -376,142 +424,132 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             return AlertDialog(
               title: const Text('Nuevo Cliente'),
               content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Teléfono (primer campo)
-                      TextFormField(
-                        controller: telefonoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Teléfono/Celular',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.phone,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un teléfono';
-                          }
-                          if (_telefonoExiste(value)) {
-                            return 'Este teléfono ya existe';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Nombre
-                      TextFormField(
-                        controller: nombreController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un nombre';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Apellido
-                      TextFormField(
-                        controller: apellidoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Apellido',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un apellido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Documento con Switch
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: documentoController,
-                              decoration: const InputDecoration(
-                                labelText: 'Documento',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese un documento';
-                                }
-                                return null;
-                              },
-                            ),
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width *0.8,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Teléfono (primer campo)
+                        TextFormField(
+                          controller: telefonoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono/Celular',
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            children: [
-                              Text(
-                                tipoDocumentoCI ? 'CI' : 'RUT',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colors.primary,
-                                ),
-                              ),
-                              Switch(
-                                value: tipoDocumentoCI,
-                                onChanged: (value) {
-                                  setState(() {
-                                    tipoDocumentoCI = value;
-                                  });
-                                },
-                                activeColor: colors.primary,
-                              ),
-                            ],
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese un teléfono';
+                            }
+                            if (_telefonoExiste(value)) {
+                              return 'Este teléfono ya existe';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Nombre
+                        TextFormField(
+                          controller: nombreController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre',
+                            border: OutlineInputBorder(),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Correo
-                      TextFormField(
-                        controller: correoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          border: OutlineInputBorder(),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese un nombre';
+                            }
+                            return null;
+                          },
                         ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un correo electrónico';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Por favor ingrese un correo válido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Dirección (último campo)
-                      TextFormField(
-                        controller: direccionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección',
-                          border: OutlineInputBorder(),
+                        const SizedBox(height: 8),
+                        
+                        // Nombre Fantasía
+                        TextFormField(
+                          controller: nombreFantasiaController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre Fantasía',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                        maxLines: 2,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese una dirección';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        
+                        // RUC
+                        TextFormField(
+                          controller: rucController,
+                          decoration: const InputDecoration(
+                            labelText: 'RUC',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese el RUC';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Correo
+                        TextFormField(
+                          controller: correoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo electrónico',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese un correo electrónico';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Por favor ingrese un correo válido';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Dirección
+                        TextFormField(
+                          controller: direccionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 1,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese una dirección';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Barrio
+                        TextFormField(
+                          controller: barrioController,
+                          decoration: const InputDecoration(
+                            labelText: 'Barrio',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Localidad
+                        TextFormField(
+                          controller: localidadController,
+                          decoration: const InputDecoration(
+                            labelText: 'Localidad',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -523,30 +561,49 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      final nuevoCliente = ClienteCP(
-                        id: SharedData.clientes.length + 1,
+                      final nuevoCliente = Cliente(
+                        clienteId: 0,
+                        codCliente: '',
                         nombre: nombreController.text,
-                        apellido: apellidoController.text,
+                        nombreFantasia: nombreFantasiaController.text,
                         direccion: direccionController.text,
-                        telefono: telefonoController.text,
-                        documento: documentoController.text,
-                        tipoDocumento: tipoDocumentoCI ? 'CI' : 'RUT',
-                        correo: correoController.text,
+                        barrio: barrioController.text,
+                        localidad: localidadController.text,
+                        telefono1: telefonoController.text,
+                        telefono2: '',
+                        email: correoController.text,
+                        ruc: rucController.text,
+                        estado: 'ACTIVO',
+                        coordenadas: null,
+                        tecnico: Tecnico.empty(),
+                        departamento: Departamento.empty(),
+                        tipoCliente: TipoCliente.empty(),
+                        notas: '',
+                        pagoId: 1,
+                        vendedorId: 1,
                       );
                       
-                      setState(() {
-                        SharedData.clientes.add(nuevoCliente);
-                        clienteSeleccionado = nuevoCliente;
-                        vehiculos = _getVehiculosPorCliente(nuevoCliente.id);
-                        vehiculoSeleccionado = null;
-                      });
-                      
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cliente agregado correctamente')),
-                      );
+                      try {
+                        await clientServices.postCliente(
+                          context, 
+                          nuevoCliente, 
+                          token
+                        );
+
+                        setState(() {
+                          clienteSeleccionado = nuevoCliente;
+                          clientesLocales.add(nuevoCliente);
+                          unidades = [];
+                          unidadSeleccionada = null;
+                        });
+                        
+                        Navigator.of(context).pop();
+                        
+                      } catch (e) {
+                        print('Error creando cliente: $e');
+                      }
                     }
                   },
                   child: const Text('Guardar'),
@@ -559,7 +616,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  void _mostrarDialogoNuevoVehiculo(BuildContext context) {
+  void _mostrarDialogoNuevaUnidad(BuildContext context) async {
     if (clienteSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Primero debe seleccionar un cliente')),
@@ -571,95 +628,112 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     final anoController = TextEditingController();
     final nroMotorController = TextEditingController();
     final nroChasisController = TextEditingController();
+    final marcaController = TextEditingController();
+    final modeloController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    String? selectedMarcaLocal;
-    String? selectedModelo;
+
+    // Variable para almacenar la unidad encontrada
+    Unidad? unidadEncontrada;
+
+    // Función para buscar unidad por matrícula
+    Future<void> buscarUnidadPorMatricula() async {
+      if (matriculaController.text.isEmpty) return;
+
+      try {
+        List<Unidad> unidadesEncontradas = await unidadesServices.getUnidades(
+          context, 
+          token, 
+          matricula: matriculaController.text
+        );
+
+        if (unidadesEncontradas.isNotEmpty) {
+          unidadEncontrada = unidadesEncontradas.first;
+          marcaController.text = unidadEncontrada!.marca;
+          modeloController.text = unidadEncontrada!.modelo;
+          anoController.text = unidadEncontrada!.anio.toString();
+          nroMotorController.text = unidadEncontrada!.motor;
+          nroChasisController.text = unidadEncontrada!.chasis;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unidad encontrada y cargada automáticamente')),
+          );
+        } else {
+          unidadEncontrada = null;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se encontró una unidad con esa matrícula')),
+          );
+        }
+      } catch (e) {
+        unidadEncontrada = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al buscar la unidad: $e')),
+        );
+      }
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateBd) {
             return AlertDialog(
-              title: const Text('Nuevo Vehículo'),
+              title: const Text('Nueva Unidad'),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Cliente: ${clienteSeleccionado!.nombreCompleto}'),
+                      Text('Cliente: ${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}'),
                       const SizedBox(height: 16),
                       
-                      // Matrícula (primer campo)
+                      // Matrícula con búsqueda automática
                       TextFormField(
                         controller: matriculaController,
                         decoration: const InputDecoration(
                           labelText: 'Matrícula',
                           border: OutlineInputBorder(),
+                          hintText: 'Presione Enter para buscar',
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor ingrese una matrícula';
                           }
-                          if (_matriculaExiste(value)) {
-                            return 'Esta matrícula ya existe';
-                          }
                           return null;
+                        },
+                        onFieldSubmitted: (value) {
+                          buscarUnidadPorMatricula();
+                          setStateBd((){});
                         },
                       ),
                       const SizedBox(height: 8),
                       
-                      // Marca (Dropdown)
-                      DropdownButtonFormField<String>(
-                        value: selectedMarcaLocal,
+                      // Marca
+                      TextFormField(
+                        controller: marcaController,
                         decoration: const InputDecoration(
                           labelText: 'Marca',
                           border: OutlineInputBorder(),
                         ),
-                        items: SharedData.marcas.map((marca) {
-                          return DropdownMenuItem<String>(
-                            value: marca.nombre,
-                            child: Text(marca.nombre),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedMarcaLocal = value;
-                            selectedModelo = null;
-                            _actualizarModelos(value);
-                          });
-                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Por favor seleccione una marca';
+                            return 'Por favor ingrese la marca';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 8),
                       
-                      // Modelo (Dropdown dependiente de la marca)
-                      DropdownButtonFormField<String>(
-                        value: selectedModelo,
+                      // Modelo
+                      TextFormField(
+                        controller: modeloController,
                         decoration: const InputDecoration(
                           labelText: 'Modelo',
                           border: OutlineInputBorder(),
                         ),
-                        items: modelosDisponibles.map((modelo) {
-                          return DropdownMenuItem<String>(
-                            value: modelo,
-                            child: Text(modelo),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedModelo = value;
-                          });
-                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Por favor seleccione un modelo';
+                            return 'Por favor ingrese el modelo';
                           }
                           return null;
                         },
@@ -733,29 +807,96 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      final nuevoVehiculo = Vehiculo(
-                        id: SharedData.vehiculos.length + 1,
-                        clienteId: clienteSeleccionado!.id,
-                        matricula: matriculaController.text,
-                        marca: selectedMarcaLocal!,
-                        modelo: selectedModelo!,
-                        ano: int.parse(anoController.text),
-                        nroMotor: nroMotorController.text,
-                        nroChasis: nroChasisController.text,
-                      );
-                      
-                      setState(() {
-                        SharedData.vehiculos.add(nuevoVehiculo);
-                        vehiculos = _getVehiculosPorCliente(clienteSeleccionado!.id);
-                        vehiculoSeleccionado = nuevoVehiculo;
-                      });
-                      
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vehículo agregado correctamente')),
-                      );
+                      try {
+                        // Si se encontró una unidad durante la búsqueda, usar editar
+                        if (unidadEncontrada != null) {
+                          // Actualizar la unidad existente con los datos del formulario
+                          unidadEncontrada!.marca = marcaController.text;
+                          unidadEncontrada!.modelo = modeloController.text;
+                          unidadEncontrada!.anio = int.parse(anoController.text);
+                          unidadEncontrada!.motor = nroMotorController.text;
+                          unidadEncontrada!.chasis = nroChasisController.text;
+                          unidadEncontrada!.clienteId = clienteSeleccionado!.clienteId;
+                          
+                          await unidadesServices.editarUnidad(
+                            context,
+                            unidadEncontrada!,
+                            token
+                          );
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Unidad actualizada correctamente')),
+                          );
+                        } else {
+                          // Si no se encontró unidad, crear una nueva
+                          final nuevaUnidad = Unidad(
+                            unidadId: 0,
+                            itemId: 0,
+                            codItem: '',
+                            descripcion: '',
+                            modeloId: 0,
+                            codModelo: '',
+                            modelo: modeloController.text,
+                            marcaId: 0,
+                            codMarca: '',
+                            marca: marcaController.text,
+                            chasis: nroChasisController.text,
+                            motor: nroMotorController.text,
+                            anio: int.parse(anoController.text),
+                            colorId: 0,
+                            color: '',
+                            consignado: false,
+                            averias: false,
+                            matricula: matriculaController.text,
+                            km: 0,
+                            comentario: '',
+                            recibidoPorId: 0,
+                            recibidoPor: '',
+                            transportadoPor: '',
+                            clienteId: clienteSeleccionado!.clienteId,
+                            padron: null,
+                          );
+                          
+                          await unidadesServices.crearUnidad(
+                            context,
+                            nuevaUnidad,
+                            token
+                          );
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Unidad creada correctamente')),
+                          );
+                        }
+
+                        // Actualizar la lista de unidades desde la API
+                        List<Unidad> unidadesActualizadas = await unidadesServices.getUnidadesDeCliente(
+                          context, 
+                          clienteSeleccionado!.clienteId, 
+                          token
+                        );
+
+                        setState(() {
+                          unidades = unidadesActualizadas;
+                          // Seleccionar la unidad recién creada o editada
+                          try {
+                            unidadSeleccionada = unidades.firstWhere(
+                              (u) => u.matricula == matriculaController.text
+                            );
+                          } catch (e) {
+                            // Si no encuentra la unidad, seleccionar la primera si existe
+                            unidadSeleccionada = unidades.isNotEmpty ? unidades.first : null;
+                          }
+                        });
+
+                        Navigator.of(context).pop();
+                        
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error al guardar unidad: $e')),
+                        );
+                      }
                     }
                   },
                   child: const Text('Guardar'),
