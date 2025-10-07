@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:app_tec_sedel/models/unidad.dart';
+import 'package:intl/intl.dart';
 
 import 'cliente.dart';
 import 'servicio_ordenes.dart';
@@ -16,13 +17,13 @@ String ordenToMap(List<Orden> data) => json.encode(List<dynamic>.from(data.map((
 
 class Orden {
   late int ordenTrabajoId;
-  late int numeroOrdenTrabajo;
+  late String numeroOrdenTrabajo;
   late String descripcion;
-  late DateTime fechaOrdenTrabajo;
-  late DateTime fechaVencimiento;
+  late DateTime? fechaOrdenTrabajo;
+  late DateTime? fechaVencimiento;
   late DateTime? fechaEntrega;
-  late DateTime fechaDesde;
-  late DateTime fechaHasta;
+  late DateTime? fechaDesde;
+  late DateTime? fechaHasta;
   late String ruc;
   late int monedaId;
   late String codMoneda;
@@ -95,22 +96,22 @@ class Orden {
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
     ordenTrabajoId: json["ordenTrabajoId"] as int? ?? 0,
-    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as int? ?? 0,
+    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as String? ?? "",
     descripcion: json["descripcion"] as String? ?? '',
-    fechaOrdenTrabajo: DateTime.parse(json["fechaOrdenTrabajo"]),
-    fechaVencimiento: DateTime.parse(json["fechaVencimiento"]),
+    fechaOrdenTrabajo: json["fechaOrdenTrabajo"] != null ? DateTime.parse(json["fechaOrdenTrabajo"]) : null,
+    fechaVencimiento: json["fechaVencimiento"] != null ?  DateTime.parse(json["fechaVencimiento"]) : null,
     fechaEntrega: json["fechaEntrega"] == null ? null : DateTime.parse(json["fechaEntrega"]),
-    fechaDesde: DateTime.parse(json["fechaDesde"]),
-    fechaHasta: DateTime.parse(json["fechaHasta"]),
+    fechaDesde: json["fechaDesde"] != null ? DateTime.parse(json["fechaDesde"]) : null,
+    fechaHasta: json["fechaDesde"] != null ? DateTime.parse(json["fechaHasta"]) : null,
     ruc: json["ruc"] as String? ?? '',
     monedaId: json["monedaId"] as int? ?? 0,
     codMoneda: json["codMoneda"] as String? ?? '',
-    descMoneda: json["descMoneda"]! as String? ?? '',
-    signo: json["signo"]! as String? ?? '',
+    descMoneda: json["descMoneda"] as String? ?? '',
+    signo: json["signo"] as String? ?? '',
     totalOrdenTrabajo: json["totalOrdenTrabajo"]?.toDouble(),
     comentarioCliente: json["comentarioCliente"] as String? ?? '',
     comentarioTrabajo: json["comentarioTrabajo"] as String? ?? '',
-    estado: json["estado"]! as String? ?? '',
+    estado: json["estado"] as String? ?? '',
     presupuestoIdPlantilla: json["presupuestoIdPlantilla"] as int? ?? 0,
     numeroPresupuesto: json["numeroPresupuesto"] as int? ?? 0,
     descripcionPresupuesto: json["descripcionPresupuesto"] as String? ?? '',
@@ -122,25 +123,26 @@ class Orden {
     regHs: json["regHs"],
     instrucciones: json["instrucciones"] as String? ?? '',
     comentarios: json["comentarios"] as String? ?? '',
-    tipoOrden: TipoOrden.fromJson(json["tipoOrden"]),
-    cliente: Cliente.fromJson(json["cliente"]),
-    tecnico: Tecnico.fromJson(json["tecnico"]),
+    tipoOrden: json["tipoOrden"] == null ? TipoOrden.empty() : TipoOrden.fromJson(json["tipoOrden"]),
+    cliente: json["cliente"] == null ? Cliente.empty() : Cliente.fromJson(json["cliente"]),
+    tecnico: json["tecnico"] == null ? Tecnico.empty() : Tecnico.fromJson(json["tecnico"]),
     unidad: json["unidad"] == null ? Unidad.empty() : Unidad.fromJson(json["unidad"]),
     servicio: [],//List<ServicioOrdenes>.from(json["servicios"].map((x) => ServicioOrdenes.fromJson(x))),
     otRevisionId: json["otRevisionId"] as int? ?? 0,
     planoId: json["planoId"] as int? ?? 0,
-    alerta: json["alerta"]
+    alerta: json["alerta"] == null ? false : json["alerta"] as bool,
+    tecnicoId: json["tecnicoId"] as int? ?? 0,
   );
 
   Map<String, dynamic> toMap() => {
     "ordenTrabajoId": ordenTrabajoId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
-    "fechaOrdenTrabajo": fechaOrdenTrabajo.toIso8601String(),
-    "fechaVencimiento": fechaVencimiento.toIso8601String(),
+    "fechaOrdenTrabajo": fechaOrdenTrabajo?.toIso8601String(),
+    "fechaVencimiento": fechaVencimiento?.toIso8601String(),
     "fechaEntrega": fechaEntrega?.toIso8601String(),
-    "fechaDesde": fechaDesde.toIso8601String(),
-    "fechaHasta": fechaHasta.toIso8601String(),
+    "fechaDesde": fechaDesde?.toIso8601String(),
+    "fechaHasta": fechaHasta?.toIso8601String(),
     "ruc": ruc,
     "monedaId": monedaId,
     "codMoneda": codMoneda,
@@ -177,9 +179,9 @@ class Orden {
     "unidadId": unidad.unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
-    "fechaOrdenTrabajo": fechaOrdenTrabajo,
-    "fechaDesde": fechaDesde,
-    "fechaHasta": fechaHasta,
+    "fechaOrdenTrabajo": getStringFecha(fechaOrdenTrabajo),
+    "fechaDesde": getStringFechaConHoraMinSec(fechaDesde),
+    "fechaHasta": getStringFechaConHoraMinSec(fechaHasta),
     "monedaId": 1,
     "totalOrdenTrabajo": totalOrdenTrabajo,
     "comentarioCliente": comentarioCliente,
@@ -190,15 +192,27 @@ class Orden {
     "plantilla": false,
   };
 
+  String getStringFecha (DateTime? fecha) {
+    if (fecha == null) return '';
+    final DateFormat formatter = DateFormat('yyyy-MM-dd');
+    return formatter.format(fecha);
+  }
+
+  String getStringFechaConHoraMinSec (DateTime? fecha) {
+    if (fecha == null) return '';
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    return formatter.format(fecha);
+  }
+
   Orden.empty() {
     ordenTrabajoId = 0;
-    numeroOrdenTrabajo = 0;
+    numeroOrdenTrabajo = '';
     descripcion = '';
-    fechaOrdenTrabajo = DateTime.now();
-    fechaVencimiento = DateTime.now();
+    fechaOrdenTrabajo = null;
+    fechaVencimiento = null;
     fechaEntrega = null;
-    fechaDesde = DateTime.now();
-    fechaHasta = DateTime.now();
+    fechaDesde = null;
+    fechaHasta = null;
     ruc = '';
     monedaId = 0;
     codMoneda = '';

@@ -1,10 +1,10 @@
 // monitor_vehiculo.dart
 import 'package:app_tec_sedel/models/marca.dart';
-import 'package:app_tec_sedel/models/modelo.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/unidades_services.dart';
+import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,7 +27,6 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
 
   // Variables para marcas y modelos (se cargan al iniciar)
   List<Marca> _marcas = [];
-  bool _cargandoMarcas = false;
 
   @override
   void initState() {
@@ -65,27 +64,16 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
     if (_marcas.isNotEmpty) return; // Ya están cargadas
     
     setState(() {
-      _cargandoMarcas = true;
     });
 
     try {
       final listaMarcas = await _codiguerasServices.getMarcas(context, token);
       setState(() {
         _marcas = listaMarcas;
-        _cargandoMarcas = false;
       });
     } catch (e) {
       setState(() {
-        _cargandoMarcas = false;
       });
-    }
-  }
-
-  Future<List<Modelo>> _cargarModelos(int marcaId) async {
-    try {
-      return await _codiguerasServices.getModelos(context, token, marcaId: marcaId);
-    } catch (e) {
-      return [];
     }
   }
 
@@ -119,476 +107,23 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
   }
 
   // Método reutilizable para crear/editar unidad
-  void _mostrarDialogoUnidad(BuildContext context, {Unidad? unidadExistente}) {
-    final bool esEdicion = unidadExistente != null;
-    
-    final matriculaController = TextEditingController(text: unidadExistente?.matricula ?? '');
-    final anioController = TextEditingController(text: unidadExistente?.anio.toString() ?? '');
-    final motorController = TextEditingController(text: unidadExistente?.motor ?? '');
-    final chasisController = TextEditingController(text: unidadExistente?.chasis ?? '');
-    final colorController = TextEditingController(text: unidadExistente?.color ?? '');
-    final comentarioController = TextEditingController(text: unidadExistente?.comentario ?? '');
-    final descripcionController = TextEditingController(text: unidadExistente?.descripcion ?? '');
-    
-    bool consignado = unidadExistente?.consignado ?? false;
-    bool averias = unidadExistente?.averias ?? false;
-
-    // Variables para los dropdowns
-    List<Modelo> modelos = [];
-    Marca? marcaSeleccionada;
-    Modelo? modeloSeleccionado;
-    bool cargandoModelos = false;
-
-    // Si es edición, cargar la marca y modelo existentes
-    if (esEdicion) {
-      // Buscar la marca correspondiente
-      marcaSeleccionada = _marcas.firstWhere(
-        (marca) => marca.marcaId == unidadExistente.marcaId,
-        orElse: () => Marca(
-          marcaId: 0, 
-          descripcion: '', 
-          paraVenta: false, 
-          orden: ''
-        ),
-      );
-      
-      // Cargar modelos para la marca seleccionada
-      if (marcaSeleccionada.marcaId != 0) {
-        _cargarModelos(marcaSeleccionada.marcaId).then((listaModelos) {
-          modelos = listaModelos;
-          // Buscar el modelo correspondiente
-          modeloSeleccionado = listaModelos.firstWhere(
-            (modelo) => modelo.modeloId == unidadExistente.modeloId,
-            orElse: () => Modelo(
-              modeloId: 0, 
-              marcaId: 0, 
-              descripcion: '', 
-              paraVenta: false, 
-              orden: '', 
-              codMarca: '', 
-              marca: ''
-            ),
-          );
-        });
-      }
-    }
-
-    final formKey = GlobalKey<FormState>();
-    final colors = Theme.of(context).colorScheme;
-
-    showDialog(
+  void _mostrarDialogoUnidad(BuildContext context, {Unidad? unidadExistente}) async {
+    final Unidad? unidadGuardada = await showDialog<Unidad>(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setStateBd) {
-            // Función para cargar modelos cuando se selecciona una marca
-            Future<void> cargarModelosParaMarca(Marca? marca) async {
-              if (marca == null) return;
-              
-              setStateBd(() {
-                cargandoModelos = true;
-                modelos = [];
-                modeloSeleccionado = null;
-              });
-              
-              final listaModelos = await _cargarModelos(marca.marcaId);
-              
-              setStateBd(() {
-                modelos = listaModelos;
-                cargandoModelos = false;
-                
-                // Si estamos editando y la marca es la misma que la existente, seleccionar el modelo correspondiente
-                if (esEdicion && marca.marcaId == unidadExistente.marcaId) {
-                  modeloSeleccionado = listaModelos.firstWhere(
-                    (modelo) => modelo.modeloId == unidadExistente.modeloId,
-                    orElse: () => Modelo(
-                      modeloId: 0, 
-                      marcaId: 0, 
-                      descripcion: '', 
-                      paraVenta: false, 
-                      orden: '', 
-                      codMarca: '', 
-                      marca: ''
-                    ),
-                  );
-                }
-              });
-            }
-
-            // Cargar modelos inicialmente si estamos editando y ya tenemos una marca seleccionada
-            if (esEdicion && marcaSeleccionada != null && marcaSeleccionada!.marcaId != 0 && modelos.isEmpty) {
-              cargarModelosParaMarca(marcaSeleccionada);
-            }
-
-            return Dialog(
-              insetPadding: const EdgeInsets.all(20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.directions_car, size: 28, color: colors.primary),
-                          const SizedBox(width: 12),
-                          Text(
-                            esEdicion ? 'Editar Unidad' : 'Nueva Unidad',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Form(
-                        key: formKey,
-                        child: Column(
-                          children: [
-                            // Descripción
-                            TextFormField(
-                              controller: descripcionController,
-                              decoration: InputDecoration(
-                                labelText: 'Descripción',
-                                prefixIcon: Icon(Icons.description, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              // validator: (value) {
-                              //   if (value == null || value.isEmpty) {
-                              //     return 'Por favor ingrese la descripción';
-                              //   }
-                              //   return null;
-                              // },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Matrícula (opcional)
-                            TextFormField(
-                              controller: matriculaController,
-                              decoration: InputDecoration(
-                                labelText: 'Matrícula',
-                                prefixIcon: Icon(Icons.confirmation_number_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Dropdown de Marcas
-                            DropdownButtonFormField<Marca>(
-                              decoration: InputDecoration(
-                                labelText: 'Marca',
-                                prefixIcon: Icon(Icons.branding_watermark_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              value: marcaSeleccionada,
-                              items: [
-                                // Opción vacía inicial
-                                const DropdownMenuItem<Marca>(
-                                  value: null,
-                                  child: Text('Seleccione una marca'),
-                                ),
-                                // Opciones de marcas (usando las ya cargadas)
-                                ..._marcas.map((Marca marca) {
-                                  return DropdownMenuItem<Marca>(
-                                    value: marca,
-                                    child: Text(marca.descripcion),
-                                  );
-                                }),
-                              ],
-                              onChanged: _cargandoMarcas 
-                                  ? null 
-                                  : (Marca? nuevaMarca) async {
-                                      await cargarModelosParaMarca(nuevaMarca);
-                                      setStateBd(() {
-                                        marcaSeleccionada = nuevaMarca;
-                                      });
-                                    },
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Por favor seleccione una marca';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Dropdown de Modelos
-                            DropdownButtonFormField<Modelo>(
-                              decoration: InputDecoration(
-                                labelText: 'Modelo',
-                                prefixIcon: Icon(Icons.model_training_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              value: modeloSeleccionado,
-                              items: [
-                                // Opción vacía inicial
-                                DropdownMenuItem<Modelo>(
-                                  value: null,
-                                  child: Text(cargandoModelos ? 'Cargando modelos...' : 'Seleccione un modelo'),
-                                ),
-                                // Opciones de modelos
-                                ...modelos.map((Modelo modelo) {
-                                  return DropdownMenuItem<Modelo>(
-                                    value: modelo,
-                                    child: Text(modelo.descripcion),
-                                  );
-                                }),
-                              ],
-                              onChanged: (marcaSeleccionada == null || cargandoModelos)
-                                  ? null
-                                  : (Modelo? nuevoModelo) {
-                                      setStateBd(() {
-                                        modeloSeleccionado = nuevoModelo;
-                                      });
-                                    },
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Por favor seleccione un modelo';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Año
-                            TextFormField(
-                              controller: anioController,
-                              decoration: InputDecoration(
-                                labelText: 'Año',
-                                prefixIcon: Icon(Icons.calendar_today_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              keyboardType: TextInputType.number,
-                              maxLength: 4,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese un año';
-                                }
-                                if (value.length != 4 || int.tryParse(value) == null) {
-                                  return 'Por favor ingrese un año válido de 4 dígitos';
-                                }
-                                final year = int.parse(value);
-                                if (year < 1900 || year > DateTime.now().year + 1) {
-                                  return 'Año fuera del rango válido';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Número de Motor
-                            TextFormField(
-                              controller: motorController,
-                              decoration: InputDecoration(
-                                labelText: 'Número de Motor',
-                                prefixIcon: Icon(Icons.engineering_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese el número de motor';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Número de Chasis
-                            TextFormField(
-                              controller: chasisController,
-                              decoration: InputDecoration(
-                                labelText: 'Número de Chasis',
-                                prefixIcon: Icon(Icons.build_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Color
-                            TextFormField(
-                              controller: colorController,
-                              decoration: InputDecoration(
-                                labelText: 'Color',
-                                prefixIcon: Icon(Icons.color_lens_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Checkboxes para Consignado y Averías
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: CheckboxListTile(
-                                    title: const Text('Consignado'),
-                                    value: consignado,
-                                    onChanged: (value) {
-                                      setStateBd(() {
-                                        consignado = value ?? false;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CheckboxListTile(
-                                    title: const Text('Averías'),
-                                    value: averias,
-                                    onChanged: (value) {
-                                      setStateBd(() {
-                                        averias = value ?? false;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            // Comentario
-                            TextFormField(
-                              controller: comentarioController,
-                              decoration: InputDecoration(
-                                labelText: 'Comentario (Opcional)',
-                                prefixIcon: Icon(Icons.comment_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              maxLines: 3,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.onSurface,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              side: BorderSide(color: colors.outline),
-                            ),
-                            child: const Text('Cancelar'),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (formKey.currentState!.validate()) {
-                                // Crear nueva unidad con los campos actualizados
-                                final unidad = Unidad(
-                                  unidadId: esEdicion ? unidadExistente.unidadId : 0,
-                                  itemId: esEdicion ? unidadExistente.itemId : null,
-                                  codItem: esEdicion ? unidadExistente.codItem : '',
-                                  descripcion: descripcionController.text,
-                                  modeloId: modeloSeleccionado?.modeloId ?? 0,
-                                  codModelo: modeloSeleccionado?.codMarca ?? '',
-                                  modelo: modeloSeleccionado?.descripcion ?? '',
-                                  marcaId: marcaSeleccionada?.marcaId ?? 0,
-                                  codMarca: marcaSeleccionada?.descripcion ?? '',
-                                  marca: marcaSeleccionada?.descripcion ?? '',
-                                  chasis: chasisController.text,
-                                  motor: motorController.text,
-                                  anio: int.parse(anioController.text),
-                                  colorId: 1,
-                                  color: colorController.text,
-                                  consignado: consignado,
-                                  averias: averias,
-                                  matricula: matriculaController.text,
-                                  km: esEdicion ? unidadExistente.km : 0,
-                                  comentario: comentarioController.text,
-                                  recibidoPorId: 113,
-                                  recibidoPor: esEdicion ? unidadExistente.recibidoPor : '',
-                                  transportadoPor: esEdicion ? unidadExistente.transportadoPor : '',
-                                  clienteId: esEdicion ? unidadExistente.clienteId : null,
-                                  padron: esEdicion ? unidadExistente.padron : '',
-                                );
-
-                                if (esEdicion) {
-                                  await _unidadesServices.editarUnidad(context, unidad, token);
-                                } else {
-                                  await _unidadesServices.crearUnidad(context, unidad, token);
-                                }
-                                
-                                final status = await _unidadesServices.getStatusCode();
-                                if (status == 0) {
-                                  // Error al crear/editar unidad
-                                  return;
-                                } else {
-                                  await _cargarUnidades();
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Unidad ${esEdicion ? 'editada' : 'agregada'} correctamente'),
-                                      backgroundColor: colors.primary,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colors.primary,
-                              foregroundColor: colors.onPrimary,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: Text(esEdicion ? 'Actualizar Unidad' : 'Guardar Unidad'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        return DialogoUnidad(
+          unidadExistente: unidadExistente,
+          token: token,
+          unidadesServices: _unidadesServices,
+          codiguerasServices: _codiguerasServices,
+          permitirBusquedaMatricula: false, // Deshabilitar búsqueda en monitor vehículos
         );
       },
     );
+
+    if (unidadGuardada != null) {
+      await _cargarUnidades();
+    }
   }
 
   void _mostrarDialogoNuevaUnidad(BuildContext context) {
@@ -655,9 +190,9 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                             ],
                           ),
                         )
-                      : ListView.separated(
+                      : ListView.builder(
                           itemCount: unidadesFiltradas.length,
-                          separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
+                          // separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
                           itemBuilder: (context, index) {
                             final unidad = unidadesFiltradas[index];
                             return Container(

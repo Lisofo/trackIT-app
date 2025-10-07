@@ -26,8 +26,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   final TextEditingController buscador = TextEditingController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   bool isMobile = false;
-
-  
+  bool isAdmin = false;
 
   @override
   void initState() {
@@ -78,6 +77,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    isAdmin = context.watch<OrdenProvider>().admOrdenes;
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -145,7 +146,11 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                           onTap: () {
                             Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
                             context.read<OrdenProvider>().setOrden(orden);
-                            router.push('/ordenInterna');
+                            if (isAdmin) {
+                              router.push('/monitorOrdenes');
+                            } else {
+                              router.push('/ordenInterna');
+                            }
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -171,7 +176,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                             height: 10,
                                           ),
                                           Text(
-                                            DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                            orden.fechaOrdenTrabajo != null
+                                              ? DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo!)
+                                              : 'Fecha no disponible',
                                           ),
                                           const SizedBox(
                                             height: 10,
@@ -228,7 +235,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                         width: 10,
                                       ),
                                       Text(
-                                        DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo),
+                                        orden.fechaOrdenTrabajo != null
+                                          ? DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo!)
+                                          : 'Fecha no disponible',
                                       ),
                                       const SizedBox(
                                         width: 10,

@@ -140,7 +140,7 @@ class Unidad {
     "unidadId": unidadId,
     "itemId": null,
     "modeloId": modeloId,
-    "chasis": chasis,
+    "chasis": chasis == '' ? null : chasis,
     "motor": motor,
     "anio": anio,
     "colorId": 1,

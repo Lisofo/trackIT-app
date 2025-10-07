@@ -1324,7 +1324,9 @@ class ChildrenColumn1 extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             Text(
-              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo),
+              orden.fechaOrdenTrabajo != null
+                  ? DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaOrdenTrabajo!)
+                  : 'Sin fecha',
               style: const TextStyle(fontSize: 14),
             ),
           ],
@@ -1340,7 +1342,9 @@ class ChildrenColumn1 extends StatelessWidget {
               ),
             ),
             Text(
-              DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento),
+              orden.fechaVencimiento != null
+                  ? DateFormat('EEEE d, MMMM yyyy HH:ss', 'es').format(orden.fechaVencimiento!)
+                  : 'Sin vencimiento',
               style: const TextStyle(fontSize: 14),
             ),
           ],

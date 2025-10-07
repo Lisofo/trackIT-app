@@ -10,7 +10,7 @@ String ultimaTareaToMap(UltimaTarea data) => json.encode(data.toMap());
 
 class UltimaTarea {
   late int ordenTrabajoId;
-  late int numeroOrdenTrabajo;
+  late String numeroOrdenTrabajo;
   late String descripcion;
   late int lineaId;
   late int itemId;
@@ -49,7 +49,7 @@ class UltimaTarea {
 
   factory UltimaTarea.fromMap(Map<String, dynamic> json) => UltimaTarea(
     ordenTrabajoId: json["ordenTrabajoId"] as int? ?? 0,
-    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as int? ?? 0,
+    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as String? ?? '',
     descripcion: json["descripcion"] as String? ?? '',
     lineaId: json["lineaId"] as int? ?? 0,
     itemId: json["itemId"] as int? ?? 0,
@@ -89,7 +89,7 @@ class UltimaTarea {
 
   UltimaTarea.empty() {
     ordenTrabajoId = 0;
-    numeroOrdenTrabajo = 0;
+    numeroOrdenTrabajo = '';
     descripcion = '';
     lineaId = 0;
     itemId = 0;

@@ -37,7 +37,13 @@ class OrdenProvider with ChangeNotifier {
   String get modo => _modo;
   int get tecnicoId => _tecnicoId;
   UltimaTarea get ultimaTarea => _ultimaTarea;
+  bool _admOrdenes = false;
+  bool get admOrdenes => _admOrdenes;
 
+  void setAdmOrdenes(bool adm) {
+    _admOrdenes = adm;
+    notifyListeners();
+  }
 
   void setUltimaTarea(UltimaTarea ultima) {
     _ultimaTarea = ultima;

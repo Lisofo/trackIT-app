@@ -1,7 +1,9 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/providers/menu_providers.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/icons.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class BotonesDrawer extends StatefulWidget {
   const BotonesDrawer({super.key});
@@ -49,6 +51,7 @@ List<Widget> _filaBotones2(data, context, opciones) {
           getIcon(opt['icon'], context),
           TextButton(
             onPressed: () {
+              Provider.of<OrdenProvider>(context, listen: false).setAdmOrdenes(true);
               router.push(opt['ruta']);
             },
             child: Text(opt['texto'])

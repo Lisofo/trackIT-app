@@ -1,6 +1,9 @@
 import 'package:app_tec_sedel/models/tecnico.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
+import 'package:app_tec_sedel/services/codigueras_services.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:app_tec_sedel/models/cliente.dart';
@@ -31,12 +34,125 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   Unidad? unidadSeleccionada;
   final ClientServices clientServices = ClientServices();
   final UnidadesServices unidadesServices = UnidadesServices();
+  final CodiguerasServices codiguerasServices = CodiguerasServices();
   String token = '';
+  final TextEditingController _numOrdenController = TextEditingController();
+  final TextEditingController _comentClienteController = TextEditingController();
+  final TextEditingController _comentTrabajoController = TextEditingController();
+  late Orden ordenExistente = Orden.empty();
+
+  // Variables para controlar si estamos editando una orden existente
+  bool _isEditMode = false;
+  Orden? _ordenExistente;
 
   @override
   void initState() {
     super.initState();
     token = context.read<OrdenProvider>().token;
+    _cargarOrdenExistente();
+  }
+
+  Future<void> _cargarOrdenExistente() async {
+    final ordenProvider = context.read<OrdenProvider>();
+    ordenExistente = ordenProvider.orden;
+
+    if (ordenExistente.ordenTrabajoId != 0) {
+      setState(() {
+        _isEditMode = true;
+        _ordenExistente = ordenExistente;
+      });
+
+      // Cargar datos del cliente desde la API
+      await _cargarClienteDesdeAPI(ordenExistente.cliente.clienteId);
+      
+      // Cargar unidades del cliente y seleccionar la correcta
+      await _cargarUnidadesYSeleccionar(ordenExistente.cliente.clienteId, ordenExistente.unidad.unidadId);
+      
+      // Cargar el resto de los datos de la orden
+      _cargarDatosOrdenExistente();
+    }
+  }
+
+  Future<void> _cargarClienteDesdeAPI(int clienteId) async {
+    try {
+      // Obtener el cliente completo desde la API
+      final clientes = await clientServices.getClientes(
+        context, 
+        ordenExistente.cliente.nombre, // nombre
+        '', // codCliente
+        '', // estado
+        '', // tecnicoId
+        token
+      );
+
+      if (clientes != null && clientes is List<Cliente>) {
+        final clienteEncontrado = clientes.firstWhere(
+          (cliente) => cliente.clienteId == clienteId,
+          orElse: () => Cliente.empty(),
+        );
+
+        if (clienteEncontrado.clienteId != 0) {
+          setState(() {
+            clienteSeleccionado = clienteEncontrado;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error cargando cliente desde API: $e');
+    }
+  }
+
+  Future<void> _cargarUnidadesYSeleccionar(int clienteId, int unidadId) async {
+    try {
+      // Obtener unidades del cliente desde la API
+      List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
+        context, 
+        clienteId, 
+        token
+      );
+
+      // Buscar la unidad específica de la orden
+      Unidad? unidadDeOrden;
+      try {
+        unidadDeOrden = unidadesDelCliente.firstWhere(
+          (unidad) => unidad.unidadId == unidadId
+        );
+      } catch (e) {
+        // Si no encuentra por ID, intentar por matrícula como fallback
+        if (ordenExistente.matricula != null) {
+          try {
+            unidadDeOrden = unidadesDelCliente.firstWhere(
+              (unidad) => unidad.matricula == ordenExistente.matricula
+            );
+          } catch (e) {
+            print('No se encontró la unidad por matrícula: ${ordenExistente.matricula}');
+          }
+        }
+      }
+
+      setState(() {
+        unidades = unidadesDelCliente;
+        unidadSeleccionada = unidadDeOrden;
+      });
+    } catch (e) {
+      print('Error cargando unidades: $e');
+    }
+  }
+
+  void _cargarDatosOrdenExistente() {
+    if (_ordenExistente == null) return;
+
+    setState(() {
+      _numOrdenController.text = _ordenExistente!.numeroOrdenTrabajo;
+      _comentClienteController.text = _ordenExistente!.comentarioCliente;
+      _comentTrabajoController.text = _ordenExistente!.comentarioTrabajo;
+      
+      if (_ordenExistente!.fechaOrdenTrabajo != null) {
+        fecha = _ordenExistente!.fechaOrdenTrabajo!;
+      }
+      
+      // Nota: condIva no está disponible en el modelo Orden, se mantiene el valor por defecto
+    });
   }
 
   bool _telefonoExiste(String telefono) {
@@ -71,43 +187,43 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     final ordenProvider = context.read<OrdenProvider>();
     
     return Orden(
-      ordenTrabajoId: 0,
-      numeroOrdenTrabajo: 0, // Se asignará desde el servidor
+      ordenTrabajoId: _isEditMode ? _ordenExistente!.ordenTrabajoId : 0,
+      numeroOrdenTrabajo: _numOrdenController.text,
       descripcion: 'Orden de trabajo para ${clienteSeleccionado!.nombre}',
       fechaOrdenTrabajo: fecha,
-      fechaVencimiento: fecha.add(const Duration(days: 30)),
-      fechaEntrega: null,
-      fechaDesde: fecha,
-      fechaHasta: fecha.add(const Duration(days: 7)),
+      fechaVencimiento: _isEditMode ? _ordenExistente!.fechaVencimiento : null,
+      fechaEntrega: _isEditMode ? _ordenExistente!.fechaEntrega : null,
+      fechaDesde: _isEditMode ? _ordenExistente!.fechaDesde : fecha,
+      fechaHasta: _isEditMode ? _ordenExistente!.fechaHasta : fecha,
       ruc: clienteSeleccionado!.ruc,
       monedaId: 1,
-      codMoneda: 'PYG',
-      descMoneda: 'Guaraní',
-      signo: '₲',
-      totalOrdenTrabajo: 0.0, // Se calculará en la siguiente pantalla
-      comentarioCliente: '',
-      comentarios: '',
-      comentarioTrabajo: '',
-      estado: 'PENDIENTE',
-      presupuestoIdPlantilla: null,
-      numeroPresupuesto: null,
-      descripcionPresupuesto: null,
-      totalPresupuesto: null,
-      plantilla: false,
+      codMoneda: 'UYU',
+      descMoneda: 'Peso Uruguayo',
+      signo: '\$',
+      totalOrdenTrabajo: _isEditMode ? _ordenExistente!.totalOrdenTrabajo : 0.0,
+      comentarioCliente: _comentClienteController.text,
+      comentarios: _isEditMode ? _ordenExistente!.comentarios : '',
+      comentarioTrabajo: _comentTrabajoController.text,
+      estado: _isEditMode ? _ordenExistente!.estado : 'PENDIENTE',
+      presupuestoIdPlantilla: _isEditMode ? _ordenExistente!.presupuestoIdPlantilla : null,
+      numeroPresupuesto: _isEditMode ? _ordenExistente!.numeroPresupuesto : null,
+      descripcionPresupuesto: _isEditMode ? _ordenExistente!.descripcionPresupuesto : null,
+      totalPresupuesto: _isEditMode ? _ordenExistente!.totalPresupuesto : null,
+      plantilla: _isEditMode ? _ordenExistente!.plantilla : false,
       unidadId: unidadSeleccionada!.unidadId,
       matricula: unidadSeleccionada!.matricula,
-      km: 0,
-      regHs: false,
-      instrucciones: '',
-      tipoOrden: TipoOrden.empty(),
+      km: _isEditMode ? _ordenExistente!.km ?? 0 : 0,
+      regHs: _isEditMode ? _ordenExistente!.regHs ?? false : false,
+      instrucciones: _isEditMode ? _ordenExistente!.instrucciones : '',
+      tipoOrden: _isEditMode ? _ordenExistente!.tipoOrden : TipoOrden.empty(),
       cliente: clienteSeleccionado!,
-      tecnico: Tecnico.empty(),
+      tecnico: _isEditMode ? _ordenExistente!.tecnico : Tecnico.empty(),
       unidad: unidadSeleccionada!,
-      servicio: [],
-      otRevisionId: 0,
-      planoId: 0,
-      alerta: false,
-      tecnicoId: ordenProvider.tecnicoId, // Obtener del provider
+      servicio: _isEditMode ? _ordenExistente!.servicio : [],
+      otRevisionId: _isEditMode ? _ordenExistente!.otRevisionId : 0,
+      planoId: _isEditMode ? _ordenExistente!.planoId : 0,
+      alerta: _isEditMode ? _ordenExistente!.alerta : false,
+      tecnicoId: ordenProvider.tecnicoId,
     );
   }
   
@@ -117,7 +233,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.primary,
-        title: Text('Registro de Orden', style: TextStyle(color: colors.onPrimary),),
+        title: Text(
+          _isEditMode ? 'Editar Orden' : 'Registro de Orden', 
+          style: TextStyle(color: colors.onPrimary),
+        ),
         iconTheme: IconThemeData(color: colors.onPrimary),
       ),
       body: SingleChildScrollView(
@@ -152,6 +271,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                       }
                     },
                   ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _numOrdenController,
+                    decoration: const InputDecoration(
+                      labelText: 'N° Orden',
+                      border: OutlineInputBorder(),
+                    ),
+                  )
                 ),
                 const SizedBox(width: 16),
                 const Text('Cond. IVA:'),
@@ -311,7 +440,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   Expanded(
                     child: TextFormField(
                       readOnly: true,
-                      initialValue: unidadSeleccionada!.marca,
+                      controller: TextEditingController(text: unidadSeleccionada!.marca),
                       decoration: const InputDecoration(
                         labelText: 'Marca',
                         border: OutlineInputBorder(),
@@ -322,7 +451,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   Expanded(
                     child: TextFormField(
                       readOnly: true,
-                      initialValue: unidadSeleccionada!.modelo,
+                      controller: TextEditingController(text: unidadSeleccionada!.modelo),
                       decoration: const InputDecoration(
                         labelText: 'Modelo',
                         border: OutlineInputBorder(),
@@ -334,7 +463,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: unidadSeleccionada!.matricula,
+                controller: TextEditingController(text: unidadSeleccionada!.matricula),
                 decoration: const InputDecoration(
                   labelText: 'Matrícula',
                   border: OutlineInputBorder(),
@@ -343,7 +472,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: unidadSeleccionada!.motor,
+                controller: TextEditingController(text: unidadSeleccionada!.motor),
                 decoration: const InputDecoration(
                   labelText: 'Número de Motor',
                   border: OutlineInputBorder(),
@@ -352,7 +481,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: unidadSeleccionada!.chasis,
+                controller: TextEditingController(text: unidadSeleccionada!.chasis),
                 decoration: const InputDecoration(
                   labelText: 'Número de Chasis',
                   border: OutlineInputBorder(),
@@ -361,18 +490,46 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: unidadSeleccionada!.anio.toString(),
+                controller: TextEditingController(text: unidadSeleccionada!.anio.toString()),
                 decoration: const InputDecoration(
                   labelText: 'Año',
                   border: OutlineInputBorder(),
                 ),
               ),
             ],
-
+            const SizedBox(height: 24),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _comentClienteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Comentario Cliente',
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 1,
+                    maxLines: 5
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _comentTrabajoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Comentario Trabajo',
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 1,
+                    maxLines: 5
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             Center(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (clienteSeleccionado == null || unidadSeleccionada == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
@@ -383,20 +540,48 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   // Crear la orden en memoria
                   final ordenCreada = _crearOrdenEnMemoria();
                   
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetallePiezasScreen(
-                        cliente: clienteSeleccionado!,
-                        vehiculo: unidadSeleccionada!,
-                        fecha: fecha,
-                        condIva: condIva,
-                        ordenPrevia: ordenCreada, // Pasar la orden creada
-                      ),
+                  // Mostrar indicador de carga
+                  showDialog(
+                    context: context,
+                    barrierDismissible: true,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(),
                     ),
                   );
+                  
+                  try {
+                    final ordenServices = OrdenServices();
+                    final ordenGuardada = _isEditMode 
+                        ? await ordenServices.actualizarOrden(context, token, ordenCreada)
+                        : await ordenServices.postOrden(context, token, ordenCreada);
+                    
+                    // Cerrar el diálogo de carga
+                    Navigator.of(context).pop();
+                    
+                    if (ordenGuardada != null) {
+                      // Limpiar la orden del provider después de guardar
+                      context.read<OrdenProvider>().setOrden(Orden.empty());
+                      
+                      // Navegar a la siguiente pantalla con la orden ya creada
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetallePiezasScreen(
+                            cliente: clienteSeleccionado!,
+                            vehiculo: unidadSeleccionada!,
+                            fecha: fecha,
+                            condIva: condIva,
+                            ordenPrevia: ordenGuardada,
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    // Cerrar el diálogo de carga en caso de error
+                    Navigator.of(context).pop();
+                  }
                 },
-                child: const Text('Siguiente'),
+                child: Text(_isEditMode ? 'Actualizar Orden' : 'Siguiente'),
               ),
             ),
           ],
@@ -624,288 +809,39 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       return;
     }
 
-    final matriculaController = TextEditingController();
-    final anoController = TextEditingController();
-    final nroMotorController = TextEditingController();
-    final nroChasisController = TextEditingController();
-    final marcaController = TextEditingController();
-    final modeloController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    // Variable para almacenar la unidad encontrada
-    Unidad? unidadEncontrada;
-
-    // Función para buscar unidad por matrícula
-    Future<void> buscarUnidadPorMatricula() async {
-      if (matriculaController.text.isEmpty) return;
-
-      try {
-        List<Unidad> unidadesEncontradas = await unidadesServices.getUnidades(
-          context, 
-          token, 
-          matricula: matriculaController.text
-        );
-
-        if (unidadesEncontradas.isNotEmpty) {
-          unidadEncontrada = unidadesEncontradas.first;
-          marcaController.text = unidadEncontrada!.marca;
-          modeloController.text = unidadEncontrada!.modelo;
-          anoController.text = unidadEncontrada!.anio.toString();
-          nroMotorController.text = unidadEncontrada!.motor;
-          nroChasisController.text = unidadEncontrada!.chasis;
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unidad encontrada y cargada automáticamente')),
-          );
-        } else {
-          unidadEncontrada = null;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se encontró una unidad con esa matrícula')),
-          );
-        }
-      } catch (e) {
-        unidadEncontrada = null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al buscar la unidad: $e')),
-        );
-      }
-    }
-
-    showDialog(
+    final Unidad? unidadGuardada = await showDialog<Unidad>(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setStateBd) {
-            return AlertDialog(
-              title: const Text('Nueva Unidad'),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Cliente: ${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}'),
-                      const SizedBox(height: 16),
-                      
-                      // Matrícula con búsqueda automática
-                      TextFormField(
-                        controller: matriculaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Matrícula',
-                          border: OutlineInputBorder(),
-                          hintText: 'Presione Enter para buscar',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese una matrícula';
-                          }
-                          return null;
-                        },
-                        onFieldSubmitted: (value) {
-                          buscarUnidadPorMatricula();
-                          setStateBd((){});
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Marca
-                      TextFormField(
-                        controller: marcaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Marca',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese la marca';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Modelo
-                      TextFormField(
-                        controller: modeloController,
-                        decoration: const InputDecoration(
-                          labelText: 'Modelo',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese el modelo';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Año
-                      TextFormField(
-                        controller: anoController,
-                        decoration: const InputDecoration(
-                          labelText: 'Año',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        maxLength: 4,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un año';
-                          }
-                          if (value.length != 4 || int.tryParse(value) == null) {
-                            return 'Por favor ingrese un año válido de 4 dígitos';
-                          }
-                          final year = int.parse(value);
-                          if (year < 1900 || year > DateTime.now().year + 1) {
-                            return 'Año fuera del rango válido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Número de Motor
-                      TextFormField(
-                        controller: nroMotorController,
-                        decoration: const InputDecoration(
-                          labelText: 'Número de Motor',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese el número de motor';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Número de Chasis
-                      TextFormField(
-                        controller: nroChasisController,
-                        decoration: const InputDecoration(
-                          labelText: 'Número de Chasis',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese el número de chasis';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      try {
-                        // Si se encontró una unidad durante la búsqueda, usar editar
-                        if (unidadEncontrada != null) {
-                          // Actualizar la unidad existente con los datos del formulario
-                          unidadEncontrada!.marca = marcaController.text;
-                          unidadEncontrada!.modelo = modeloController.text;
-                          unidadEncontrada!.anio = int.parse(anoController.text);
-                          unidadEncontrada!.motor = nroMotorController.text;
-                          unidadEncontrada!.chasis = nroChasisController.text;
-                          unidadEncontrada!.clienteId = clienteSeleccionado!.clienteId;
-                          
-                          await unidadesServices.editarUnidad(
-                            context,
-                            unidadEncontrada!,
-                            token
-                          );
-                          
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Unidad actualizada correctamente')),
-                          );
-                        } else {
-                          // Si no se encontró unidad, crear una nueva
-                          final nuevaUnidad = Unidad(
-                            unidadId: 0,
-                            itemId: 0,
-                            codItem: '',
-                            descripcion: '',
-                            modeloId: 0,
-                            codModelo: '',
-                            modelo: modeloController.text,
-                            marcaId: 0,
-                            codMarca: '',
-                            marca: marcaController.text,
-                            chasis: nroChasisController.text,
-                            motor: nroMotorController.text,
-                            anio: int.parse(anoController.text),
-                            colorId: 0,
-                            color: '',
-                            consignado: false,
-                            averias: false,
-                            matricula: matriculaController.text,
-                            km: 0,
-                            comentario: '',
-                            recibidoPorId: 0,
-                            recibidoPor: '',
-                            transportadoPor: '',
-                            clienteId: clienteSeleccionado!.clienteId,
-                            padron: null,
-                          );
-                          
-                          await unidadesServices.crearUnidad(
-                            context,
-                            nuevaUnidad,
-                            token
-                          );
-                          
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Unidad creada correctamente')),
-                          );
-                        }
-
-                        // Actualizar la lista de unidades desde la API
-                        List<Unidad> unidadesActualizadas = await unidadesServices.getUnidadesDeCliente(
-                          context, 
-                          clienteSeleccionado!.clienteId, 
-                          token
-                        );
-
-                        setState(() {
-                          unidades = unidadesActualizadas;
-                          // Seleccionar la unidad recién creada o editada
-                          try {
-                            unidadSeleccionada = unidades.firstWhere(
-                              (u) => u.matricula == matriculaController.text
-                            );
-                          } catch (e) {
-                            // Si no encuentra la unidad, seleccionar la primera si existe
-                            unidadSeleccionada = unidades.isNotEmpty ? unidades.first : null;
-                          }
-                        });
-
-                        Navigator.of(context).pop();
-                        
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error al guardar unidad: $e')),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
+        return DialogoUnidad(
+          token: token,
+          clienteId: clienteSeleccionado!.clienteId,
+          unidadesServices: unidadesServices,
+          codiguerasServices: codiguerasServices,
+          permitirBusquedaMatricula: true, // Habilitar búsqueda por matrícula
         );
       },
     );
+
+    if (unidadGuardada != null) {
+      // Actualizar la lista de unidades desde la API
+      List<Unidad> unidadesActualizadas = await unidadesServices.getUnidadesDeCliente(
+        context, 
+        clienteSeleccionado!.clienteId, 
+        token
+      );
+
+      setState(() {
+        unidades = unidadesActualizadas;
+        // Seleccionar la unidad recién creada
+        try {
+          unidadSeleccionada = unidades.firstWhere(
+            (u) => u.matricula == unidadGuardada.matricula
+          );
+        } catch (e) {
+          // Si no encuentra la unidad, seleccionar la primera si existe
+          unidadSeleccionada = unidades.isNotEmpty ? unidades.first : null;
+        }
+      });
+    }
   }
 }

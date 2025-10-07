@@ -18,7 +18,8 @@ class OrdenServices {
 
   Future getOrden(BuildContext context, String tecnicoId, String desde, String hasta, String token) async {
     String link = apiLink;
-    String linkFiltrado = '${link}api/v1/ordenes/?fechaHasta=2024-09-24 23:59:59';
+    String linkFiltrado = '${link}api/v1/ordenes/';
+    // String linkFiltrado = '${link}api/v1/ordenes/?fechaHasta=2024-09-24 23:59:59';
     
     // += desde == 'Anteriores'
         // ? 'api/v1/ordenes/?sort=fechaDesde&tecnicoId=$tecnicoId&estado=EN PROCESO,PENDIENTE'
@@ -49,7 +50,7 @@ class OrdenServices {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/';
     var data = orden.toMapCyP();
-    print(data);
+    // print(data);
 
     try {
       var headers = {'Authorization': token};
@@ -63,12 +64,42 @@ class OrdenServices {
       );
       statusCode = 1;
       
+      // print(resp.data);
+      var retorno = Orden.fromJson(resp.data);
+      return retorno;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  // Agregar este método en la clase OrdenServices
+  Future actualizarOrden(BuildContext context, String token, Orden orden) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/${orden.ordenTrabajoId}'; // Usar PUT para actualizar
+
+    try {
+      var headers = {'Authorization': token};
+      var data = orden.toMapCyP();
+      
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'PUT',
+          headers: headers,
+        ),
+        data: data
+      );
+      
+      statusCode = 1;
+      
       print(resp.data);
       var retorno = Orden.fromJson(resp.data);
       return retorno;
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
+      rethrow;
     }
   }
 

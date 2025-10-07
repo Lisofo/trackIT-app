@@ -211,7 +211,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  DateFormat('EEEE d, MMMM yyyy', 'es').format(orden.fechaOrdenTrabajo),
+                  DateFormat('EEEE d, MMMM yyyy', 'es').format(orden.fechaOrdenTrabajo ?? DateTime.now()),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(

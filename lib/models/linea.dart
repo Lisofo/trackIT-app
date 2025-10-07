@@ -40,6 +40,8 @@ class Linea {
   late double? mecanicaHs;
   late double? mecanicaMonto;
   late double? repSinIva;
+  late String pieza;
+  late String accion;
 
   Linea({
     required this.lineaId,
@@ -65,6 +67,16 @@ class Linea {
     required this.gruInvId,
     required this.avance,
     required this.mo,
+    required this.chapaHs,
+    required this.chapaMonto,
+    required this.pinturaMonto,
+    required this.mecanicaHs,
+    required this.mecanicaMonto,
+    required this.repSinIva,
+    required this.accionId,
+    required this.accion,
+    required this.piezaId,
+    required this.pieza,
   });
 
   factory Linea.fromJson(Map<String, dynamic> json) => Linea(
@@ -91,6 +103,16 @@ class Linea {
     gruInvId: json["gruInvId"] as int? ?? 0,
     avance: json["avance"] as int? ?? 0,
     mo: json["MO"] as String? ?? '',
+    chapaHs: (json["chapaHs"] as num?)?.toDouble() ?? 0.0,
+    chapaMonto: (json["chapaMonto"] as num?)?.toDouble() ?? 0.0,
+    pinturaMonto: (json["pinturaMonto"] as num?)?.toDouble() ?? 0.0,
+    mecanicaHs: (json["mecanicaHs"] as num?)?.toDouble() ?? 0.0,
+    mecanicaMonto: (json["mecanicaMonto"] as num?)?.toDouble() ?? 0.0,
+    repSinIva: (json["repSinIva"] as num?)?.toDouble() ?? 0.0,
+    accionId: json["accionId"] as int? ?? 0,
+    piezaId: json["piezaId"] as int? ?? 0,
+    pieza: json["pieza"] as String? ?? '',
+    accion: json["accion"] as String? ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -134,7 +156,9 @@ class Linea {
     "pinturaMonto": pinturaMonto,
     "mecanicaHs": mecanicaHs,
     "mecanicaMonto": mecanicaMonto,
-    "repSinIva": repSinIva != 0.0 ? "S" : "N",
+    "repSinIva": repSinIva,
+    'accion': accion,
+    'pieza': pieza,
   };
 
   Linea.empty(){
@@ -161,6 +185,12 @@ class Linea {
     gruInvId = 0;
     avance = 0;
     mo = '';
+    chapaHs = 0.0;
+    chapaMonto = 0.0;
+    pinturaMonto = 0.0;
+    mecanicaHs = 0.0;
+    mecanicaMonto = 0.0;
+    repSinIva = 0.0;
   }
 
   String getAvanceEnHorasMinutos() {

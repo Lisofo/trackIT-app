@@ -219,7 +219,9 @@ class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
                                     width: 10,
                                   ),
                                   Text(
-                                    DateFormat('EEEE d, MMMM yyyy', 'es').format(ordenesFiltradas[i].fechaOrdenTrabajo),
+                                    ordenesFiltradas[i].fechaOrdenTrabajo != null
+                                        ? DateFormat('EEEE d, MMMM yyyy', 'es').format(ordenesFiltradas[i].fechaOrdenTrabajo!)
+                                        : 'Fecha no disponible',
                                   ),
                                   const Expanded(child: Text('')),
                                   Text(ordenesFiltradas[i].tipoOrden.descripcion),

@@ -191,6 +191,7 @@ class _EntradSalidaState extends State<EntradSalida> {
               ],
               CustomButton(
                 onPressed: !marcando ? () {
+                  Provider.of<OrdenProvider>(context, listen: false).setAdmOrdenes(false);
                   router.push('/listaOrdenes');
                 } : null ,
                 text: 'Revisar Ordenes',
