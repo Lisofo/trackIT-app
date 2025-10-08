@@ -1,4 +1,5 @@
 import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/providers/menu_providers.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/icons.dart';
@@ -43,6 +44,7 @@ class _BotonesDrawerState extends State<BotonesDrawer> {
 
 List<Widget> _filaBotones2(data, context, opciones) {
   final List<Widget> opcionesRet = [];
+  final ordenProvider = Provider.of<OrdenProvider>(context, listen: false);
   opciones.forEach((opt) {
     final widgetTemp = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -51,7 +53,10 @@ List<Widget> _filaBotones2(data, context, opciones) {
           getIcon(opt['icon'], context),
           TextButton(
             onPressed: () {
-              Provider.of<OrdenProvider>(context, listen: false).setAdmOrdenes(true);
+              if (opt['ruta'] == '/monitorOrdenes') {
+                ordenProvider.setOrden(Orden.empty());
+              }
+              ordenProvider.setAdmOrdenes(true);
               router.push(opt['ruta']);
             },
             child: Text(opt['texto'])

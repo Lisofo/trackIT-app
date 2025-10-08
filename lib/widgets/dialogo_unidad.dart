@@ -318,6 +318,33 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                     key: formKey,
                     child: Column(
                       children: [
+                        // Matrícula
+                        if (!widget.permitirBusquedaMatricula) ...[
+                          TextFormField(
+                            controller: matriculaController,
+                            decoration: InputDecoration(
+                              labelText: 'Matrícula',
+                              prefixIcon: Icon(Icons.confirmation_number_outlined, color: colors.primary),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: colors.onError, width: 2),
+                              ),
+                              errorStyle: TextStyle(color: colors.onError),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: colors.primary, width: 2),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingrese la matrícula';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         // Descripción
                         TextFormField(
                           controller: descripcionController,
@@ -331,35 +358,18 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // Matrícula
-                        // TextFormField(
-                        //   controller: matriculaController,
-                        //   decoration: InputDecoration(
-                        //     labelText: 'Matrícula',
-                        //     prefixIcon: Icon(Icons.confirmation_number_outlined, color: colors.primary),
-                        //     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        //     focusedBorder: OutlineInputBorder(
-                        //       borderRadius: BorderRadius.circular(12),
-                        //       borderSide: BorderSide(color: colors.primary, width: 2),
-                        //     ),
-                        //   ),
-                        //   validator: (value) {
-                        //     if (value == null || value.isEmpty) {
-                        //       return 'Por favor ingrese la matrícula';
-                        //     }
-                        //     return null;
-                        //   },
-                        // ),
-                        // const SizedBox(height: 16),
-                        
+                        const SizedBox(height: 16),                        
                         // Dropdown de Marcas
                         DropdownButtonFormField<Marca>(
                           decoration: InputDecoration(
                             labelText: 'Marca',
                             prefixIcon: Icon(Icons.branding_watermark_outlined, color: colors.primary),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colors.onError, width: 2),
+                            ),
+                            errorStyle: TextStyle(color: colors.onError),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: colors.primary, width: 2),
@@ -401,6 +411,11 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                             labelText: 'Modelo',
                             prefixIcon: Icon(Icons.model_training_outlined, color: colors.primary),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colors.onError, width: 2),
+                            ),
+                            errorStyle: TextStyle(color: colors.onError),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: colors.primary, width: 2),
@@ -442,6 +457,11 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                             labelText: 'Año',
                             prefixIcon: Icon(Icons.calendar_today_outlined, color: colors.primary),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colors.onError, width: 2),
+                            ),
+                            errorStyle: TextStyle(color: colors.onError),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: colors.primary, width: 2),
@@ -608,6 +628,7 @@ class DialogoUnidadState extends State<DialogoUnidad> {
   }
 
   Widget _buildCampoBusquedaMatricula(Function setStateBd) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -628,6 +649,11 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                   labelText: 'Matrícula',
                   hintText: 'Ingrese matrícula para buscar',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.onError, width: 2),
+                  ),
+                  errorStyle: TextStyle(color: colors.onError),
                   suffixIcon: buscandoUnidad 
                       ? const SizedBox(
                           width: 20,
@@ -640,6 +666,12 @@ class DialogoUnidadState extends State<DialogoUnidad> {
                         ),
                 ),
                 onFieldSubmitted: (value) => _buscarUnidadPorMatricula(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingrese la matrícula';
+                  }
+                  return null;
+                },
               ),
             ),
           ],

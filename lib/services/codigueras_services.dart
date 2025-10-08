@@ -19,7 +19,7 @@ class CodiguerasServices {
   }
   
   Future<List<Marca>> getMarcas(BuildContext context, String token) async {
-    String link = '${apiUrl}api/v1/unidades-marcas/';
+    String link = '${apiUrl}api/v1/unidades-marcas/?sort=descripcion';
     try {
       var headers = {'Authorization': token};
       var resp = await _dio.request(
@@ -41,11 +41,11 @@ class CodiguerasServices {
   }
 
   Future<List<Modelo>> getModelos(BuildContext context, String token, {int? marcaId}) async {
-    String link = '${apiUrl}api/v1/unidades-modelos/';
+    String link = '${apiUrl}api/v1/unidades-modelos/?sort=descripcion';
     
     // Agregar parámetro marcaId si viene
     if (marcaId != null) {
-      link += '?marcaId=$marcaId';
+      link += '&marcaId=$marcaId';
     }
     
     try {

@@ -1,10 +1,9 @@
 // monitor_cliente.dart
 import 'dart:async';
-
 import 'package:app_tec_sedel/models/cliente.dart';
-import 'package:app_tec_sedel/models/tecnico.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
+import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,6 +19,8 @@ class MonitorClientes extends StatefulWidget {
 class MonitorClientesState extends State<MonitorClientes> {
   List<Cliente> clientes = [];
   List<Cliente> clientesFiltrados = [];
+  Departamento? departamentoSeleccionado;
+  bool isLoadingDepartamentos = false;
   TextEditingController searchController = TextEditingController();
   
   // Variables para búsqueda en tiempo real
@@ -39,8 +40,6 @@ class MonitorClientesState extends State<MonitorClientes> {
   @override
   void initState() {
     super.initState();
-    _cargarClientesIniciales();
-    // Corregir: obtener el token del provider correctamente
     token = context.read<OrdenProvider>().token;
     searchController.addListener(_filtrarClientesEnTiempoReal);
     _scrollController.addListener(_scrollListener);
@@ -215,10 +214,6 @@ class MonitorClientesState extends State<MonitorClientes> {
     FocusScope.of(context).unfocus();
   }
 
-  bool _telefonoExiste(String telefono) {
-    return clientes.any((c) => c.telefono1 == telefono);
-  }
-
   Widget _buildLoadingMoreIndicator() {
     return _hasMore 
       ? const Padding(
@@ -305,10 +300,10 @@ class MonitorClientesState extends State<MonitorClientes> {
                               ],
                             ),
                           )
-                        : ListView.separated(
+                        : ListView.builder(
                             controller: _scrollController,
                             itemCount: clientesFiltrados.length + (_isLoadingMore ? 1 : 0),
-                            separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
+                            // separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
                             itemBuilder: (context, index) {
                               if (index == clientesFiltrados.length) {
                                 return _buildLoadingMoreIndicator();
@@ -324,7 +319,7 @@ class MonitorClientesState extends State<MonitorClientes> {
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withOpacity(0.30),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -389,6 +384,18 @@ class MonitorClientesState extends State<MonitorClientes> {
                                       ),
                                     ),
                                   ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {
+                                          _mostrarDialogoEditarCliente(context, cliente);
+                                        },
+                                        icon: Icon(Icons.edit, color: colors.primary),
+                                        tooltip: 'Editar Cliente',
+                                      ),
+                                    ],
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 ),
                               );
@@ -408,290 +415,86 @@ class MonitorClientesState extends State<MonitorClientes> {
     );
   }
 
-  void _mostrarDialogoNuevoCliente(BuildContext context) {
-    final telefonoController = TextEditingController();
-    final nombreController = TextEditingController();
-    final nombreFantasiaController = TextEditingController();
-    final rucController = TextEditingController();
-    final correoController = TextEditingController();
-    final direccionController = TextEditingController();
-    final barrioController = TextEditingController();
-    final localidadController = TextEditingController();
-    final colors = Theme.of(context).colorScheme;
-    final formKey = GlobalKey<FormState>();
+  // void _mostrarDialogoEliminarCliente(BuildContext context, Cliente cliente) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: const Text('Eliminar Cliente'),
+  //         content: Text('¿Estás seguro de que quieres eliminar a ${cliente.nombre}?'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text('Cancelar'),
+  //           ),
+  //           TextButton(
+  //             onPressed: () async {
+  //               try {
+  //                 await clientServices.deleteCliente(context, cliente, token);
+  //                 await _recargarDatos();
+  //                 Navigator.of(context).pop();
+  //               } catch (e) {
+  //                 print('Error eliminando cliente: $e');
+  //               }
+  //             },
+  //             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
-    showDialog(
+  void _mostrarDialogoNuevoCliente(BuildContext context) async {
+    final clienteGuardado = await showDialog<Cliente>(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              insetPadding: const EdgeInsets.all(20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.person_add, size: 28, color: colors.primary),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Nuevo Cliente',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Form(
-                        key: formKey,
-                        child: Column(
-                          children: [
-                            // Teléfono (primer campo)
-                            TextFormField(
-                              controller: telefonoController,
-                              decoration: InputDecoration(
-                                labelText: 'Teléfono/Celular',
-                                prefixIcon: Icon(Icons.phone_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              keyboardType: TextInputType.phone,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese un teléfono';
-                                }
-                                if (_telefonoExiste(value)) {
-                                  return 'Este teléfono ya existe';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Nombre
-                            TextFormField(
-                              controller: nombreController,
-                              decoration: InputDecoration(
-                                labelText: 'Nombre',
-                                prefixIcon: Icon(Icons.person_outline, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese un nombre';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Nombre Fantasía
-                            TextFormField(
-                              controller: nombreFantasiaController,
-                              decoration: InputDecoration(
-                                labelText: 'Nombre Fantasía',
-                                prefixIcon: Icon(Icons.business_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // RUC
-                            TextFormField(
-                              controller: rucController,
-                              decoration: InputDecoration(
-                                labelText: 'RUC',
-                                prefixIcon: Icon(Icons.badge_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese el RUC';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Correo
-                            TextFormField(
-                              controller: correoController,
-                              decoration: InputDecoration(
-                                labelText: 'Correo electrónico',
-                                prefixIcon: Icon(Icons.email_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese un correo electrónico';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Por favor ingrese un correo válido';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Dirección
-                            TextFormField(
-                              controller: direccionController,
-                              decoration: InputDecoration(
-                                labelText: 'Dirección',
-                                prefixIcon: Icon(Icons.location_on_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                              maxLines: 2,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingrese una dirección';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Barrio
-                            TextFormField(
-                              controller: barrioController,
-                              decoration: InputDecoration(
-                                labelText: 'Barrio',
-                                prefixIcon: Icon(Icons.location_city_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Localidad
-                            TextFormField(
-                              controller: localidadController,
-                              decoration: InputDecoration(
-                                labelText: 'Localidad',
-                                prefixIcon: Icon(Icons.place_outlined, color: colors.primary),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: colors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.onSurface,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              side: BorderSide(color: colors.outline),
-                            ),
-                            child: const Text('Cancelar'),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (formKey.currentState!.validate()) {
-                                final nuevoCliente = Cliente(
-                                  clienteId: 0,
-                                  codCliente: '',
-                                  nombre: nombreController.text,
-                                  nombreFantasia: nombreFantasiaController.text,
-                                  direccion: direccionController.text,
-                                  barrio: barrioController.text,
-                                  localidad: localidadController.text,
-                                  telefono1: telefonoController.text,
-                                  telefono2: '',
-                                  email: correoController.text,
-                                  ruc: rucController.text,
-                                  estado: 'ACTIVO',
-                                  coordenadas: null,
-                                  tecnico: Tecnico.empty(),
-                                  departamento: Departamento.empty(),
-                                  tipoCliente: TipoCliente.empty(),
-                                  notas: '',
-                                  pagoId: 0,
-                                  vendedorId: 0,
-                                );
-                                
-                                try {
-                                  await clientServices.postCliente(
-                                    context, 
-                                    nuevoCliente, 
-                                    token
-                                  );
-
-                                  // Recargar los datos después de crear el cliente
-                                  await _recargarDatos();
-                                  
-                                  Navigator.of(context).pop();
-                                  
-                                } catch (e) {
-                                  print('Error creando cliente: $e');
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colors.primary,
-                              foregroundColor: colors.onPrimary,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: const Text('Guardar Cliente'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        return DialogoCliente(
+          clientServices: clientServices,
+          token: token,
+          // Asegúrate de no pasar callbacks que puedan interferir
         );
       },
     );
+
+    if (clienteGuardado != null && mounted) {
+      await _recargarDatos();
+      
+      // Opcional: Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cliente ${clienteGuardado.nombre} creado exitosamente'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _mostrarDialogoEditarCliente(BuildContext context, Cliente cliente) async {
+    final clienteEditado = await showDialog<Cliente>(
+      context: context,
+      builder: (BuildContext context) {
+        return DialogoCliente(
+          clientServices: clientServices,
+          token: token,
+          esEdicion: true,
+          clienteEditar: cliente,
+        );
+      },
+    );
+
+    if (clienteEditado != null && mounted) {
+      await _recargarDatos();
+      
+      // Opcional: Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cliente ${clienteEditado.nombre} actualizado exitosamente'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

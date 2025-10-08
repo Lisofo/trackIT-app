@@ -19,7 +19,7 @@ class AppTheme{
       // secondary: Colors.green,
       // secondary: Colors.blue,
       onSecondary: Colors.white, 
-      error: Colors.white, 
+      error: Colors.red, 
       onError: Colors.red, 
       surface: Colors.white, 
       onSurface: Colors.black,    

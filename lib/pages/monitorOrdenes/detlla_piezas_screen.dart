@@ -368,7 +368,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.primary,
-        title: Text('Detalle de Piezas', style: TextStyle(color: colors.onPrimary)),
+        title: Text('Detalle de Piezas ${widget.ordenPrevia.numeroOrdenTrabajo}', style: TextStyle(color: colors.onPrimary)),
         iconTheme: IconThemeData(color: colors.onPrimary),
       ),
       body: SingleChildScrollView(

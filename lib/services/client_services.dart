@@ -68,7 +68,7 @@ class ClientServices {
   }
 
   Future getClientesDepartamentos(BuildContext context, String token) async {
-    String link = apiUrl += 'api/v1/clientes/departamentos?sort=descripcion';
+    String link = '${apiUrl}api/v1/clientes/departamentos?sort=descripcion';
 
     try {
       var headers = {'Authorization': token};
@@ -90,7 +90,7 @@ class ClientServices {
   }
 
   Future getTipoClientes(BuildContext context, String token) async {
-    String link = apiUrl += 'api/v1/clientes/tipos';
+    String link = '${apiUrl}api/v1/clientes/tipos';
 
     try {
       var headers = {'Authorization': token};
@@ -112,14 +112,14 @@ class ClientServices {
   }
 
   Future putCliente(BuildContext context, Cliente cliente, String token) async {
-    String link = apiUrl += 'api/v1/clientes/';
+    String link = '${apiUrl}api/v1/clientes/${cliente.clienteId}';
     var headers = {'Authorization': token};
 
     var map = cliente.toMap();
 
     try {
       final resp = await _dio.request(
-        link += cliente.clienteId.toString(),
+        link,
         data: map, 
         options: Options(
           method: 'PUT', 
@@ -130,9 +130,9 @@ class ClientServices {
       statusCode = 1;
       print(resp.statusCode);
       if (resp.statusCode == 200) {
-        await Carteles.showDialogs(context, 'Cliente actualizado correctamente', false, false, false);
+        // await Carteles.showDialogs(context, 'Cliente actualizado correctamente', true, false, false);
       }
-      return;
+      return Cliente.fromJson(resp.data);
     } catch (e) {
       statusCode = 0;
       errorManagment(e, context);
@@ -140,7 +140,8 @@ class ClientServices {
   }
 
   Future postCliente(BuildContext context, Cliente cliente, String token) async {
-    String link = apiUrl += 'api/v1/clientes/';
+    String link = '${apiUrl}api/v1/clientes/';
+    print(cliente.toMap());
 
     try {
       var headers = {'Authorization': token};
@@ -158,23 +159,23 @@ class ClientServices {
       cliente.clienteId = resp.data['clienteId'];
 
       if (resp.statusCode == 201) {
-        Carteles.showDialogs(context, 'Cliente creado correctamente', false, false, false);
+        // Carteles.showDialogs(context, 'Cliente creado correctamente', true, false, false);
       }
 
-      return;
+      return Cliente.fromJson(resp.data);
     } catch (e) {
       statusCode = 0;
       errorManagment(e, context);
     }
   }
-
+  
   Future deleteCliente(BuildContext context, Cliente cliente, String token) async {
     try {
-      String link = '${apiUrl}api/v1/clientes/';
+      String link = '${apiUrl}api/v1/clientes/${cliente.clienteId}';
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
-        link += cliente.clienteId.toString(),
+        link,
         options: Options(
           method: 'DELETE', 
           headers: headers
@@ -183,7 +184,7 @@ class ClientServices {
 
       statusCode = 1;
       if (resp.statusCode == 204) {
-        Carteles.showDialogs(context, 'Cliente borrado correctamente', true, true, false);
+        // Carteles.showDialogs(context, 'Cliente borrado correctamente', true, true, false);
       }
       return resp.statusCode;
       

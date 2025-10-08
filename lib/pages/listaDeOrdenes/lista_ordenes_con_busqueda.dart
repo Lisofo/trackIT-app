@@ -112,6 +112,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             ),
             IconButton(
               onPressed: () {
+                Provider.of<OrdenProvider>(context, listen: false).setOrden(Orden.empty());
                 router.push('/monitorOrdenes');
               },
               icon: const Icon(Icons.add),

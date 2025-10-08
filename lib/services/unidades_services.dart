@@ -44,6 +44,7 @@ class UnidadesServices {
 
   Future crearUnidad(BuildContext context, Unidad unidad, String token) async {
     String link = '${apiUrl}api/v1/unidades';
+      print(unidad.toJson());
     try {
       var headers = {'Authorization': token};
       var data = unidad.toJson();

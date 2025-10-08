@@ -56,6 +56,9 @@ class Cliente {
     required this.notas,
     required this.pagoId,
     required this.vendedorId,
+    required this.departamentoId,
+    required this.tipoClienteId,
+    required this.tecnicoId,
   });
 
   factory Cliente.fromJson(Map<String, dynamic> json) => Cliente(
@@ -78,6 +81,9 @@ class Cliente {
         tipoCliente: json["tipoCliente"] != null ? TipoCliente.fromJson(json["tipoCliente"]) : TipoCliente.empty(),
         pagoId: json["pagoId"] as int? ?? 0,
         vendedorId: json["vendedorId"] as int? ?? 0,
+        departamentoId: json["departamentoId"] as int? ?? 0,
+        tipoClienteId: json["tipoClienteId"] as int? ?? 0,
+        tecnicoId: json["tecnicoId"] as int? ?? 0,
       );
 
   Map<String, dynamic> toMap() => {
@@ -94,8 +100,6 @@ class Cliente {
         "ruc": ruc,
         "estado": estado,
         "coordenadas": coordenadas,
-        "departamento": departamento.toMap(),
-        "tipoCliente": tipoCliente.toMap(),
         "tecnicoId": 2,
         "departamentoId": departamentoId,
         "tipoClienteId": tipoClienteId,

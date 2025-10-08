@@ -141,7 +141,7 @@ class Unidad {
     "itemId": null,
     "modeloId": modeloId,
     "chasis": chasis == '' ? null : chasis,
-    "motor": motor,
+    "motor": motor == '' ? null : motor,
     "anio": anio,
     "colorId": 1,
     "consignado": consignado,

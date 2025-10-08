@@ -3,6 +3,7 @@ import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
 import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -155,10 +156,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     });
   }
 
-  bool _telefonoExiste(String telefono) {
-    return clientesLocales.any((c) => c.telefono1 == telefono);
-  }
-
   void _abrirBusquedaCliente(BuildContext context) async {
     final Cliente? resultado = await showSearch<Cliente>(
       context: context,
@@ -282,33 +279,33 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     ),
                   )
                 ),
-                const SizedBox(width: 16),
-                const Text('Cond. IVA:'),
-                const SizedBox(width: 8),
-                Row(
-                  children: [
-                    Radio<bool>(
-                      value: true,
-                      groupValue: condIva,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          condIva = value ?? true;
-                        });
-                      },
-                    ),
-                    const Text('Sí'),
-                    Radio<bool>(
-                      value: false,
-                      groupValue: condIva,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          condIva = value ?? false;
-                        });
-                      },
-                    ),
-                    const Text('No'),
-                  ],
-                ),
+                // const SizedBox(width: 16),
+                // const Text('Cond. IVA:'),
+                // const SizedBox(width: 8),
+                // Row(
+                //   children: [
+                //     Radio<bool>(
+                //       value: true,
+                //       groupValue: condIva,
+                //       onChanged: (bool? value) {
+                //         setState(() {
+                //           condIva = value ?? true;
+                //         });
+                //       },
+                //     ),
+                //     const Text('Sí'),
+                //     Radio<bool>(
+                //       value: false,
+                //       groupValue: condIva,
+                //       onChanged: (bool? value) {
+                //         setState(() {
+                //           condIva = value ?? false;
+                //         });
+                //       },
+                //     ),
+                //     const Text('No'),
+                //   ],
+                // ),
               ],
             ),
             
@@ -330,9 +327,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 suffixIcon: Icon(Icons.search),
               ),
               controller: TextEditingController(
-                text: clienteSeleccionado != null 
-                    ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}'
-                    : '',
+                text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
               ),
               onTap: () {
                 _abrirBusquedaCliente(context);
@@ -357,7 +352,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 12),
               TextFormField(
                 readOnly: true,
-                initialValue: clienteSeleccionado!.direccion,
+                controller: TextEditingController(text: clienteSeleccionado!.direccion),
                 decoration: const InputDecoration(
                   labelText: 'Dirección',
                   border: OutlineInputBorder(),
@@ -366,7 +361,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: clienteSeleccionado!.telefono1,
+                controller: TextEditingController(text: clienteSeleccionado!.telefono1),
                 decoration: const InputDecoration(
                   labelText: 'Teléfono',
                   border: OutlineInputBorder(),
@@ -375,7 +370,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: clienteSeleccionado!.email,
+                controller: TextEditingController(text: clienteSeleccionado!.email),
                 decoration: const InputDecoration(
                   labelText: 'Correo electrónico',
                   border: OutlineInputBorder(),
@@ -384,7 +379,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(height: 8),
               TextFormField(
                 readOnly: true,
-                initialValue: 'RUC: ${clienteSeleccionado!.ruc}',
+                controller: TextEditingController(text: 'RUC: ${clienteSeleccionado!.ruc}'),
                 decoration: const InputDecoration(
                   labelText: 'Documento',
                   border: OutlineInputBorder(),
@@ -498,31 +493,27 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ),
             ],
             const SizedBox(height: 24),
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _comentClienteController,
-                    decoration: const InputDecoration(
-                      labelText: 'Comentario Cliente',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 1,
-                    maxLines: 5
+                TextFormField(
+                  controller: _comentClienteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Comentario Cliente',
+                    border: OutlineInputBorder(),
                   ),
+                  minLines: 1,
+                  maxLines: 5
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _comentTrabajoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Comentario Trabajo',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 1,
-                    maxLines: 5
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _comentTrabajoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Comentario Trabajo',
+                    border: OutlineInputBorder(),
                   ),
+                  minLines: 1,
+                  maxLines: 5
                 ),
               ],
             ),
@@ -590,215 +581,39 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  void _mostrarDialogoNuevoCliente(BuildContext context) {
-    final telefonoController = TextEditingController();
-    final nombreController = TextEditingController();
-    final nombreFantasiaController = TextEditingController();
-    final rucController = TextEditingController();
-    final correoController = TextEditingController();
-    final direccionController = TextEditingController();
-    final barrioController = TextEditingController();
-    final localidadController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
+  void _mostrarDialogoNuevoCliente(BuildContext context) async {
+    final clienteGuardado = await showDialog<Cliente>(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Nuevo Cliente'),
-              content: SingleChildScrollView(
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width *0.8,
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Teléfono (primer campo)
-                        TextFormField(
-                          controller: telefonoController,
-                          decoration: const InputDecoration(
-                            labelText: 'Teléfono/Celular',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese un teléfono';
-                            }
-                            if (_telefonoExiste(value)) {
-                              return 'Este teléfono ya existe';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Nombre
-                        TextFormField(
-                          controller: nombreController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese un nombre';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Nombre Fantasía
-                        TextFormField(
-                          controller: nombreFantasiaController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre Fantasía',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // RUC
-                        TextFormField(
-                          controller: rucController,
-                          decoration: const InputDecoration(
-                            labelText: 'RUC',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese el RUC';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Correo
-                        TextFormField(
-                          controller: correoController,
-                          decoration: const InputDecoration(
-                            labelText: 'Correo electrónico',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese un correo electrónico';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Por favor ingrese un correo válido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Dirección
-                        TextFormField(
-                          controller: direccionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Dirección',
-                            border: OutlineInputBorder(),
-                          ),
-                          maxLines: 1,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese una dirección';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Barrio
-                        TextFormField(
-                          controller: barrioController,
-                          decoration: const InputDecoration(
-                            labelText: 'Barrio',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Localidad
-                        TextFormField(
-                          controller: localidadController,
-                          decoration: const InputDecoration(
-                            labelText: 'Localidad',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      final nuevoCliente = Cliente(
-                        clienteId: 0,
-                        codCliente: '',
-                        nombre: nombreController.text,
-                        nombreFantasia: nombreFantasiaController.text,
-                        direccion: direccionController.text,
-                        barrio: barrioController.text,
-                        localidad: localidadController.text,
-                        telefono1: telefonoController.text,
-                        telefono2: '',
-                        email: correoController.text,
-                        ruc: rucController.text,
-                        estado: 'ACTIVO',
-                        coordenadas: null,
-                        tecnico: Tecnico.empty(),
-                        departamento: Departamento.empty(),
-                        tipoCliente: TipoCliente.empty(),
-                        notas: '',
-                        pagoId: 1,
-                        vendedorId: 1,
-                      );
-                      
-                      try {
-                        await clientServices.postCliente(
-                          context, 
-                          nuevoCliente, 
-                          token
-                        );
-
-                        setState(() {
-                          clienteSeleccionado = nuevoCliente;
-                          clientesLocales.add(nuevoCliente);
-                          unidades = [];
-                          unidadSeleccionada = null;
-                        });
-                        
-                        Navigator.of(context).pop();
-                        
-                      } catch (e) {
-                        print('Error creando cliente: $e');
-                      }
-                    }
-                  },
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
+        return DialogoCliente(
+          clientServices: clientServices,
+          token: token,
+          // Asegúrate de que el diálogo pueda cerrarse correctamente
         );
       },
     );
+
+    if (clienteGuardado != null && mounted) {
+      // Actualizar el estado con el nuevo cliente
+      setState(() {
+        clienteSeleccionado = clienteGuardado;
+        clientesLocales.add(clienteGuardado);
+        unidades = []; // Limpiar unidades ya que es un cliente nuevo
+        unidadSeleccionada = null;
+      });
+
+      // Opcional: Mostrar un mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cliente ${clienteGuardado.nombre} creado exitosamente'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Debug: Verificar por qué clienteGuardado es null
+      print('Cliente guardado es null o diálogo cerrado sin guardar');
+    }
   }
 
   void _mostrarDialogoNuevaUnidad(BuildContext context) async {
