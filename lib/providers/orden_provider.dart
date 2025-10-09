@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
@@ -39,6 +40,18 @@ class OrdenProvider with ChangeNotifier {
   UltimaTarea get ultimaTarea => _ultimaTarea;
   bool _admOrdenes = false;
   bool get admOrdenes => _admOrdenes;
+  Unidad _unidadSeleccionada = Unidad.empty();
+  Unidad get unidadSeleccionada => _unidadSeleccionada;
+
+  void setUnidadSeleccionada(Unidad unidad) {
+    _unidadSeleccionada = unidad;
+    notifyListeners();
+  }
+
+  void clearUnidadSeleccionada() {
+    _unidadSeleccionada = Unidad.empty();
+    notifyListeners();
+  }
 
   void setAdmOrdenes(bool adm) {
     _admOrdenes = adm;

@@ -231,7 +231,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       appBar: AppBar(
         backgroundColor: colors.primary,
         title: Text(
-          _isEditMode ? 'Editar Orden' : 'Registro de Orden', 
+          _isEditMode ? 'Editar Orden ${ordenExistente.numeroOrdenTrabajo}' : 'Registro de Orden', 
           style: TextStyle(color: colors.onPrimary),
         ),
         iconTheme: IconThemeData(color: colors.onPrimary),
@@ -319,19 +319,22 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             const SizedBox(height: 8),
             
             // Campo de búsqueda de cliente
-            TextFormField(
-              readOnly: true,
-              decoration: const InputDecoration(
-                labelText: 'Buscar cliente...',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.search),
+            GestureDetector(
+              onDoubleTap: clienteSeleccionado != null ? _editarClienteSeleccionado : null,
+              child: TextFormField(
+                readOnly: true,
+                decoration: const InputDecoration(
+                  labelText: 'Buscar cliente...',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.search),
+                ),
+                controller: TextEditingController(
+                  text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
+                ),
+                onTap: () {
+                  _abrirBusquedaCliente(context);
+                },
               ),
-              controller: TextEditingController(
-                text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
-              ),
-              onTap: () {
-                _abrirBusquedaCliente(context);
-              },
             ),
             
             // Botón para agregar nuevo cliente
@@ -398,23 +401,26 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<Unidad>(
-                    value: unidadSeleccionada,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Seleccione un vehículo',
+                  child: GestureDetector(
+                    onDoubleTap: unidadSeleccionada != null ? _editarUnidadSeleccionada : null,
+                    child: DropdownButtonFormField<Unidad>(
+                      value: unidadSeleccionada,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Seleccione un vehículo',
+                      ),
+                      items: unidades.map((Unidad unidad) {
+                        return DropdownMenuItem<Unidad>(
+                          value: unidad,
+                          child: Text(unidad.displayInfo),
+                        );
+                      }).toList(),
+                      onChanged: (Unidad? nuevaUnidad) {
+                        setState(() {
+                          unidadSeleccionada = nuevaUnidad;
+                        });
+                      },
                     ),
-                    items: unidades.map((Unidad unidad) {
-                      return DropdownMenuItem<Unidad>(
-                        value: unidad,
-                        child: Text(unidad.displayInfo),
-                      );
-                    }).toList(),
-                    onChanged: (Unidad? nuevaUnidad) {
-                      setState(() {
-                        unidadSeleccionada = nuevaUnidad;
-                      });
-                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -651,6 +657,79 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         try {
           unidadSeleccionada = unidades.firstWhere(
             (u) => u.matricula == unidadGuardada.matricula
+          );
+        } catch (e) {
+          // Si no encuentra la unidad, seleccionar la primera si existe
+          unidadSeleccionada = unidades.isNotEmpty ? unidades.first : null;
+        }
+      });
+    }
+  }
+
+  void _editarClienteSeleccionado() async {
+    if (clienteSeleccionado == null) return;
+
+    final clienteEditado = await showDialog<Cliente>(
+      context: context,
+      builder: (BuildContext context) {
+        return DialogoCliente(
+          clientServices: clientServices,
+          token: token,
+          esEdicion: true,
+          clienteEditar: clienteSeleccionado,
+        );
+      },
+    );
+
+    if (clienteEditado != null && mounted) {
+      setState(() {
+        clienteSeleccionado = clienteEditado;
+      });
+
+      // Recargar unidades del cliente editado
+      await _cargarUnidadesYSeleccionar(clienteEditado.clienteId, unidadSeleccionada?.unidadId ?? 0);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cliente ${clienteEditado.nombre} actualizado exitosamente'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _editarUnidadSeleccionada() async {
+    if (unidadSeleccionada == null || clienteSeleccionado == null) return;
+
+    final Unidad? unidadEditada = await showDialog<Unidad>(
+      context: context,
+      builder: (BuildContext context) {
+        return DialogoUnidad(
+          token: token,
+          clienteId: clienteSeleccionado!.clienteId,
+          unidadesServices: unidadesServices,
+          codiguerasServices: codiguerasServices,
+          permitirBusquedaMatricula: false,
+          unidadExistente: unidadSeleccionada,
+        );
+      },
+    );
+
+    if (unidadEditada != null && mounted) {
+      // Actualizar la lista de unidades desde la API
+      List<Unidad> unidadesActualizadas = await unidadesServices.getUnidadesDeCliente(
+        context, 
+        clienteSeleccionado!.clienteId, 
+        token
+      );
+
+      setState(() {
+        unidades = unidadesActualizadas;
+        // Seleccionar la unidad editada
+        try {
+          unidadSeleccionada = unidades.firstWhere(
+            (u) => u.unidadId == unidadEditada.unidadId
           );
         } catch (e) {
           // Si no encuentra la unidad, seleccionar la primera si existe

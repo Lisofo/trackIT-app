@@ -16,14 +16,10 @@ class OrdenServices {
   String apiLink = Config.APIURL;
   int? statusCode = 0;
 
-  Future getOrden(BuildContext context, String tecnicoId, String desde, String hasta, String token) async {
+  // En OrdenServices, modifica el método getOrden:
+  Future getOrden(BuildContext context, String tecnicoId, String desde, String hasta, String token, {Map<String, dynamic>? queryParams}) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/';
-    // String linkFiltrado = '${link}api/v1/ordenes/?fechaHasta=2024-09-24 23:59:59';
-    
-    // += desde == 'Anteriores'
-        // ? 'api/v1/ordenes/?sort=fechaDesde&tecnicoId=$tecnicoId&estado=EN PROCESO,PENDIENTE'
-        // : 'api/v1/ordenes/?sort=fechaDesde&tecnicoId=$tecnicoId&fechaDesde=$desde&fechaHasta=$hasta';
 
     try {
       var headers = {'Authorization': token};
@@ -32,8 +28,8 @@ class OrdenServices {
         options: Options(
           method: 'GET',
           headers: headers,
-
         ),
+        queryParameters: queryParams
       );
       statusCode = 1;
       final List<dynamic> ordenList = resp.data;
@@ -77,6 +73,7 @@ class OrdenServices {
   Future actualizarOrden(BuildContext context, String token, Orden orden) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/${orden.ordenTrabajoId}'; // Usar PUT para actualizar
+    print(orden.toMapCyP());
 
     try {
       var headers = {'Authorization': token};

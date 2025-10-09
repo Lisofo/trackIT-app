@@ -1,4 +1,5 @@
 // monitor_vehiculo.dart
+import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/marca.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
@@ -132,6 +133,14 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
 
   void _editarUnidad(Unidad unidad) {
     _mostrarDialogoUnidad(context, unidadExistente: unidad);
+  }
+
+  void _verHistorial(Unidad unidad) {
+    // Settear la unidad en el provider
+    Provider.of<OrdenProvider>(context, listen: false).setUnidadSeleccionada(unidad);
+    
+    // Navegar a la lista de órdenes
+    router.push('/listaOrdenes');
   }
 
   @override
@@ -317,9 +326,11 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                                       icon: const Icon(Icons.edit, color: Colors.blue,)
                                     ),
                                     IconButton(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.delete, color: Colors.red,)
-                                    )
+                                      onPressed: () {
+                                        _verHistorial(unidad);
+                                      },
+                                      icon: const Icon(Icons.history, color: Colors.green,) // Nuevo botón
+                                    ),
                                   ],
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

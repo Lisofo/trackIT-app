@@ -45,8 +45,33 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     try {
       token = context.read<OrdenProvider>().token;
       tecnicoId = context.read<OrdenProvider>().tecnicoId;
-      ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), "Anteriores", "Anteriores", token);
-      ordenesFiltradas = ordenes; // Inicializa la lista de filtradas con todas las órdenes
+      
+      // Obtener la unidad seleccionada del provider
+      final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
+      
+      if (unidadSeleccionada.unidadId > 0) {
+        ordenes = await ordenServices.getOrden(
+          context, 
+          tecnicoId.toString(), 
+          "Anteriores", 
+          "Anteriores", 
+          token,
+          queryParams: {
+            'unidadId': unidadSeleccionada.unidadId.toString(),          
+          },
+        );
+      } else {
+        ordenes = await ordenServices.getOrden(
+          context,
+          tecnicoId.toString(),
+          "Anteriores",
+          "Anteriores",
+          token,
+        );
+      }
+      
+      
+      ordenesFiltradas = ordenes;
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
       var shortestSide = MediaQuery.of(context).size.shortestSide;
       isMobile = shortestSide < 600;
