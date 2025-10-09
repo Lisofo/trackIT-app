@@ -18,16 +18,16 @@ class Tarea {
   });
 
   factory Tarea.fromJson(Map<String, dynamic> json) => Tarea(
-        tareaId: json["tareaId"],
-        codTarea: json["codTarea"],
-        descripcion: json["descripcion"],
-      );
+    tareaId: json["tareaId"] as int? ?? 0,
+    codTarea: json["codTarea"] as String? ?? '',
+    descripcion: json["descripcion"] as String? ?? '',
+  );
 
   Map<String, dynamic> toMap() => {
-        "tareaId": tareaId,
-        "codTarea": codTarea,
-        "descripcion": descripcion,
-      };
+    "tareaId": tareaId,
+    "codTarea": codTarea,
+    "descripcion": descripcion,
+  };
 
   Tarea.empty() {
     tareaId = 0;

@@ -6,6 +6,7 @@ import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/tarea.dart';
 import 'package:app_tec_sedel/models/tareaXtpi.dart';
 import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -14,25 +15,6 @@ class TareasServices {
   String apiLink = Config.APIURL;
   int? statusCode;
   
-  Future<void> showErrorDialog(BuildContext context, String mensaje) async {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        surfaceTintColor: Colors.white,
-        title: const Text('Error'),
-        content: Text(mensaje),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<int?> getStatusCode() async {
     return statusCode;
   }
@@ -59,28 +41,89 @@ class TareasServices {
       return tareaList.map((obj) => Tarea.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future putTarea(BuildContext context, Tarea tarea, String token) async {
+    String link = "${apiLink}api/v1/tareas/${tarea.tareaId}/";
+
+    try {
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link,
+        data: tarea.toMap(),
+        options: Options(
+          method: 'PUT', 
+          headers: headers
+        )
+      );
+
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        // showDialogs(context, 'Tarea actualizada correctamente', false, false);
+      }
+
+      return Tarea.fromJson(resp.data);
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context); 
+    }
+  }
+
+  Future postTarea(BuildContext context, Tarea tarea, String token) async {
+    String link = "${apiLink}api/v1/tareas/";
+
+    try {
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link,
+        data: tarea.toMap(),
+        options: Options(
+          method: 'POST', 
+          headers: headers
+        )
+      );
+
+      statusCode = 1;
+      tarea.tareaId = resp.data["tareaId"];
+
+      if (resp.statusCode == 201) {
+        // showDialogs(context, 'Tarea creada correctamente', false, false);
+      }
+
+      return Tarea.fromJson(resp.data);
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context); 
+    }
+  }
+
+  Future deleteTarea(BuildContext context, Tarea tarea, String token) async {
+    String link = "${apiLink}api/v1/tareas/${tarea.tareaId}/";
+
+    try {
+      var headers = {'Authorization': token};
+
+      final resp = await _dio.request(
+        link += tarea.tareaId.toString(),
+        options: Options(
+          method: 'DELETE', 
+          headers: headers
+        )
+      );
+          
+      statusCode = 1;
+      if (resp.statusCode == 204) {
+        // showDialogs(context, 'Tarea borrada correctamente', true, true);
+      }
+
+      return resp.statusCode;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context); 
     }
   }
 
@@ -102,28 +145,7 @@ class TareasServices {
       return tareaXPTIList.map((obj) => TareaXtpi.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 
@@ -145,28 +167,7 @@ class TareasServices {
       return tareaList.map((obj) => Linea.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
-      if (e is DioException) {
-        if (e.response != null) {
-          final responseData = e.response!.data;
-          if (responseData != null) {
-            if(e.response!.statusCode == 403){
-              showErrorDialog(context, 'Error: ${e.response!.data['message']}');
-            }else if(e.response!.statusCode! >= 500) {
-              showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-            } else{
-              final errors = responseData['errors'] as List<dynamic>;
-              final errorMessages = errors.map((error) {
-                return "Error: ${error['message']}";
-              }).toList();
-              showErrorDialog(context, errorMessages.join('\n'));
-            }
-          } else {
-            showErrorDialog(context, 'Error: ${e.response!.data}');
-          }
-        } else {
-          showErrorDialog(context, 'Error: No se pudo completar la solicitud');
-        } 
-      } 
+      Carteles().errorManagment(e, context);
     }
   }
 }

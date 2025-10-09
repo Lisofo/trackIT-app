@@ -16,3 +16,13 @@ export 'package:app_tec_sedel/pages/drawerPages/observaciones_page.dart';
 export 'package:app_tec_sedel/pages/drawerPages/plagas_page.dart';
 export 'package:app_tec_sedel/pages/drawerPages/tareas_page.dart';
 export 'package:app_tec_sedel/pages/drawerPages/validacion_page.dart';
+
+export 'package:app_tec_sedel/pages/admin/admin.dart';
+export 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_busqueda.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_cliente.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_materiales.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_tareas.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_tecnico.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_vehiculo.dart';
+export 'package:app_tec_sedel/pages/monitorOrdenes/monitor_ordenes.dart';
+export 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';

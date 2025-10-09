@@ -256,6 +256,7 @@ class _DialogoClienteState extends State<DialogoCliente> {
                     // Código cliente
                     TextFormField(
                       controller: _codigoController,
+                      maxLength: 10,
                       decoration: InputDecoration(
                         labelText: 'Código cliente',
                         prefixIcon: Icon(Icons.badge, color: colors.primary),
@@ -323,12 +324,6 @@ class _DialogoClienteState extends State<DialogoCliente> {
                           borderSide: BorderSide(color: colors.primary, width: 2),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un nombre de fantasía';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -349,12 +344,6 @@ class _DialogoClienteState extends State<DialogoCliente> {
                           borderSide: BorderSide(color: colors.primary, width: 2),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese el RUC';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -376,15 +365,6 @@ class _DialogoClienteState extends State<DialogoCliente> {
                         ),
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un correo electrónico';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Por favor ingrese un correo válido';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
 

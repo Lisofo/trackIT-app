@@ -28,26 +28,26 @@ class Materiales {
   });
 
   factory Materiales.fromJson(Map<String, dynamic> json) => Materiales(
-        materialId: json["materialId"] as int? ?? 0,
-        codMaterial: json["codMaterial"] as String? ?? '',
-        descripcion: json["descripcion"] as String? ?? '',
-        dosis: json["dosis"] as String? ?? '',
-        unidad: json["unidad"] as String? ?? '',
-        fabProv: json["fabProv"] as String? ?? '',
-        enAppTecnico: json["enAppTecnico"] as String? ?? '',
-        enUso: json["enUso"] as String? ?? '',
-      );
+    materialId: json["materialId"] as int? ?? 0,
+    codMaterial: json["codMaterial"] as String? ?? '',
+    descripcion: json["descripcion"] as String? ?? '',
+    dosis: json["dosis"] as String? ?? '',
+    unidad: json["unidad"] as String? ?? '',
+    fabProv: json["fabProv"] as String? ?? '',
+    enAppTecnico: json["enAppTecnico"] as String? ?? '',
+    enUso: json["enUso"] as String? ?? '',
+  );
 
   Map<String, dynamic> toMap() => {
-        "materialId": materialId,
-        "codMaterial": codMaterial,
-        "descripcion": descripcion,
-        "dosis": dosis,
-        "unidad": unidad,
-        "fabProv": fabProv,
-        "enAppTecnico": enAppTecnico,
-        "enUso": enUso,
-      };
+    "materialId": materialId,
+    "codMaterial": codMaterial,
+    "descripcion": descripcion,
+    "dosis": null,
+    "unidad": "unidad",
+    "fabProv": '',
+    "enAppTecnico": enAppTecnico,
+    "enUso": enUso,
+  };
 
   Materiales.empty() {
     materialId = 0;

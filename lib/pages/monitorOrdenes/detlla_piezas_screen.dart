@@ -41,6 +41,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   bool isLoadingMateriales = false;
   int ordinalCounter = 1;
   final LineasServices _lineasServices = LineasServices();
+  final ordenServices = OrdenServices();
 
   // Métodos para calcular totales - ahora basados en Linea
   double get _totalChapa {
@@ -155,7 +156,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   Future<void> _editarOrden() async {
     try {
-      final ordenServices = OrdenServices();
       final token = context.read<OrdenProvider>().token;
       
       // Mostrar indicador de carga
@@ -594,8 +594,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                         ),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           // Acción de imprimir (pendiente de implementar)
+                          await ordenServices.imprimirOTAdm(context, widget.ordenPrevia, context.read<OrdenProvider>().token);
                         },
                         icon: const Icon(Icons.print),
                         label: const Text('Imprimir'),

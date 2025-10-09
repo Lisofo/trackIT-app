@@ -602,9 +602,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
       context: context, 
       builder: (context) {
         return AlertDialog(
-          title: Text(index == 0 ? 'Imprimir OT' : 'Imprimir controles'),
+          title: Text((index == 0 || index == 1 || index == 2) ? 'Imprimir OT' : 'Imprimir controles'),
           content: Text(
-            index == 0 ? 'Esta por imprimir la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirla?' : 'Esta por imprimir los controles de la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirlos?'
+            (index == 0 || index == 1 || index == 2) ? 'Esta por imprimir la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirla?' : 'Esta por imprimir los controles de la OT ${orden.numeroOrdenTrabajo}, esta seguro de querer imprimirlos?'
           ),
           actions: [
             TextButton(
@@ -615,7 +615,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ),
             TextButton(
               onPressed: () async {
-                if(index == 0){
+                if (index == 0 || index == 1 || index == 2) {
                   await ordenServices.imprimirOT(context, orden, token);
                 } else if(index == 3){
                   await ordenServices.imprimirControles(context, orden, token);

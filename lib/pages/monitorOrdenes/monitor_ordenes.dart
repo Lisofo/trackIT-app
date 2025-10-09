@@ -221,6 +221,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       planoId: _isEditMode ? _ordenExistente!.planoId : 0,
       alerta: _isEditMode ? _ordenExistente!.alerta : false,
       tecnicoId: ordenProvider.tecnicoId,
+      clienteId: clienteSeleccionado!.clienteId,
     );
   }
   

@@ -23,6 +23,21 @@
                     "ruta": "/monitorVehiculos",
                     "icon": "calendar_month",
                     "texto": "Monitor de vehiculos"
+                },
+                {
+                    "ruta": "/monitorTareas",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de acciones"
+                },
+                {
+                    "ruta": "/monitorMateriales",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de piezas"
+                },
+                {
+                    "ruta": "/monitorTecnicos",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de tecnicos"
                 }
             ]
         }

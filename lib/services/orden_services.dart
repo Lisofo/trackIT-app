@@ -368,6 +368,33 @@ class OrdenServices {
     }
   }
 
+  Future imprimirOTAdm(BuildContext context, Orden orden, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/imprimirOTAdm';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: headers,
+        ),
+      );
+      statusCode = 1;
+      if (resp.statusCode == 200) {
+        
+      } else {
+        Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
+      }
+
+      return;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
   Future imprimirControles(BuildContext context, Orden orden, String token) async {
     String link = apiLink;
     link += 'api/v1/ordenes/${orden.ordenTrabajoId}/imprimirControlesOT';

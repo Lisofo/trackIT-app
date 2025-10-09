@@ -52,6 +52,7 @@ class Orden {
   late int otRevisionId;
   late int planoId;
   late int? tecnicoId;
+  late int? clienteId;
   late bool alerta;
 
   Orden({
@@ -92,6 +93,7 @@ class Orden {
     required this.alerta,
     required this.unidad,
     this.tecnicoId,
+    this.clienteId,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -132,6 +134,7 @@ class Orden {
     planoId: json["planoId"] as int? ?? 0,
     alerta: json["alerta"] == null ? false : json["alerta"] as bool,
     tecnicoId: json["tecnicoId"] as int? ?? 0,
+    clienteId: json["clienteId"] as int? ?? 0,
   );
 
   Map<String, dynamic> toMap() => {
@@ -170,13 +173,15 @@ class Orden {
     "otRevisionId": otRevisionId,
     "planoId": planoId,
     "alerta": alerta,
+    "tecnicoId": tecnicoId,
+    "clienteId": clienteId,
   };
 
   Map<String, dynamic> toMapCyP() => {
     "tipoOrdenId": 5,
-    "clienteId": cliente.clienteId,
+    "clienteId": clienteId,
     "tecnicoId": tecnicoId,
-    "unidadId": unidad.unidadId,
+    "unidadId": unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
     "fechaOrdenTrabajo": getStringFecha(fechaOrdenTrabajo),
