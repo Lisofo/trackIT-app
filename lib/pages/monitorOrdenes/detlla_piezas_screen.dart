@@ -161,7 +161,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       // Mostrar indicador de carga
       showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (context) => const Center(
           child: CircularProgressIndicator(),
         ),
@@ -190,8 +190,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       }
       
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
-      Navigator.of(context).pop();
+      // Cerrar el diálogo de carga en caso de erro      
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

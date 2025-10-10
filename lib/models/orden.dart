@@ -179,9 +179,9 @@ class Orden {
 
   Map<String, dynamic> toMapCyP() => {
     "tipoOrdenId": 5,
-    "clienteId": clienteId,
-    "tecnicoId": tecnicoId,
-    "unidadId": unidadId,
+    "clienteId": cliente.clienteId,
+    "tecnicoId": tecnico.tecnicoId,
+    "unidadId": unidad.unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
     "fechaOrdenTrabajo": getStringFecha(fechaOrdenTrabajo),

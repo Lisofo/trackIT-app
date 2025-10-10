@@ -209,7 +209,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       plantilla: _isEditMode ? _ordenExistente!.plantilla : false,
       unidadId: unidadSeleccionada!.unidadId,
       matricula: unidadSeleccionada!.matricula,
-      km: _isEditMode ? _ordenExistente!.km ?? 0 : 0,
+      km: _isEditMode ? _ordenExistente!.km ?? unidadSeleccionada?.km : 0,
       regHs: _isEditMode ? _ordenExistente!.regHs ?? false : false,
       instrucciones: _isEditMode ? _ordenExistente!.instrucciones : '',
       tipoOrden: _isEditMode ? _ordenExistente!.tipoOrden : TipoOrden.empty(),
