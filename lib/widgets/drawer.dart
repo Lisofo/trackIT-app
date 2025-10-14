@@ -1,5 +1,6 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/providers/menu_providers.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/icons.dart';
@@ -55,6 +56,9 @@ List<Widget> _filaBotones2(data, context, opciones) {
             onPressed: () {
               if (opt['ruta'] == '/monitorOrdenes') {
                 ordenProvider.setOrden(Orden.empty());
+              }
+              if (opt['ruta'] == '/listaOrdenes') {
+                ordenProvider.setUnidadSeleccionada(Unidad.empty());
               }
               ordenProvider.setAdmOrdenes(true);
               router.push(opt['ruta']);

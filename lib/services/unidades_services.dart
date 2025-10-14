@@ -19,7 +19,7 @@ class UnidadesServices {
   
   Future<List<Unidad>> getUnidades(BuildContext context, String token, {String? matricula}) async {
     Map<String, dynamic> queryParams = {};
-    if (matricula != null) queryParams['matricula'] = matricula;
+    if (matricula != null && matricula != '') queryParams['matricula'] = matricula;
     String link = '${apiUrl}api/v1/unidades';
     try {
       var headers = {'Authorization': token};

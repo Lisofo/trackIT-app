@@ -18,13 +18,13 @@ class MonitorVehiculos extends StatefulWidget {
 
 class MonitorVehiculosState extends State<MonitorVehiculos> {
   
-  List<Unidad> unidades = [];
   List<Unidad> unidadesFiltradas = [];
   TextEditingController searchController = TextEditingController();
   final UnidadesServices _unidadesServices = UnidadesServices();
   final CodiguerasServices _codiguerasServices = CodiguerasServices();
   late String token = '';
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _hasSearched = false;
 
   // Variables para marcas y modelos (se cargan al iniciar)
   List<Marca> _marcas = [];
@@ -32,9 +32,9 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
   @override
   void initState() {
     super.initState();
-    _cargarUnidades();
+    token = context.read<OrdenProvider>().token;
     _cargarMarcas(); // Cargar marcas al iniciar la pantalla
-    searchController.addListener(_filtrarUnidades);
+    // Removemos la carga automática de unidades
   }
 
   @override
@@ -43,19 +43,37 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
     super.dispose();
   }
 
-  Future<void> _cargarUnidades() async {
-    token = context.read<OrdenProvider>().token;
+  Future<void> _buscarUnidades() async {
+    final query = searchController.text.trim();
+    
+    if (query.isEmpty) {
+      setState(() {
+        unidadesFiltradas = [];
+        _hasSearched = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final listaUnidades = await _unidadesServices.getUnidades(context, token);
+      final listaUnidades = await _unidadesServices.getUnidades(
+        context, 
+        token, 
+        matricula: query // Solo buscar por matrícula
+      );
       
       setState(() {
-        unidades = listaUnidades;
-        unidadesFiltradas = unidades;
+        unidadesFiltradas = listaUnidades;
         _isLoading = false;
+        _hasSearched = true;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
+        _hasSearched = true;
       });
       // El error ya fue manejado por Carteles().errorManagment en el servicio
     }
@@ -64,43 +82,14 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
   Future<void> _cargarMarcas() async {
     if (_marcas.isNotEmpty) return; // Ya están cargadas
     
-    setState(() {
-    });
-
     try {
       final listaMarcas = await _codiguerasServices.getMarcas(context, token);
       setState(() {
         _marcas = listaMarcas;
       });
     } catch (e) {
-      setState(() {
-      });
+      // Manejar error silenciosamente
     }
-  }
-
-  void _filtrarUnidades() {
-    final query = searchController.text.toLowerCase();
-    
-    if (query.isEmpty) {
-      setState(() {
-        unidadesFiltradas = unidades;
-      });
-      return;
-    }
-
-    setState(() {
-      unidadesFiltradas = unidades.where((unidad) {
-        return unidad.marca.toLowerCase().contains(query) ||
-            (unidad.matricula.toLowerCase().contains(query)) ||
-            unidad.modelo.toLowerCase().contains(query) ||
-            unidad.anio.toString().contains(query) ||
-            unidad.motor.toLowerCase().contains(query) ||
-            unidad.chasis.toLowerCase().contains(query) ||
-            unidad.descripcion.toLowerCase().contains(query) ||
-            unidad.codItem.toLowerCase().contains(query) ||
-            _getDisplayInfo(unidad).toLowerCase().contains(query);
-      }).toList();
-    });
   }
 
   String _getDisplayInfo(Unidad unidad) {
@@ -123,7 +112,10 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
     );
 
     if (unidadGuardada != null) {
-      await _cargarUnidades();
+      // Si se creó/editó una unidad, puedes realizar una nueva búsqueda si hay texto en el buscador
+      if (searchController.text.isNotEmpty) {
+        _buscarUnidades();
+      }
     }
   }
 
@@ -154,16 +146,17 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.2),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
+                Expanded(
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      labelText: 'Buscar vehículo',
+                      labelText: 'Buscar por matrícula',
                       prefixIcon: Icon(Icons.search, color: colors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -174,173 +167,196 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                     ),
+                    onSubmitted: (value) => _buscarUnidades(),
                   ),
                 ),
-                Expanded(
-                  child: unidadesFiltradas.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.directions_car_outlined, size: 64, color: colors.onSurface.withOpacity(0.5)),
-                              const SizedBox(height: 16),
-                              Text(
-                                unidades.isEmpty ? 'No hay vehículos registrados' : 'No se encontraron resultados',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: colors.onSurface.withOpacity(0.7),
-                                ),
-                              ),
-                              if (unidades.isEmpty) 
-                                TextButton(
-                                  onPressed: _cargarUnidades,
-                                  child: Text('Reintentar', style: TextStyle(color: colors.primary)),
-                                ),
-                            ],
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _buscarUnidades,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  child: _isLoading 
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onPrimary,
                           ),
                         )
-                      : ListView.builder(
-                          itemCount: unidadesFiltradas.length,
-                          // separatorBuilder: (context, index) => Divider(height: 1, color: colors.outline.withOpacity(0.3)),
-                          itemBuilder: (context, index) {
-                            final unidad = unidadesFiltradas[index];
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: colors.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: ListTile(
-                                title: Text(
-                                  _getDisplayInfo(unidad),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.onSurface,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Año: ${unidad.anio}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colors.onSurface.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Motor: ${unidad.motor}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colors.onSurface.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Chasis: ${unidad.chasis}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colors.onSurface.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    if (unidad.color.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Color: ${unidad.color}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: colors.onSurface.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                    if (unidad.descripcion.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Descripción: ${unidad.descripcion}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: colors.onSurface.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                    if (unidad.codItem.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Código: ${unidad.codItem}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: colors.onSurface.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                    if (unidad.consignado) ...[
-                                      const SizedBox(height: 2),
-                                      const Text(
-                                        'Consignado: Sí',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.orange,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                    if (unidad.averias) ...[
-                                      const SizedBox(height: 2),
-                                      const Text(
-                                        'Averías: Sí',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                leading: CircleAvatar(
-                                  backgroundColor: colors.primary.withOpacity(0.2),
-                                  child: Text(
-                                    unidad.marca.isNotEmpty ? unidad.marca[0] : 'V',
-                                    style: TextStyle(
-                                      color: colors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        _editarUnidad(unidad);
-                                      },
-                                      icon: const Icon(Icons.edit, color: Colors.blue,)
-                                    ),
-                                    IconButton(
-                                      onPressed: () {
-                                        _verHistorial(unidad);
-                                      },
-                                      icon: const Icon(Icons.history, color: Colors.green,) // Nuevo botón
-                                    ),
-                                  ],
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                            );
-                          },
-                        ),
+                      : Icon(Icons.search, color: colors.onPrimary),
                 ),
               ],
             ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : unidadesFiltradas.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.directions_car_outlined, size: 64, color: colors.onSurface.withOpacity(0.5)),
+                            const SizedBox(height: 16),
+                            Text(
+                              _hasSearched 
+                                  ? 'No se encontraron vehículos con esa matrícula'
+                                  : 'Ingrese una matrícula para buscar',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: colors.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: unidadesFiltradas.length,
+                        itemBuilder: (context, index) {
+                          final unidad = unidadesFiltradas[index];
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                _getDisplayInfo(unidad),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Año: ${unidad.anio}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colors.onSurface.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Motor: ${unidad.motor}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colors.onSurface.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Chasis: ${unidad.chasis}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colors.onSurface.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  if (unidad.color.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Color: ${unidad.color}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                  if (unidad.descripcion.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Descripción: ${unidad.descripcion}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                  if (unidad.codItem.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Código: ${unidad.codItem}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colors.onSurface.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                  if (unidad.consignado) ...[
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Consignado: Sí',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                  if (unidad.averias) ...[
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Averías: Sí',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: colors.primary.withOpacity(0.2),
+                                child: Text(
+                                  unidad.marca.isNotEmpty ? unidad.marca[0] : 'V',
+                                  style: TextStyle(
+                                    color: colors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      _editarUnidad(unidad);
+                                    },
+                                    icon: const Icon(Icons.edit, color: Colors.blue,)
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      _verHistorial(unidad);
+                                    },
+                                    icon: const Icon(Icons.history, color: Colors.green,) // Nuevo botón
+                                  ),
+                                ],
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _mostrarDialogoNuevaUnidad(context);

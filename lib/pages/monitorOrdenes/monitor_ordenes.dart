@@ -40,6 +40,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _numOrdenController = TextEditingController();
   final TextEditingController _comentClienteController = TextEditingController();
   final TextEditingController _comentTrabajoController = TextEditingController();
+  final TextEditingController _descripcionController = TextEditingController();
   late Orden ordenExistente = Orden.empty();
 
   // Variables para controlar si estamos editando una orden existente
@@ -147,6 +148,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       _numOrdenController.text = _ordenExistente!.numeroOrdenTrabajo;
       _comentClienteController.text = _ordenExistente!.comentarioCliente;
       _comentTrabajoController.text = _ordenExistente!.comentarioTrabajo;
+      _descripcionController.text = _ordenExistente!.descripcion;
       
       if (_ordenExistente!.fechaOrdenTrabajo != null) {
         fecha = _ordenExistente!.fechaOrdenTrabajo!;
@@ -186,7 +188,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     return Orden(
       ordenTrabajoId: _isEditMode ? _ordenExistente!.ordenTrabajoId : 0,
       numeroOrdenTrabajo: _numOrdenController.text,
-      descripcion: 'Orden de trabajo para ${clienteSeleccionado!.nombre}',
+      descripcion: _descripcionController.text,
       fechaOrdenTrabajo: fecha,
       fechaVencimiento: _isEditMode ? _ordenExistente!.fechaVencimiento : null,
       fechaEntrega: _isEditMode ? _ordenExistente!.fechaEntrega : null,
@@ -309,7 +311,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 // ),
               ],
             ),
-            
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _descripcionController,
+              decoration: const InputDecoration(
+                labelText: 'Descripción',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 24),
             
             // Datos del cliente - SearchDelegate

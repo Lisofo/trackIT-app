@@ -1,17 +1,17 @@
+// unidad_search_delegate.dart
+import 'package:app_tec_sedel/services/unidades_services.dart';
 import 'package:flutter/material.dart';
-import 'package:app_tec_sedel/models/cliente.dart';
-import 'package:app_tec_sedel/services/client_services.dart';
+import 'package:app_tec_sedel/models/unidad.dart';
 
-class ClienteSearchDelegate extends SearchDelegate<Cliente> {
+class UnidadSearchDelegate extends SearchDelegate<Unidad> {
   final String token;
-  final ClientServices clientService;
+  final UnidadesServices unidadService;
   
-  // Variable para controlar si se debe realizar la búsqueda
   bool _shouldSearch = false;
 
-  ClienteSearchDelegate({
+  UnidadSearchDelegate({
     required this.token,
-    required this.clientService,
+    required this.unidadService,
   });
 
   @override
@@ -33,14 +33,13 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, Cliente.empty());
+        close(context, Unidad.empty());
       },
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
-    // Solo buscar cuando se presiona Enter
     if (_shouldSearch) {
       return _buildSearchResults(context);
     } else {
@@ -50,7 +49,6 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    // Mostrar estado inicial o resultados según corresponda
     if (_shouldSearch) {
       return _buildSearchResults(context);
     } else {
@@ -72,7 +70,7 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
           Icon(Icons.search, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'Escriba el nombre y presione Enter',
+            'Escriba la matricula de la unidad y presione Enter',
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
@@ -81,8 +79,8 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
   }
 
   Widget _buildSearchResults(BuildContext context) {
-    return FutureBuilder<List<Cliente>>(
-      future: _searchClientes(context),
+    return FutureBuilder<List<Unidad>>(
+      future: _searchUnidades(context),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -92,36 +90,34 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final clientes = snapshot.data ?? [];
+        final unidades = snapshot.data ?? [];
 
-        if (clientes.isEmpty) {
+        if (unidades.isEmpty) {
           return const Center(
-            child: Text('No se encontraron clientes'),
+            child: Text('No se encontraron unidades'),
           );
         }
 
         return ListView.builder(
-          itemCount: clientes.length,
+          itemCount: unidades.length,
           itemBuilder: (context, index) {
-            final cliente = clientes[index];
-            final nombreCompleto = '${cliente.nombre} ${cliente.nombreFantasia}';
+            final unidad = unidades[index];
             
             return ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(nombreCompleto),
+              leading: const Icon(Icons.directions_car),
+              title: Text(unidad.matricula),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (cliente.ruc.isNotEmpty)
-                    Text('RUC: ${cliente.ruc}'),
-                  if (cliente.telefono1.isNotEmpty)
-                    Text('Teléfono: ${cliente.telefono1}'),
-                  if (cliente.direccion.isNotEmpty)
-                    Text('Dirección: ${cliente.direccion}'),
+                  if (unidad.marca.isNotEmpty && unidad.modelo.isNotEmpty)
+                    Text('${unidad.marca} - ${unidad.modelo}'),
+                  Text('Kilometraje: ${unidad.km} km'),
+                  if (unidad.descripcion.isNotEmpty)
+                    Text('Descripción: ${unidad.descripcion}'),
                 ],
               ),
               onTap: () {
-                close(context, cliente);
+                close(context, unidad);
               },
             );
           },
@@ -130,23 +126,20 @@ class ClienteSearchDelegate extends SearchDelegate<Cliente> {
     );
   }
 
-  Future<List<Cliente>> _searchClientes(BuildContext context) async {
+  Future<List<Unidad>> _searchUnidades(BuildContext context) async {
     try {
-      final resultados = await clientService.getClientes(
+      // Asumiendo que tienes un servicio para unidades
+      final resultados = await unidadService.getUnidades(
         context,
-        '', // nombre
-        '',    // codCliente
-        null,  // estado
-        '0',   // tecnicoId (0 para todos)
         token,
-        condicion: query, // Usar el query como condición de búsqueda
+        matricula: query
       );
-      return resultados ?? [];
+      return resultados;
     } catch (e) {
-      throw Exception('Error al buscar clientes: $e');
+      throw Exception('Error al buscar unidades: $e');
     }
   }
 
   @override
-  String get searchFieldLabel => 'Buscar por nombre...';
+  String get searchFieldLabel => 'Buscar por matricula de la unidad...';
 }

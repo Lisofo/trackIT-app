@@ -43,6 +43,12 @@ class _DialogoClienteState extends State<DialogoCliente> {
   bool _isLoadingDepartamentos = false;
   bool _isGuardando = false;
 
+  // Variables para búsqueda por teléfono
+  List<Cliente> _clientesEncontrados = [];
+  Cliente? _clienteSeleccionado;
+  bool _buscandoCliente = false;
+  bool _mostrarAutocomplete = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,7 +83,6 @@ class _DialogoClienteState extends State<DialogoCliente> {
         });
       }
 
-      // Si estamos editando, seleccionar el departamento actual del cliente
       if (widget.esEdicion && widget.clienteEditar != null) {
         final departamentoActual = _departamentos.firstWhere(
           (dep) => dep.departamentoId == widget.clienteEditar!.departamento.departamentoId,
@@ -98,8 +103,93 @@ class _DialogoClienteState extends State<DialogoCliente> {
   }
 
   bool _validarTelefono(String telefono) {
-    // Aquí puedes agregar validaciones específicas para el teléfono
     return telefono.isNotEmpty;
+  }
+
+  // Función para buscar cliente por teléfono
+  Future<void> _buscarClientePorTelefono() async {
+    if (_telefonoController.text.isEmpty) return;
+
+    setState(() {
+      _buscandoCliente = true;
+      _clientesEncontrados = [];
+      _clienteSeleccionado = null;
+      _mostrarAutocomplete = false;
+    });
+
+    try {
+      final clientesEncontrados = await widget.clientServices.getClientes(
+        context,
+        '', // nombre
+        '',    // codCliente
+        null,  // estado
+        '0',   // tecnicoId (0 para todos)
+        widget.token, 
+        condicion: _telefonoController.text
+      );
+
+      if (clientesEncontrados.isNotEmpty) {
+        setState(() {
+          _clientesEncontrados = clientesEncontrados;
+        });
+
+        if (clientesEncontrados.length == 1) {
+          // Si hay solo un cliente, llenar automáticamente
+          _seleccionarCliente(clientesEncontrados.first);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cliente encontrado y cargado automáticamente')),
+          );
+        } else {
+          // Si hay múltiples clientes, mostrar autocomplete
+          setState(() {
+            _mostrarAutocomplete = true;
+          });
+        }
+      } else {
+        // No se encontraron clientes
+        _clienteSeleccionado = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se encontró un cliente con ese teléfono')),
+        );
+      }
+    } catch (e) {
+      _clienteSeleccionado = null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al buscar el cliente: $e')),
+      );
+    } finally {
+      setState(() {
+        _buscandoCliente = false;
+      });
+    }
+  }
+
+  // Función para seleccionar un cliente del autocomplete
+  void _seleccionarCliente(Cliente cliente) {
+    setState(() {
+      _clienteSeleccionado = cliente;
+      _telefonoController.text = cliente.telefono1;
+      _codigoController.text = cliente.codCliente;
+      _nombreController.text = cliente.nombre;
+      _nombreFantasiaController.text = cliente.nombreFantasia;
+      _rucController.text = cliente.ruc;
+      _correoController.text = cliente.email;
+      _direccionController.text = cliente.direccion;
+      _barrioController.text = cliente.barrio;
+      _localidadController.text = cliente.localidad;
+      _mostrarAutocomplete = false;
+      
+      // Buscar y seleccionar departamento
+      if (cliente.departamento.departamentoId != 0) {
+        final departamento = _departamentos.firstWhere(
+          (dep) => dep.departamentoId == cliente.departamento.departamentoId,
+          orElse: () => Departamento.empty(),
+        );
+        if (departamento.departamentoId != 0) {
+          _departamentoSeleccionado = departamento;
+        }
+      }
+    });
   }
 
   Future<void> _guardarCliente() async {
@@ -108,8 +198,11 @@ class _DialogoClienteState extends State<DialogoCliente> {
     setState(() => _isGuardando = true);
 
     try {
+      final esEdicion = widget.esEdicion || _clienteSeleccionado != null;
+      final clienteExistente = widget.clienteEditar ?? _clienteSeleccionado;
+
       final nuevoCliente = Cliente(
-        clienteId: widget.esEdicion ? widget.clienteEditar!.clienteId : 0,
+        clienteId: esEdicion ? clienteExistente!.clienteId : 0,
         codCliente: _codigoController.text,
         nombre: _nombreController.text,
         nombreFantasia: _nombreFantasiaController.text,
@@ -135,7 +228,7 @@ class _DialogoClienteState extends State<DialogoCliente> {
 
       Cliente? clienteGuardado;
       
-      if (widget.esEdicion) {
+      if (esEdicion) {
         clienteGuardado = await widget.clientServices.putCliente(
           context, 
           nuevoCliente, 
@@ -149,22 +242,18 @@ class _DialogoClienteState extends State<DialogoCliente> {
         );
       }
 
-      // Verificar si el widget sigue montado antes de realizar cualquier acción
       if (!mounted) return;
 
       if (clienteGuardado != null) {
-        // Llamar al callback si existe
         if (widget.onClienteCreado != null) {
           widget.onClienteCreado!(clienteGuardado);
         }
         
-        // Cerrar el diálogo y retornar el cliente guardado
         Navigator.of(context).pop(clienteGuardado);
       } else {
-        // Si hubo error, mostrar mensaje pero no cerrar el diálogo
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al ${widget.esEdicion ? 'editar' : 'crear'} el cliente - Servicio retornó null'),
+            content: Text('Error al ${esEdicion ? 'editar' : 'crear'} el cliente - Servicio retornó null'),
             backgroundColor: Colors.red,
           ),
         );
@@ -223,35 +312,15 @@ class _DialogoClienteState extends State<DialogoCliente> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Teléfono
-                    TextFormField(
-                      controller: _telefonoController,
-                      decoration: InputDecoration(
-                        labelText: 'Teléfono/Celular',
-                        prefixIcon: Icon(Icons.phone_outlined, color: colors.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.onError, width: 2),
-                        ),
-                        errorStyle: TextStyle(color: colors.onError),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.primary, width: 2),
-                        ),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un teléfono';
-                        }
-                        if (!_validarTelefono(value)) {
-                          return 'Por favor ingrese un teléfono válido';
-                        }
-                        return null;
-                      },
-                    ),
+                    // Campo de teléfono con búsqueda
+                    _buildCampoTelefono(),
                     const SizedBox(height: 16),
+
+                    // Autocomplete para múltiples clientes
+                    if (_mostrarAutocomplete && _clientesEncontrados.length > 1) ...[
+                      _buildAutocompleteClientes(),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Código cliente
                     TextFormField(
@@ -279,6 +348,7 @@ class _DialogoClienteState extends State<DialogoCliente> {
                         return null;
                       },
                     ),
+                    // ... (resto de los campos se mantienen igual)
                     const SizedBox(height: 16),
 
                     // Nombre
@@ -517,6 +587,111 @@ class _DialogoClienteState extends State<DialogoCliente> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCampoTelefono() {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Teléfono/Celular',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colors.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _telefonoController,
+                decoration: InputDecoration(
+                  labelText: 'Teléfono',
+                  hintText: 'Ingrese teléfono para buscar',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.onError, width: 2),
+                  ),
+                  errorStyle: TextStyle(color: colors.onError),
+                  suffixIcon: _buscandoCliente 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () => _buscarClientePorTelefono(),
+                        ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.primary, width: 2),
+                  ),
+                ),
+                onFieldSubmitted: (value) => _buscarClientePorTelefono(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingrese un teléfono';
+                  }
+                  if (!_validarTelefono(value)) {
+                    return 'Por favor ingrese un teléfono válido';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        if (_clienteSeleccionado != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            '✓ Cliente encontrado - Complete los datos restantes',
+            style: TextStyle(
+              color: colors.primary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAutocompleteClientes() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Se encontraron múltiples clientes, seleccione uno:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: _clientesEncontrados.map((cliente) {
+              return ListTile(
+                title: Text(cliente.nombre),
+                subtitle: Text('${cliente.codCliente} - ${cliente.telefono1}'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => _seleccionarCliente(cliente),
+                dense: true,
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }

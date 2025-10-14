@@ -17,7 +17,7 @@ class OrdenServices {
   int? statusCode = 0;
 
   // En OrdenServices, modifica el método getOrden:
-  Future getOrden(BuildContext context, String tecnicoId, String desde, String hasta, String token, {Map<String, dynamic>? queryParams}) async {
+  Future getOrden(BuildContext context, String tecnicoId, String token, {Map<String, dynamic>? queryParams, String? desde, String? hasta,}) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/';
 

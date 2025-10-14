@@ -25,7 +25,7 @@ class ClientServices {
     statusCode = null;
   }
 
-  Future getClientes(BuildContext context, String nombre, String codCliente, String? estado, String tecnicoId, String token) async {
+  Future  getClientes(BuildContext context, String nombre, String codCliente, String? estado, String tecnicoId, String token, {String? condicion}) async {
     String link = '${apiUrl}api/v1/clientes/?offset=0&sort=nombre';
     bool yaTieneFiltro = true;
     if (nombre != '') {
@@ -48,6 +48,12 @@ class ClientServices {
       yaTieneFiltro = true;
     }
 
+    Map<String, dynamic> queryParams = {};
+
+    if (condicion != null && condicion != '') {
+      queryParams['condicion'] = condicion;
+    }
+
     try {
       var headers = {'Authorization': token};
       var resp = await _dio.request(
@@ -56,6 +62,7 @@ class ClientServices {
           method: 'GET',
           headers: headers,
         ),
+        queryParameters: queryParams,
       );
       statusCode = 1;
       final List<dynamic> clienteList = resp.data;

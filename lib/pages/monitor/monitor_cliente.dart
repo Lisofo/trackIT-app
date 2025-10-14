@@ -71,11 +71,12 @@ class MonitorClientesState extends State<MonitorClientes> {
       
       final nuevosClientes = await clientServices.getClientes(
         context,
-        searchController.text, // nombre
+        '',
         '',    // codCliente
         null,  // estado
         '0',   // tecnicoId (0 para todos)
         token,
+        condicion: searchController.text, // nombre
       );
       
       if (nuevosClientes != null && nuevosClientes.isNotEmpty) {

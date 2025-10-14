@@ -62,7 +62,7 @@ class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
     try {
       token = context.read<OrdenProvider>().token;
       tecnicoId = context.read<OrdenProvider>().tecnicoId;
-      ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), opcionActual, opcionActual, token);
+      // ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), opcionActual, opcionActual, token);
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
       setState(() {});
     } catch (e) {
