@@ -560,8 +560,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                       // Limpiar la orden del provider después de guardar
                       context.read<OrdenProvider>().setOrden(Orden.empty());
                       
-                      // Navegar a la siguiente pantalla con la orden ya creada
-                      Navigator.push(
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => DetallePiezasScreen(
@@ -573,6 +572,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                           ),
                         ),
                       );
+
+                      // Si recibimos una orden de vuelta, actualizar el estado
+                      if (result != null && result is Orden) {
+                        setState(() {
+                          ordenExistente = result;
+                          _isEditMode = true;
+                          _ordenExistente = result;
+                        });
+                        
+                        // Recargar los datos de la orden
+                        await _cargarClienteDesdeAPI(result.cliente.clienteId);
+                        await _cargarUnidadesYSeleccionar(result.cliente.clienteId, result.unidad.unidadId);
+                        _cargarDatosOrdenExistente();
+                      }
                     }
                   } catch (e) {
                     // Cerrar el diálogo de carga en caso de error

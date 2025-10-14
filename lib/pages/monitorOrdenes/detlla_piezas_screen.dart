@@ -370,6 +370,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         backgroundColor: colors.primary,
         title: Text('Detalle de Piezas ${widget.ordenPrevia.numeroOrdenTrabajo}', style: TextStyle(color: colors.onPrimary)),
         iconTheme: IconThemeData(color: colors.onPrimary),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Devolver la orden actualizada cuando se presiona retroceso
+            Navigator.of(context).pop(widget.ordenPrevia);
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
