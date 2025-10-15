@@ -26,6 +26,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   bool isMobile = false;
   bool isAdmin = false;
+  bool datosCargados = false;
 
   // Variables para los filtros
   bool _isFilterExpanded = false;
@@ -33,14 +34,23 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   int? _unidadIdFiltro;
   DateTime? _fechaDesdeFiltro;
   DateTime? _fechaHastaFiltro;
-  String? _numeroOrdenFiltro; // Nueva variable
+  String? _numeroOrdenFiltro;
 
   @override
   void initState() {
     super.initState();
-    // cargarDatos();
     token = context.read<OrdenProvider>().token;
     tecnicoId = context.read<OrdenProvider>().tecnicoId;
+    
+    // Verificar si hay una unidad seleccionada (viene desde MonitorVehiculos)
+    final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
+    if (unidadSeleccionada.unidadId > 0) {
+      // Si hay unidad seleccionada, cargar datos automáticamente
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        cargarDatos();
+      });
+    }
+    // Si no hay unidad seleccionada, no cargar automáticamente
   }
 
   // 2. Método para manejar la actualización de datos
@@ -52,12 +62,20 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
 
   cargarDatos() async {
     try {
+      datosCargados = true;
+      
+      // Limpiar filtros previos cuando viene desde monitor vehículos
+      final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
+      if (unidadSeleccionada.unidadId > 0) {
+        _clienteIdFiltro = null;
+        _fechaDesdeFiltro = null;
+        _fechaHastaFiltro = null;
+        _numeroOrdenFiltro = null;
+      }
       
       // Obtener la unidad seleccionada del provider
-      final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
-      
       Map<String, dynamic> queryParams = {};
-      queryParams['sort'] = 'fechaDesde DESC'; // Ordenar por fechaDesde descendente
+      queryParams['sort'] = 'fechaDesde DESC';
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
@@ -82,8 +100,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         ordenes = await ordenServices.getOrden(
           context, 
           tecnicoId.toString(), 
-          // "Anteriores", 
-          // "Anteriores", 
           token,
           queryParams: queryParams,
         );
@@ -91,8 +107,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         ordenes = await ordenServices.getOrden(
           context,
           tecnicoId.toString(),
-          // "Anteriores",
-          // "Anteriores",
           token,
         );
       }
@@ -112,14 +126,14 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     int? unidadId, 
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? numeroOrden, // Nuevo parámetro
+    String? numeroOrden,
   ) {
     setState(() {
       _clienteIdFiltro = clienteId;
       _unidadIdFiltro = unidadId;
       _fechaDesdeFiltro = fechaDesde;
       _fechaHastaFiltro = fechaHasta;
-      _numeroOrdenFiltro = numeroOrden; // Asignar el nuevo filtro
+      _numeroOrdenFiltro = numeroOrden;
       _isFilterExpanded = false;
     });
     
@@ -183,7 +197,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       _unidadIdFiltro = null;
       _fechaDesdeFiltro = null;
       _fechaHastaFiltro = null;
-      _numeroOrdenFiltro = null; // Resetear el nuevo filtro
+      _numeroOrdenFiltro = null;
       _isFilterExpanded = false;
     });
     cargarDatos();

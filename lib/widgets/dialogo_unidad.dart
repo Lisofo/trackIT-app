@@ -113,7 +113,43 @@ class DialogoUnidadState extends State<DialogoUnidad> {
       setState(() {
         marcaSeleccionada = marcaExistente;
       });
-      _cargarModelos(marcaExistente.marcaId);
+      
+      // Cargar modelos y luego seleccionar el correcto
+      _cargarModelos(marcaExistente.marcaId).then((listaModelos) {
+        if (mounted) {
+          setState(() {
+            modelos = listaModelos;
+            
+            // Buscar el modelo por ID
+            final modeloExistente = listaModelos.firstWhere(
+              (modelo) => modelo.modeloId == unidad.modeloId,
+              orElse: () => Modelo(
+                modeloId: 0, 
+                marcaId: 0, 
+                descripcion: '', 
+                paraVenta: false, 
+                orden: '', 
+                codMarca: '', 
+                marca: ''
+              ),
+            );
+            
+            // Si no encuentra por ID, intentar por descripción como fallback
+            if (modeloExistente.modeloId == 0 && unidad.modelo.isNotEmpty) {
+              try {
+                modeloSeleccionado = listaModelos.firstWhere(
+                  (modelo) => modelo.descripcion.toLowerCase() == unidad.modelo.toLowerCase()
+                );
+              } catch (e) {
+                print('No se pudo encontrar el modelo por descripción: ${unidad.modelo}');
+                modeloSeleccionado = null;
+              }
+            } else {
+              modeloSeleccionado = modeloExistente.modeloId != 0 ? modeloExistente : null;
+            }
+          });
+        }
+      });
     }
   }
 
@@ -140,10 +176,13 @@ class DialogoUnidadState extends State<DialogoUnidad> {
       modelos = listaModelos;
       cargandoModelos = false;
       
-      // Si estamos editando y la marca es la misma que la existente, seleccionar el modelo correspondiente
-      if (widget.unidadExistente != null && marca.marcaId == widget.unidadExistente!.marcaId || unidadEncontrada != null && marca.marcaId == unidadEncontrada!.marcaId) {
-        modeloSeleccionado = listaModelos.firstWhere(
-          (modelo) => (modelo.modeloId == widget.unidadExistente?.modeloId || modelo.modeloId == unidadEncontrada?.modeloId),
+      // Si estamos editando, seleccionar el modelo correspondiente
+      if (widget.unidadExistente != null && marca.marcaId == widget.unidadExistente!.marcaId) {
+        final unidad = widget.unidadExistente!;
+        
+        // Buscar por ID
+        final modeloExistente = listaModelos.firstWhere(
+          (modelo) => modelo.modeloId == unidad.modeloId,
           orElse: () => Modelo(
             modeloId: 0, 
             marcaId: 0, 
@@ -154,6 +193,50 @@ class DialogoUnidadState extends State<DialogoUnidad> {
             marca: ''
           ),
         );
+        
+        // Si no encuentra por ID, buscar por descripción
+        if (modeloExistente.modeloId == 0 && unidad.modelo.isNotEmpty) {
+          try {
+            modeloSeleccionado = listaModelos.firstWhere(
+              (modelo) => modelo.descripcion.toLowerCase() == unidad.modelo.toLowerCase()
+            );
+          } catch (e) {
+            print('No se pudo encontrar el modelo por descripción: ${unidad.modelo}');
+            modeloSeleccionado = null;
+          }
+        } else {
+          modeloSeleccionado = modeloExistente.modeloId != 0 ? modeloExistente : null;
+        }
+      }
+      
+      // También para unidad encontrada por búsqueda
+      if (unidadEncontrada != null && marca.marcaId == unidadEncontrada!.marcaId) {
+        final unidad = unidadEncontrada!;
+        
+        final modeloExistente = listaModelos.firstWhere(
+          (modelo) => modelo.modeloId == unidad.modeloId,
+          orElse: () => Modelo(
+            modeloId: 0, 
+            marcaId: 0, 
+            descripcion: '', 
+            paraVenta: false, 
+            orden: '', 
+            codMarca: '', 
+            marca: ''
+          ),
+        );
+        
+        if (modeloExistente.modeloId == 0 && unidad.modelo.isNotEmpty) {
+          try {
+            modeloSeleccionado = listaModelos.firstWhere(
+              (modelo) => modelo.descripcion.toLowerCase() == unidad.modelo.toLowerCase()
+            );
+          } catch (e) {
+            modeloSeleccionado = null;
+          }
+        } else {
+          modeloSeleccionado = modeloExistente.modeloId != 0 ? modeloExistente : null;
+        }
       }
     });
   }

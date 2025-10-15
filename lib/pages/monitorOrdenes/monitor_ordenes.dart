@@ -535,73 +535,85 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
             const SizedBox(height: 24),
             Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (clienteSeleccionado == null || unidadSeleccionada == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
-                    );
-                    return;
-                  }
-                  
-                  // Crear la orden en memoria
-                  final ordenCreada = _crearOrdenEnMemoria();
-                  
-                  // Mostrar indicador de carga
-                  showDialog(
-                    context: context,
-                    barrierDismissible: true,
-                    builder: (context) => const Center(
-                      child: CircularProgressIndicator(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isEditMode) ... [
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: const Text('Descartar orden'),
                     ),
-                  );
-                  
-                  try {
-                    final ordenServices = OrdenServices();
-                    final ordenGuardada = _isEditMode 
-                        ? await ordenServices.actualizarOrden(context, token, ordenCreada)
-                        : await ordenServices.postOrden(context, token, ordenCreada);
-                    
-                    // Cerrar el diálogo de carga
-                    Navigator.of(context).pop();
-                    
-                    if (ordenGuardada != null) {
-                      // Limpiar la orden del provider después de guardar
-                      context.read<OrdenProvider>().setOrden(Orden.empty());
+                    const SizedBox(width: 16),
+                  ],
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (clienteSeleccionado == null || unidadSeleccionada == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
+                        );
+                        return;
+                      }
                       
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetallePiezasScreen(
-                            cliente: clienteSeleccionado!,
-                            vehiculo: unidadSeleccionada!,
-                            fecha: fecha,
-                            condIva: condIva,
-                            ordenPrevia: ordenGuardada,
-                          ),
+                      // Crear la orden en memoria
+                      final ordenCreada = _crearOrdenEnMemoria();
+                      
+                      // Mostrar indicador de carga
+                      showDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (context) => const Center(
+                          child: CircularProgressIndicator(),
                         ),
                       );
-
-                      // Si recibimos una orden de vuelta, actualizar el estado
-                      if (result != null && result is Orden) {
-                        setState(() {
-                          ordenExistente = result;
-                          _isEditMode = true;
-                          _ordenExistente = result;
-                        });
+                      
+                      try {
+                        final ordenServices = OrdenServices();
+                        final ordenGuardada = _isEditMode 
+                            ? await ordenServices.actualizarOrden(context, token, ordenCreada)
+                            : await ordenServices.postOrden(context, token, ordenCreada);
                         
-                        // Recargar los datos de la orden
-                        await _cargarClienteDesdeAPI(result.cliente.clienteId);
-                        await _cargarUnidadesYSeleccionar(result.cliente.clienteId, result.unidad.unidadId);
-                        _cargarDatosOrdenExistente();
+                        // Cerrar el diálogo de carga
+                        Navigator.of(context).pop();
+                        
+                        if (ordenGuardada != null) {
+                          // Limpiar la orden del provider después de guardar
+                          context.read<OrdenProvider>().setOrden(Orden.empty());
+                          
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetallePiezasScreen(
+                                cliente: clienteSeleccionado!,
+                                vehiculo: unidadSeleccionada!,
+                                fecha: fecha,
+                                condIva: condIva,
+                                ordenPrevia: ordenGuardada,
+                              ),
+                            ),
+                          );
+                  
+                          // Si recibimos una orden de vuelta, actualizar el estado
+                          if (result != null && result is Orden) {
+                            setState(() {
+                              ordenExistente = result;
+                              _isEditMode = true;
+                              _ordenExistente = result;
+                            });
+                            
+                            // Recargar los datos de la orden
+                            await _cargarClienteDesdeAPI(result.cliente.clienteId);
+                            await _cargarUnidadesYSeleccionar(result.cliente.clienteId, result.unidad.unidadId);
+                            _cargarDatosOrdenExistente();
+                          }
+                        }
+                      } catch (e) {
+                        // Cerrar el diálogo de carga en caso de error
+                        Navigator.of(context).pop();
                       }
-                    }
-                  } catch (e) {
-                    // Cerrar el diálogo de carga en caso de error
-                    Navigator.of(context).pop();
-                  }
-                },
-                child: Text(_isEditMode ? 'Actualizar Orden' : 'Siguiente'),
+                    },
+                    child: Text(_isEditMode ? 'Actualizar Orden' : 'Siguiente'),
+                  ),
+                ],
               ),
             ),
           ],
