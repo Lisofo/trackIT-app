@@ -88,7 +88,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     double total = 0;
     for (var linea in lineas) {
       total += (linea.repSinIva ?? 0).toDouble();
-    }
+    } 
     return total;
   }
 
@@ -560,6 +560,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           _buildTotalItem('Pintura:', formatCurrency.format(_totalPintura)),
                           _buildTotalItem('Mecánica:', formatCurrency.format(_totalMecanica)),
                           _buildTotalItem('Repuestos:', formatCurrency.format(_totalRepuestos)),
+                        ],
+                      ),
+                      const SizedBox(height: 12), 
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
                           _buildTotalItem('TOTAL:', formatCurrency.format(_totalGeneral), isTotal: true),
                         ],
                       ),
@@ -682,53 +688,53 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     CheckboxListTile(
                       title: const Text('Detallar ítems de Chapa'),
                       value: opcionesTemp['DC'] ?? false, // Usamos ?? false como seguridad
-                      onChanged: (bool? value) {
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['DC'] = value ?? false;
                         });
-                      },
+                      } : null,
                     ),
                     CheckboxListTile(
                       title: const Text('Detallar ítems de Pintura'),
                       value: opcionesTemp['DP'] ?? false,
-                      onChanged: (bool? value) {
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['DP'] = value ?? false;
                         });
-                      },
+                      } : null,
                     ),
                     CheckboxListTile(
                       title: const Text('Detallar ítems de Mecánica'),
                       value: opcionesTemp['DM'] ?? false,
-                      onChanged: (bool? value) {
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['DM'] = value ?? false;
                         });
-                      },
+                      } : null,
                     ),
                     CheckboxListTile(
                       title: const Text('Detallar ítems de Repuestos'),
                       value: opcionesTemp['DR'] ?? false,
-                      onChanged: (bool? value) {
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['DR'] = value ?? false;
                         });
-                      },
+                      } : null,
                     ),
                     CheckboxListTile(
                       title: const Text('Imprimir la observación'),
                       value: opcionesTemp['II'] ?? false,
-                      onChanged: (bool? value) {
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['II'] = value ?? false;
                         });
-                      },
+                      } : null,
                     ),
                     const SizedBox(height: 16),
                     CheckboxListTile(
                       title: const Text('Impresión para USO INTERNO'),
-                      value: opcionesTemp['IO'] ?? false,
-                      onChanged: (bool? value) {
+                      value: opcionesTemp['IO'] ?? false,                                                                                        
+                      onChanged: (opcionesTemp["DC"] == true || opcionesTemp["DP"] == true || opcionesTemp["DM"] == true || opcionesTemp["DR"] == true || opcionesTemp["II"] == true) ? null : (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['IO'] = value ?? false;
                         });
@@ -821,10 +827,16 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     setState(() {});
     while (contador < 15 && informeGeneradoEsS == false && generandoInforme){
       print(contador);
-      
+      if (rptGenId == 0) {
+        informeGeneradoEsS = false;
+        generandoInforme = false;
+        print('rptGenId es 0, saliendo del bucle');
+        break;
+      } 
       reporte = await ordenServices.getReporte(context, rptGenId, context.read<OrdenProvider>().token);
 
       if(reporte.generado == 'S'){
+        await Future.delayed(const Duration(seconds: 1));
         informeGeneradoEsS = true;
         if(kIsWeb){
           abrirUrlWeb(reporte.archivoUrl);
@@ -832,6 +844,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           await abrirUrl(reporte.archivoUrl, context.read<OrdenProvider>().token);
         }
         generandoInforme = false;
+        informeGeneradoEsS = false;
+        Provider.of<OrdenProvider>(context, listen: false).setRptId(0);
         setState(() {});
       }else{
         await Future.delayed(const Duration(seconds: 1));
@@ -902,7 +916,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   abrirUrl(String url, String token) async {
     Dio dio = Dio();
-    String link = url; // += '?authorization=$token';
+    String link = "$url?authorization=$token"; // += '?authorization=$token';
     print(link);
     try {
       // Realizar la solicitud HTTP con el encabezado de autorización
@@ -917,7 +931,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       // Verificar si la solicitud fue exitosa (código de estado 200)
       if (response.statusCode == 200) {
         // Si la respuesta fue exitosa, abrir la URL en el navegador
-        Uri uri = Uri.parse(url);
+        Uri uri = Uri.parse(link);
         await launchUrl(uri);
       } else {
         // Si la solicitud no fue exitosa, mostrar un mensaje de error
