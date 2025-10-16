@@ -44,13 +44,16 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     
     // Verificar si hay una unidad seleccionada (viene desde MonitorVehiculos)
     final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
-    if (unidadSeleccionada.unidadId > 0) {
-      // Si hay unidad seleccionada, cargar datos automáticamente
+    // Verificar si hay un cliente seleccionado (viene desde MonitorClientes)
+    final clienteSeleccionado = context.read<OrdenProvider>().cliente;
+    
+    if (unidadSeleccionada.unidadId > 0 || clienteSeleccionado.clienteId > 0) {
+      // Si hay unidad o cliente seleccionado, cargar datos automáticamente
       WidgetsBinding.instance.addPostFrameCallback((_) {
         cargarDatos();
       });
     }
-    // Si no hay unidad seleccionada, no cargar automáticamente
+    // Si no hay unidad o cliente seleccionado, no cargar automáticamente
   }
 
   // 2. Método para manejar la actualización de datos
@@ -64,22 +67,26 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     try {
       datosCargados = true;
       
-      // Limpiar filtros previos cuando viene desde monitor vehículos
+      // Limpiar filtros previos cuando viene desde monitor vehículos o clientes
       final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
-      if (unidadSeleccionada.unidadId > 0) {
+      final clienteSeleccionado = context.read<OrdenProvider>().cliente;
+      
+      if (unidadSeleccionada.unidadId > 0 || clienteSeleccionado.clienteId > 0) {
         _clienteIdFiltro = null;
         _fechaDesdeFiltro = null;
         _fechaHastaFiltro = null;
         _numeroOrdenFiltro = null;
       }
       
-      // Obtener la unidad seleccionada del provider
+      // Obtener la unidad y cliente seleccionados del provider
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
         queryParams['clienteId'] = _clienteIdFiltro.toString();
+      } else if (clienteSeleccionado.clienteId > 0) {
+        queryParams['clienteId'] = clienteSeleccionado.clienteId.toString();
       }
       
       if (_unidadIdFiltro != null && _unidadIdFiltro! > 0) {
@@ -88,6 +95,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         queryParams['unidadId'] = unidadSeleccionada.unidadId.toString();
       }
       
+      // Resto del método permanece igual...
       if (_fechaDesdeFiltro != null) {
         queryParams['fechaDesde'] = DateFormat('yyyy-MM-dd').format(_fechaDesdeFiltro!);
       }

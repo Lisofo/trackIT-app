@@ -323,34 +323,34 @@ class _DialogoClienteState extends State<DialogoCliente> {
                     ],
 
                     // Código cliente
-                    TextFormField(
-                      controller: _codigoController,
-                      maxLength: 10,
-                      decoration: InputDecoration(
-                        labelText: 'Código cliente',
-                        prefixIcon: Icon(Icons.badge, color: colors.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.onError, width: 2),
+                    if (_clienteSeleccionado != null && _clienteSeleccionado?.codCliente != '') ...[
+                      TextFormField(
+                        controller: _codigoController,
+                        maxLength: 10,
+                        decoration: InputDecoration(
+                          labelText: 'Código cliente',
+                          prefixIcon: Icon(Icons.badge, color: colors.primary),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: colors.onError, width: 2),
+                          ),
+                          errorStyle: TextStyle(color: colors.onError),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: colors.primary, width: 2),
+                          ),
                         ),
-                        errorStyle: TextStyle(color: colors.onError),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.primary, width: 2),
-                        ),
+                        keyboardType: TextInputType.text,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese un código de cliente';
+                          }
+                          return null;
+                        },
                       ),
-                      keyboardType: TextInputType.text,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un código de cliente';
-                        }
-                        return null;
-                      },
-                    ),
-                    // ... (resto de los campos se mantienen igual)
-                    const SizedBox(height: 16),
-
+                      const SizedBox(height: 16),
+                    ],
                     // Nombre
                     TextFormField(
                       controller: _nombreController,

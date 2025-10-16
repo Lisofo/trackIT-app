@@ -1,5 +1,6 @@
 // monitor_cliente.dart
 import 'dart:async';
+import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
@@ -152,11 +153,12 @@ class MonitorClientesState extends State<MonitorClientes> {
       try {
         final resultados = await clientServices.getClientes(
           context,
-          query, // nombre
+          '', // nombre
           '',    // codCliente
           null,  // estado
           '0',   // tecnicoId (0 para todos)
           token,
+          condicion: query
         );
         
         if (mounted) {
@@ -230,6 +232,14 @@ class MonitorClientesState extends State<MonitorClientes> {
             ),
           ),
         );
+  }
+
+  void _verHistorial(Cliente cliente) {
+    // Settear el cliente en el provider
+    Provider.of<OrdenProvider>(context, listen: false).setCliente(cliente);
+    
+    // Navegar a la lista de órdenes
+    router.push('/listaOrdenes');
   }
 
   @override
@@ -394,6 +404,13 @@ class MonitorClientesState extends State<MonitorClientes> {
                                         },
                                         icon: Icon(Icons.edit, color: colors.primary),
                                         tooltip: 'Editar Cliente',
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          _verHistorial(cliente);
+                                        },
+                                        icon: const Icon(Icons.history, color: Colors.green),
+                                        tooltip: 'Ver historial de órdenes',
                                       ),
                                     ],
                                   ),

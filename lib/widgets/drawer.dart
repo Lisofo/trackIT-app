@@ -1,4 +1,5 @@
 import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/providers/menu_providers.dart';
@@ -59,6 +60,7 @@ List<Widget> _filaBotones2(data, context, opciones) {
               }
               if (opt['ruta'] == '/listaOrdenes') {
                 ordenProvider.setUnidadSeleccionada(Unidad.empty());
+                ordenProvider.setCliente(Cliente.empty());
               }
               ordenProvider.setAdmOrdenes(true);
               router.push(opt['ruta']);

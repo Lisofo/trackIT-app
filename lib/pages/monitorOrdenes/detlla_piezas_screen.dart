@@ -1,4 +1,5 @@
 import 'package:app_tec_sedel/models/cliente.dart';
+import 'package:app_tec_sedel/models/reporte.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/models/tarea.dart';
 import 'package:app_tec_sedel/models/material.dart';
@@ -9,9 +10,12 @@ import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 
 class DetallePiezasScreen extends StatefulWidget {
   final Cliente cliente;
@@ -42,6 +46,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   int ordinalCounter = 1;
   final LineasServices _lineasServices = LineasServices();
   final ordenServices = OrdenServices();
+  late int rptGenId = 0;
+  late bool generandoInforme = false;
+  late bool informeGeneradoEsS = false;
+  late Reporte reporte = Reporte.empty();
+  Map<String, bool> _opcionesImpresion = {
+    'DC': false,
+    'DP': false,
+    'DM': false,
+    'DR': false, // Por defecto seleccionado según tu imagen
+    'II': false,
+    'IO': false,
+  };
 
   // Métodos para calcular totales - ahora basados en Linea
   double get _totalChapa {
@@ -382,244 +398,548 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tarjeta de información del cliente y vehículo
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Cliente: ${widget.cliente.nombre}', 
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                    ),
-                    const SizedBox(height: 8),
-                    Text('Vehículo: ${widget.vehiculo.displayInfo}'),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text('Fecha: ${DateFormat('dd/MM/yyyy').format(widget.fecha)}'),
-                        const SizedBox(width: 16),
-                        Text('Cond. IVA: ${widget.condIva ? 'Sí' : 'No'}'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Tabla de detalles de líneas
-            const Text(
-              'Detalle de Piezas',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            
-            Card(
-              elevation: 2,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: DataTable(
-                    dividerThickness: 1.0,
-                    horizontalMargin: 12,
-                    columnSpacing: 16,
-                    dataRowMinHeight: 40,
-                    dataRowMaxHeight: 60,
-                    headingRowHeight: 50,
-                    headingTextStyle: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: colors.primary,
-                    ),
-                    columns: const [
-                      DataColumn(label: Text('Acción', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Pieza', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Chapa (H)', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Chapa (M)', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Pintura', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Mec. (H)', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Mec. (M)', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Repto. s/iva', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Editar', textAlign: TextAlign.center)),
-                      DataColumn(label: Text('Eliminar', textAlign: TextAlign.center)),
-                    ],
-                    rows: lineas.isEmpty
-                      ? [
-                          const DataRow(cells: [
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                            DataCell(Center(child: Text('-'))),
-                          ])
-                        ]
-                      : lineas.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final linea = entry.value;
-                          return DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
-                                return index.isEven ? Colors.grey.shade50 : null;
-                              },
-                            ),
-                            cells: [
-                              DataCell(Center(child: Text(linea.accion))),
-                              DataCell(Text(linea.pieza)),
-                              DataCell(Center(child: Text(linea.chapaHs?.toStringAsFixed(1) ?? '0.0'))),
-                              DataCell(Center(child: Text(formatCurrency.format(linea.chapaMonto ?? 0)))),
-                              DataCell(Center(child: Text(formatCurrency.format(linea.pinturaMonto ?? 0)))),
-                              DataCell(Center(child: Text(linea.mecanicaHs?.toStringAsFixed(1) ?? '0.0'))),
-                              DataCell(Center(child: Text(formatCurrency.format(linea.mecanicaMonto ?? 0)))),
-                              DataCell(Center(child: Text(formatCurrency.format(linea.repSinIva ?? 0)))),
-                              DataCell( // Nueva celda de edición
-                                Center(
-                                  child: IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () {
-                                      _editarLinea(index, linea);
-                                    },
-                                  ),
-                                ),
-                              ),
-                              DataCell(
-                                Center(
-                                  child: IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      _eliminarLinea(index);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                  ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Botón para agregar nueva línea
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _mostrarDialogoNuevaLinea(context);
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Agregar Pieza'),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Totales presupuestados
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Totales presupuestados',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildTotalItem('Chapa:', formatCurrency.format(_totalChapa)),
-                        _buildTotalItem('Pintura:', formatCurrency.format(_totalPintura)),
-                        _buildTotalItem('Mecánica:', formatCurrency.format(_totalMecanica)),
-                        _buildTotalItem('Repuestos:', formatCurrency.format(_totalRepuestos)),
-                        _buildTotalItem('TOTAL:', formatCurrency.format(_totalGeneral), isTotal: true),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Costos reales
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Costos reales',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildTotalItem('Chapa:', formatCurrency.format(_costoRealChapa)),
-                        _buildTotalItem('Pintura:', formatCurrency.format(_costoRealPintura)),
-                        _buildTotalItem('Mecánica:', formatCurrency.format(_costoRealMecanica)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Botón para crear la orden
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            if (!generandoInforme) ...[
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: _editarOrden,
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Confirmar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
+                      Text('Cliente: ${widget.cliente.nombre}', 
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          // Acción de imprimir (pendiente de implementar)
-                          await ordenServices.imprimirOTAdm(context, widget.ordenPrevia, context.read<OrdenProvider>().token);
-                        },
-                        icon: const Icon(Icons.print),
-                        label: const Text('Imprimir'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.secondary,
-                          foregroundColor: Colors.white,
-                        ),
+                      const SizedBox(height: 8),
+                      Text('Vehículo: ${widget.vehiculo.displayInfo}'),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text('Fecha: ${DateFormat('dd/MM/yyyy').format(widget.fecha)}'),
+                          const SizedBox(width: 16),
+                          Text('Cond. IVA: ${widget.condIva ? 'Sí' : 'No'}'),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+              
+              const SizedBox(height: 24),
+              
+              // Tabla de detalles de líneas
+              const Text(
+                'Detalle de Piezas',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              
+              Card(
+                elevation: 2,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DataTable(
+                      dividerThickness: 1.0,
+                      horizontalMargin: 12,
+                      columnSpacing: 16,
+                      dataRowMinHeight: 40,
+                      dataRowMaxHeight: 60,
+                      headingRowHeight: 50,
+                      headingTextStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colors.primary,
+                      ),
+                      columns: const [
+                        DataColumn(label: Text('Acción', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Pieza', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Chapa (H)', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Chapa (M)', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Pintura', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Mec. (H)', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Mec. (M)', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Repto. s/iva', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Editar', textAlign: TextAlign.center)),
+                        DataColumn(label: Text('Eliminar', textAlign: TextAlign.center)),
+                      ],
+                      rows: lineas.isEmpty
+                        ? [
+                            const DataRow(cells: [
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                              DataCell(Center(child: Text('-'))),
+                            ])
+                          ]
+                        : lineas.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final linea = entry.value;
+                            return DataRow(
+                              color: MaterialStateProperty.resolveWith<Color?>(
+                                (Set<MaterialState> states) {
+                                  return index.isEven ? Colors.grey.shade50 : null;
+                                },
+                              ),
+                              cells: [
+                                DataCell(Center(child: Text(linea.accion))),
+                                DataCell(Text(linea.pieza)),
+                                DataCell(Center(child: Text(linea.chapaHs?.toStringAsFixed(1) ?? '0.0'))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.chapaMonto ?? 0)))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.pinturaMonto ?? 0)))),
+                                DataCell(Center(child: Text(linea.mecanicaHs?.toStringAsFixed(1) ?? '0.0'))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.mecanicaMonto ?? 0)))),
+                                DataCell(Center(child: Text(formatCurrency.format(linea.repSinIva ?? 0)))),
+                                DataCell( // Nueva celda de edición
+                                  Center(
+                                    child: IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
+                                      onPressed: () {
+                                        _editarLinea(index, linea);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Center(
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        _eliminarLinea(index);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Botón para agregar nueva línea
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _mostrarDialogoNuevaLinea(context);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Agregar Pieza'),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Totales presupuestados
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Totales presupuestados',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildTotalItem('Chapa:', formatCurrency.format(_totalChapa)),
+                          _buildTotalItem('Pintura:', formatCurrency.format(_totalPintura)),
+                          _buildTotalItem('Mecánica:', formatCurrency.format(_totalMecanica)),
+                          _buildTotalItem('Repuestos:', formatCurrency.format(_totalRepuestos)),
+                          _buildTotalItem('TOTAL:', formatCurrency.format(_totalGeneral), isTotal: true),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Costos reales
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Costos reales',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildTotalItem('Chapa:', formatCurrency.format(_costoRealChapa)),
+                          _buildTotalItem('Pintura:', formatCurrency.format(_costoRealPintura)),
+                          _buildTotalItem('Mecánica:', formatCurrency.format(_costoRealMecanica)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Botón para crear la orden
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _editarOrden,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Confirmar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _mostrarDialogoOpcionesImpresion,
+                          icon: const Icon(Icons.print),
+                          label: const Text('Imprimir'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.secondary,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: colors.primary,
+                      strokeWidth: 5,
+                    ),
+                  ),
+                  const Text('Generando PDF, espere por favor.'),
+                  TextButton(
+                    onPressed: () async {
+                      await ordenServices.patchInforme(context, reporte, 'D', context.read<OrdenProvider>().token);
+                      generandoInforme = false;
+                      setState(() {});
+                    }, 
+                    child: const Text('Cancelar'))
+                ],
+              )
+            ]
           ],
         ),
       ),
     );
+  }
+
+  void _mostrarDialogoOpcionesImpresion() {
+    // Inicializar todas las opciones en false
+    Map<String, bool> opcionesTemp = {
+      'DC': false,
+      'DP': false,
+      'DM': false,
+      'DR': false,
+      'II': false,
+      'IO': false,
+    };
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Opciones de Impresión', textAlign: TextAlign.center),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Chapa'),
+                      value: opcionesTemp['DC'] ?? false, // Usamos ?? false como seguridad
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DC'] = value ?? false;
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Pintura'),
+                      value: opcionesTemp['DP'] ?? false,
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DP'] = value ?? false;
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Mecánica'),
+                      value: opcionesTemp['DM'] ?? false,
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DM'] = value ?? false;
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Repuestos'),
+                      value: opcionesTemp['DR'] ?? false,
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DR'] = value ?? false;
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Imprimir la observación'),
+                      value: opcionesTemp['II'] ?? false,
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['II'] = value ?? false;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      title: const Text('Impresión para USO INTERNO'),
+                      value: opcionesTemp['IO'] ?? false,
+                      onChanged: (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['IO'] = value ?? false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cerrar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _opcionesImpresion = opcionesTemp; // Guardar el nuevo estado
+                    });
+                    Navigator.of(context).pop();
+                    await _imprimirConOpciones();
+                    await generarInformeCompleto();
+                  },
+                  child: const Text('Imprimir'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Método para exportar (si es necesario)
+  // void _exportarConOpciones() {
+  //   // Lógica similar para exportar
+  //   List<String> opcionesSeleccionadas = [];
+    
+  //   _opcionesImpresion.forEach((key, value) {
+  //     if (value) {
+  //       opcionesSeleccionadas.add(key);
+  //     }
+  //   });
+    
+  //   String opcionesString = opcionesSeleccionadas.join(',');
+    
+  //   print('Opciones para exportar: $opcionesString');
+  //   // Aquí llamarías al método de exportación
+  // }
+
+  // Método para imprimir con las opciones seleccionadas
+  Future<void> _imprimirConOpciones() async {
+    // Crear string con opciones seleccionadas separadas por coma
+    List<String> opcionesSeleccionadas = [];
+    
+    _opcionesImpresion.forEach((key, value) {
+      if (value) {
+        opcionesSeleccionadas.add(key);
+      }
+    });
+    
+    String opcionesString = opcionesSeleccionadas.join(', ');
+    
+    print('Opciones seleccionadas: $opcionesString'); // Para debug
+    
+    try {
+      await ordenServices.postimprimirOTAdm(
+        context, 
+        widget.ordenPrevia, 
+        opcionesString, // Asumiendo que el método acepta este parámetro
+        context.read<OrdenProvider>().token
+      );
+      rptGenId = context.read<OrdenProvider>().rptGenId;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al imprimir: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> generarInformeCompleto() async {
+    int contador = 0;
+    generandoInforme = true;
+    informeGeneradoEsS = false;
+    
+    setState(() {});
+    while (contador < 15 && informeGeneradoEsS == false && generandoInforme){
+      print(contador);
+      
+      reporte = await ordenServices.getReporte(context, rptGenId, context.read<OrdenProvider>().token);
+
+      if(reporte.generado == 'S'){
+        informeGeneradoEsS = true;
+        if(kIsWeb){
+          abrirUrlWeb(reporte.archivoUrl);
+        } else{
+          await abrirUrl(reporte.archivoUrl, context.read<OrdenProvider>().token);
+        }
+        generandoInforme = false;
+        setState(() {});
+      }else{
+        await Future.delayed(const Duration(seconds: 1));
+      }
+      contador++;
+    }
+    if(informeGeneradoEsS != true && generandoInforme){
+      await popUpInformeDemoro();
+      
+      print('informe demoro en generarse');
+    }
+    
+  }
+
+  Future<void> popUpInformeDemoro() async{
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Su PDF esta tardando demasiado en generarse, quiere seguir esperando?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                generandoInforme = false;
+                await ordenServices.patchInforme(context, reporte, 'D', context.read<OrdenProvider>().token);
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+              child: const Text('No'),
+            ),
+            TextButton(
+              child: const Text('Si'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                print('dije SI');
+                await generarInformeInfinite();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> generarInformeInfinite() async {
+    
+    generandoInforme = true;
+    
+    while (informeGeneradoEsS == false && generandoInforme){
+      reporte = await ordenServices.getReporte(context, rptGenId, context.read<OrdenProvider>().token);
+      if(reporte.generado == 'S'){
+        informeGeneradoEsS = true;
+        if(kIsWeb) {
+          abrirUrlWeb(reporte.archivoUrl);
+        } else {
+          await abrirUrl(reporte.archivoUrl, context.read<OrdenProvider>().token);
+        }
+        generandoInforme = false;
+        setState(() {});
+      }else{
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+    setState(() {});
+
+  }
+
+  abrirUrl(String url, String token) async {
+    Dio dio = Dio();
+    String link = url; // += '?authorization=$token';
+    print(link);
+    try {
+      // Realizar la solicitud HTTP con el encabezado de autorización
+      Response response = await dio.get(
+        link,
+        options: Options(
+          headers: {
+            'Authorization': 'headers $token',
+          },
+        ),
+      );
+      // Verificar si la solicitud fue exitosa (código de estado 200)
+      if (response.statusCode == 200) {
+        // Si la respuesta fue exitosa, abrir la URL en el navegador
+        Uri uri = Uri.parse(url);
+        await launchUrl(uri);
+      } else {
+        // Si la solicitud no fue exitosa, mostrar un mensaje de error
+        print('Error al cargar la URL: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Manejar errores de solicitud
+      print('Error al realizar la solicitud: $e');
+    }
+  }
+
+  Future<void> abrirUrlWeb(String url) async {
+    Uri uri = Uri.parse(url);
+    
+    // Verificar si la URL puede ser abierta
+    if (await canLaunchUrl(uri)) {
+      // Si la URL es válida, abrirla en el navegador
+      await launchUrl(uri);
+    } else {
+      // Si no se puede abrir la URL, imprimir un mensaje de error
+      print('No se puede abrir la URL: $url');
+    }
   }
 
   void _editarLinea(int index, Linea linea) async {

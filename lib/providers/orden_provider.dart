@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:flutter/cupertino.dart';
@@ -42,6 +43,20 @@ class OrdenProvider with ChangeNotifier {
   bool get admOrdenes => _admOrdenes;
   Unidad _unidadSeleccionada = Unidad.empty();
   Unidad get unidadSeleccionada => _unidadSeleccionada;
+  Cliente _clienteSeleccionado = Cliente.empty();
+  Cliente get cliente => _clienteSeleccionado;
+  int _rptGenId = 0;
+  int get rptGenId => _rptGenId;
+
+  void setRptId(int rptGenId){
+    _rptGenId = rptGenId;
+    notifyListeners();
+  }
+
+  void setCliente(Cliente cliente) {
+    _clienteSeleccionado = cliente;
+    notifyListeners();
+  }
 
   void setUnidadSeleccionada(Unidad unidad) {
     _unidadSeleccionada = unidad;

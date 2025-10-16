@@ -272,16 +272,19 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _numOrdenController,
-                    decoration: const InputDecoration(
-                      labelText: 'N° Orden',
-                      border: OutlineInputBorder(),
-                    ),
-                  )
-                ),
+                if (ordenExistente.numeroOrdenTrabajo.isNotEmpty && ordenExistente.numeroOrdenTrabajo != '') ... [
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numOrdenController,
+                      decoration: const InputDecoration(
+                        labelText: 'N° Orden',
+                        border: OutlineInputBorder(),
+                      ),
+                      readOnly: true,
+                    )
+                  ),
+                ]
                 // const SizedBox(width: 16),
                 // const Text('Cond. IVA:'),
                 // const SizedBox(width: 8),

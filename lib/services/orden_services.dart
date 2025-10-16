@@ -4,6 +4,7 @@ import 'package:app_tec_sedel/config/config.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/reporte.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
@@ -368,9 +369,13 @@ class OrdenServices {
     }
   }
 
-  Future imprimirOTAdm(BuildContext context, Orden orden, String token) async {
+  Future postimprimirOTAdm(BuildContext context, Orden orden, String opciones, String token) async {
     String link = apiLink;
     link += 'api/v1/ordenes/${orden.ordenTrabajoId}/imprimirOTAdm';
+
+    var data = {
+      "p2": opciones
+    };
 
     try {
       var headers = {'Authorization': token};
@@ -380,15 +385,60 @@ class OrdenServices {
           method: 'POST',
           headers: headers,
         ),
+        data: data
       );
       statusCode = 1;
       if (resp.statusCode == 200) {
-        
+        Provider.of<OrdenProvider>(context, listen: false).setRptId(resp.data["rptGenId"]);
       } else {
         Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
       return;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future getReporte(BuildContext context, int reporteId, String token) async {
+    String link = '${apiLink}api/v1/rpts/$reporteId';
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      final Reporte reporte = Reporte.fromJson(resp.data);
+      print(reporte.rptGenId);
+      return reporte;
+
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future patchInforme(BuildContext context, Reporte reporte, String generado, String token) async {
+    String link = '${apiLink}api/v1/rpts/${reporte.rptGenId}';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'PATCH',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      return resp;
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
