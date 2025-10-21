@@ -5,6 +5,7 @@ import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/reporte.dart';
+import 'package:app_tec_sedel/models/tarifa.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
@@ -439,6 +440,28 @@ class OrdenServices {
 
       statusCode = 1;
       return resp;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future getTarifas (BuildContext context, String token) async {
+    String link = '${apiLink}api/v1/tarifas';
+
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      final List<dynamic> tarifaList = resp.data;
+      return tarifaList.map((obj) => Tarifa.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);

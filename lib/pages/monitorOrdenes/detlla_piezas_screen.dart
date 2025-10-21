@@ -1,5 +1,6 @@
 import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/models/reporte.dart';
+import 'package:app_tec_sedel/models/tarifa.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/models/tarea.dart';
 import 'package:app_tec_sedel/models/material.dart';
@@ -40,6 +41,7 @@ class DetallePiezasScreen extends StatefulWidget {
 class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   List<Linea> lineas = [];
   List<Tarea> tareas = [];
+  List<Tarifa> tarifas = [];
   List<Materiales> materiales = [];
   bool isLoadingTareas = false;
   bool isLoadingMateriales = false;
@@ -114,6 +116,19 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     super.initState();
     _cargarTareasYMateriales();
     _cargarLineasExistentes();
+    _cargarTarifas();
+  }
+
+  Future<void> _cargarTarifas() async {
+    try {
+      final token = context.read<OrdenProvider>().token;
+      final tarifasCargadas = await ordenServices.getTarifas(context, token);
+      setState(() {
+        tarifas = tarifasCargadas;
+      });
+    } catch (e) {
+      print('Error cargando tarifas: $e');
+    }
   }
 
   Future<void> _cargarTareasYMateriales() async {
@@ -1278,6 +1293,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     int? piezaIdSeleccionado;
     String? accionDescripcionSeleccionada;
     String? piezaDescripcionSeleccionada;
+    int tarifaChapa = tarifas.firstWhere((t) => t.codTarifa == 'CH', orElse: () => Tarifa.empty()).valor ?? 0;
+    int tarifaMecanica = tarifas.firstWhere((t) => t.codTarifa == 'ME', orElse: () => Tarifa.empty()).valor ?? 0;
     
     final chapaHorasController = TextEditingController();
     final chapaMontoController = TextEditingController();
@@ -1367,6 +1384,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (value) {
+                          double horas = double.tryParse(value) ?? 0.0;
+                          double monto = horas * tarifaChapa;
+                          chapaMontoController.text = monto.toStringAsFixed(2);
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1409,6 +1431,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (value) {
+                          double horas = double.tryParse(value) ?? 0.0;
+                          double monto = horas * tarifaMecanica;
+                          mechMontoController.text = monto.toStringAsFixed(2);
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
