@@ -1,3 +1,4 @@
+import 'package:app_tec_sedel/pages/dashboard/dashboard.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
 
@@ -27,6 +28,7 @@ final router = GoRouter(
     GoRoute(path: '/monitorTareas', builder: (context, state) => const MonitorTareas(),),
     GoRoute(path: '/monitorMateriales', builder: (context, state) => const MonitorMateriales(),),
     GoRoute(path: '/monitorTecnicos', builder: (context, state) => const MonitorTecnicos(),),
+    GoRoute(path: '/Dashboard', builder: (context, state) => const DashboardPage(),),
     
   ]
 );

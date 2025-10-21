@@ -38,6 +38,11 @@
                     "ruta": "/monitorTecnicos",
                     "icon": "calendar_month",
                     "texto": "Monitor de tecnicos"
+                },
+                {
+                    "ruta": "/dashboard",
+                    "icon": "calendar_month",
+                    "texto": "Dashboard"
                 }
             ]
         }
