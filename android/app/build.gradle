@@ -23,7 +23,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.app_tecnicos_sedel"
+    namespace "com.example.taller"
     compileSdk = 35
     ndkVersion flutter.ndkVersion
 
@@ -43,13 +43,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.app_tecnicos_sedel"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        applicationId "com.example.taller"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode.toInteger()
+        versionName = flutter.versionName
         
         // Habilitar soporte multidex
         multiDexEnabled true
@@ -62,6 +60,49 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    flavorDimensions "default"
+    productFlavors {
+        automotoraargentinaProd {
+            dimension "default"
+            applicationId "com.taller.automotoraargentina.prod"
+            versionNameSuffix "-automotoraargentina-prod"
+            resValue "String", "app_name", "Automotora Argentina"
+        }
+        automotoraargentinaQa {
+            dimension "default"
+            applicationId "com.taller.automotoraargentina.qa"
+            versionNameSuffix "-automotoraargentina-qa"
+            resValue "String", "app_name", "Automotora Argentina"
+        }
+        parabrisasejidoProd {
+            dimension "default"
+            applicationId "com.taller.parabrisasejido.prod"
+            versionNameSuffix "-parabrisasejido-prod"
+            resValue "String", "app_name", "Parabrisas Ejido"
+        }
+        parabrisasejidoQa {
+            dimension "default"
+            applicationId "com.taller.parabrisasejido.qa"
+            versionNameSuffix "-parabrisasejido-qa"
+            resValue "String", "app_name", "Parabrisas Ejido"
+        }
+    }
+
+    // sourecSets {
+    //     automotoraargentinaProd {
+    //         res.srcDirs = ['src/automotoraargentina/res']
+    //     }
+    //     automotoraargentinaQa {
+    //         res.srcDirs = ['src/automotoraargentina/res']
+    //     }
+    //     parabrisasejidoProd {
+    //         res.srcDirs = ['src/parabrisasejido/res']
+    //     }
+    //     parabrisasejidoQa {
+    //         res.srcDirs = ['src/parabrisasejido/res']
+    //     }
+    // }
 }
 
 flutter {

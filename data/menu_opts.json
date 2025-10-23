@@ -43,6 +43,11 @@
                     "ruta": "/dashboard",
                     "icon": "calendar_month",
                     "texto": "Dashboard"
+                },
+                {
+                    "ruta": "/mapa",
+                    "icon": "calendar_month",
+                    "texto": "Ubicaciones"
                 }
             ]
         }

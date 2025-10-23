@@ -1,3 +1,4 @@
+import 'package:app_tec_sedel/config/config.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,6 +9,8 @@ import 'config/router/router.dart';
 import 'config/theme/app_theme.dart';
 import 'providers/orden_provider.dart';
 
+const String flavor = String.fromEnvironment('FLAVOR');
+const bool isProd = bool.fromEnvironment('IS_PROD', defaultValue: false);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
@@ -16,6 +19,7 @@ Future<void> main() async {
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.immersiveSticky,
   );
+  await Config.loadFromAssets(flavor, isProd);
 
   await _requestLocationPermission();
 

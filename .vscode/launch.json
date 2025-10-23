@@ -4,16 +4,49 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
-            "name": "Dart",
+            "name": "Automotora Argentina QA",
             "type": "dart",
             "request": "launch",
             "program": "lib/main.dart",
             "args": [
-                "--dart-define-from-file",
-                "config.json"
-              ]
+                "--flavor", "automotoraargentinaQa",
+                "--dart-define", "FLAVOR=automotoraargentina",
+                "--dart-define", "IS_PROD=false"
+            ]
+        },
+        {
+            "name": "Automotora Argentina Prod",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor", "automotoraargentinaProd",
+                "--dart-define", "FLAVOR=automotoraargentina",
+                "--dart-define", "IS_PROD=true"
+            ]
+        },
+        {
+            "name": "Parabrisas Ejido QA",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor", "parabrisasejidoQa",
+                "--dart-define", "FLAVOR=parabrisasejido",
+                "--dart-define", "IS_PROD=false"
+            ]
+        },
+        {
+            "name": "Parabrisas Ejido Prod",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor", "parabrisasejidoProd",
+                "--dart-define", "FLAVOR=parabrisasejido",
+                "--dart-define", "IS_PROD=true"
+            ]
         }
         
     ]

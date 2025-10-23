@@ -53,7 +53,7 @@ class _LoginState extends State<Login> {
     final colors = Theme.of(context).colorScheme;
     return SafeArea(
       child: Scaffold(
-      backgroundColor:  colors.primary,
+      backgroundColor: colors.secondary,
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

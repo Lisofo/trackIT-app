@@ -1,23 +1,47 @@
 import 'package:flutter/material.dart';
 
+const String flavor = String.fromEnvironment('FLAVOR');
+
 final colorList = <Color>[
-  // const Color.fromARGB(255, 33, 79, 119),
-  // const Color.fromARGB(255, 0, 145, 60),
-  const Color.fromARGB(176, 88, 35, 124),
+  const Color.fromARGB(255, 33, 79, 119), //Lopez Motors
+  const Color.fromARGB(255, 0, 145, 60), //Parabrisas Ejido
+  const Color.fromARGB(176, 88, 35, 124), //Automotora Argentina
+];
+
+final secondaryColorList = <Color>[
+  Colors.blue,
+  Colors.green,
+  Colors.deepPurple,
 ];
 
 class AppTheme{
   final int selectedColor;
-  AppTheme({this.selectedColor = 0});
+  final Color primaryColor;
+  final Color secondaryColor;
+
+  static int _getSelectedColorIndex() {
+    switch (flavor.toLowerCase()) {
+      case 'lopezmotors':
+        return 0;
+      case 'parabrisasejido':
+        return 1;
+      case 'automotoraargentina':
+        return 2;
+      default:
+        return 0;
+    }
+  }
+  AppTheme({int? selectedColor, Color? primaryColor, Color? secondaryColor})
+    : selectedColor = selectedColor ?? _getSelectedColorIndex(),
+      primaryColor = primaryColor ?? colorList[_getSelectedColorIndex()],
+      secondaryColor = secondaryColor ?? secondaryColorList[_getSelectedColorIndex()];
 
   ThemeData getTheme() => ThemeData(
     colorScheme: ColorScheme(
       brightness: Brightness.light,
-      primary: colorList[selectedColor],
+      primary: primaryColor,
       onPrimary: Colors.white, 
-      secondary: Colors.deepPurple,
-      // secondary: Colors.green,
-      // secondary: Colors.blue,
+      secondary: secondaryColor,
       onSecondary: Colors.white, 
       error: Colors.red, 
       onError: Colors.red, 
@@ -25,8 +49,21 @@ class AppTheme{
       onSurface: Colors.black,    
     ),
 
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       centerTitle: false,
+      backgroundColor: primaryColor,
     )
   );
+
+  AppTheme copyWith({
+    int? selectedColor,
+    Color? primaryColor,
+    Color? secondaryColor,
+  }) {
+    return AppTheme(
+      selectedColor: selectedColor ?? this.selectedColor,
+      primaryColor: primaryColor ?? this.primaryColor,
+      secondaryColor: secondaryColor ?? this.secondaryColor,
+    );
+  }
 }
