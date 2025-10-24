@@ -48,6 +48,11 @@
                     "ruta": "/mapa",
                     "icon": "calendar_month",
                     "texto": "Ubicaciones"
+                },
+                {
+                    "ruta": "/camera",
+                    "icon": "calendar_month",
+                    "texto": "Prueba Camara"
                 }
             ]
         }

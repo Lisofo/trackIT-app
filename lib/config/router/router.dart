@@ -1,3 +1,4 @@
+import 'package:app_tec_sedel/pages/camera/camera_screen.dart';
 import 'package:app_tec_sedel/pages/dashboard/dashboard.dart';
 import 'package:app_tec_sedel/pages/monitor/mapa.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,7 @@ final router = GoRouter(
     GoRoute(path: '/monitorTecnicos', builder: (context, state) => const MonitorTecnicos(),),
     GoRoute(path: '/Dashboard', builder: (context, state) => const DashboardPage(),),
     GoRoute(path: '/mapa', builder: (context, state) => const MapaPage(),),
+    GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),),
     
   ]
 );
