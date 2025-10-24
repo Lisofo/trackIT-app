@@ -148,13 +148,13 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
           surfaceTintColor: Colors.white,
           child: Column(
             children: [
-              Container(
-                color: colors.primary,
-                child: Image.asset('images/banner.jpg')
-              ),
-              const SizedBox(
-                height: 25,
-              ),
+              // Container(
+              //   color: colors.primary,
+              //   child: Image.asset('images/banner.jpg')
+              // ),
+              // const SizedBox(
+              //   height: 25,
+              // ),
               Expanded(child: _listaItems())
             ],
           ),

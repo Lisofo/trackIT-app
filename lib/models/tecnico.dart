@@ -64,6 +64,11 @@ class Tecnico {
     deshabilitado = false;
     cargo = Cargo(cargoId: 0, codCargo: '', descripcion: '');
   }
+
+  @override
+  String toString() {
+    return nombre;
+  }
 }
 
 class Cargo {

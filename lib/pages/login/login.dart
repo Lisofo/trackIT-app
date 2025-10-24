@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/services/login_service.dart';
 import 'package:app_tec_sedel/widgets/custom_form_field.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+const String flavor = String.fromEnvironment('FLAVOR');
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -48,6 +49,19 @@ class _LoginState extends State<Login> {
     return true;
   }
 
+  String getLogoPath() {
+    switch (flavor.toLowerCase()) {
+      case 'lopezmotors':
+        return 'images/lopezMotorsLogo.jpg';
+      case 'parabrisasejido':
+        return 'images/banner.jpg';
+      case 'automotoraargentina':
+        return 'images/automotoraLogo.jpg';
+      default:
+        return 'images/lopezMotorsLogo.jpg'; // fallback
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -72,7 +86,9 @@ class _LoginState extends State<Login> {
             SizedBox(
               width: MediaQuery.sizeOf(context).width,
               height: MediaQuery.sizeOf(context).height * 0.2,
-              child: Image.asset('images/automotoraLogo.jpg')
+              child: Image.asset(
+                getLogoPath(),
+              )
             ),
             const SizedBox(
               height: 70,

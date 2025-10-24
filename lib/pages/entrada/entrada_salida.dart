@@ -20,7 +20,7 @@ import 'package:app_tec_sedel/services/marcas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+const String flavorEntrada = String.fromEnvironment('FLAVOR');
 class EntradSalida extends StatefulWidget {
   const EntradSalida({super.key});
 
@@ -71,6 +71,19 @@ class _EntradSalidaState extends State<EntradSalida> {
     // await obtenerObjeto();
     setState(() {});
   }
+  
+  String getLogoPath() {
+    switch (flavorEntrada.toLowerCase()) {
+      case 'lopezmotors':
+        return 'images/lopezMotorsLogo.jpg';
+      case 'parabrisasejido':
+        return 'images/banner.jpg';
+      case 'automotoraargentina':
+        return 'images/automotoraLogo.jpg';
+      default:
+        return 'images/lopezMotorsLogo.jpg'; // fallback
+    }
+  }
 
 
   @override
@@ -107,13 +120,8 @@ class _EntradSalidaState extends State<EntradSalida> {
               SizedBox(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height * 0.2,
-                child: Image.asset('images/automotoraLogo.jpg')
+                child: Image.asset(getLogoPath())
               ),
-              // SizedBox(
-              //   width: MediaQuery.sizeOf(context).width,
-              //   height: MediaQuery.sizeOf(context).height * 0.2,
-              //   child: Image.asset('images/lopezMotorsLogo.jpg')
-              // ),
               const SizedBox(height: 20),
               Text(
                 nombreUsuario,
