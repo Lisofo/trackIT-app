@@ -1,0 +1,2 @@
+C:/flutter/software/trackIT-app/android/app/.cxx/RelWithDebInfo/6uk54t5l/x86_64/CMakeFiles/edit_cache.dir
+C:/flutter/software/trackIT-app/android/app/.cxx/RelWithDebInfo/6uk54t5l/x86_64/CMakeFiles/rebuild_cache.dir
