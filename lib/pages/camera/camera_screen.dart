@@ -355,51 +355,55 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cámara y Galería'),
-        actions: [
-          if (images.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.cloud_upload),
-              onPressed: _uploadAllImages,
-              tooltip: 'Enviar todas las imágenes',
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          foregroundColor: colors.onPrimary,
+          title: const Text('Cámara y Galería'),
+          actions: [
+            if (images.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.cloud_upload),
+                onPressed: _uploadAllImages,
+                tooltip: 'Enviar todas las imágenes',
+              ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: _buildCameraPreview(),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 2,
-            child: _buildCameraPreview(),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            flex: 3,
-            child: _buildImageGrid(),
-          ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: "gallery_btn",
-            onPressed: _pickImageFromGallery,
-            mini: true,
-            tooltip: 'Abrir galería',
-            child: const Icon(Icons.photo_library),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: "camera_btn",
-            onPressed: _takePicture,
-            tooltip: 'Tomar foto',
-            child: _isTakingPicture
-                ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
-                : const Icon(Icons.camera),
-          ),
-        ],
+            const Divider(height: 1),
+            Expanded(
+              flex: 2,
+              child: _buildImageGrid(),
+            ),
+          ],
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              heroTag: "gallery_btn",
+              onPressed: _pickImageFromGallery,
+              mini: true,
+              tooltip: 'Abrir galería',
+              child: const Icon(Icons.photo_library),
+            ),
+            const SizedBox(height: 16),
+            FloatingActionButton(
+              heroTag: "camera_btn",
+              onPressed: _takePicture,
+              tooltip: 'Tomar foto',
+              child: _isTakingPicture
+                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                  : const Icon(Icons.camera),
+            ),
+          ],
+        ),
       ),
     );
   }
