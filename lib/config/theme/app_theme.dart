@@ -6,12 +6,14 @@ final colorList = <Color>[
   const Color.fromARGB(255, 33, 79, 119), //Lopez Motors
   const Color.fromARGB(255, 0, 145, 60), //Parabrisas Ejido
   const Color.fromARGB(176, 88, 35, 124), //Automotora Argentina
+  const Color.fromARGB(255, 0, 82, 155), //Resysol
 ];
 
 final secondaryColorList = <Color>[
   Colors.blue,
   Colors.green,
   Colors.deepPurple,
+  Colors.blueAccent
 ];
 
 class AppTheme{
@@ -27,6 +29,8 @@ class AppTheme{
         return 1;
       case 'automotoraargentina':
         return 2;
+      case 'resysol':
+        return 3;
       default:
         return 0;
     }

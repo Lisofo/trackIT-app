@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,10 +19,15 @@ List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    cameras = await availableCameras();
-  } on CameraException catch (e) {
-    print('Error al cargar cámaras: $e');
+  if (Platform.isAndroid || Platform.isIOS) {
+    try {
+      cameras = await availableCameras();
+    } on CameraException catch (e) {
+      print('Error al cargar cámaras: $e');
+    }
+  } else {
+    cameras = [];
+    print("Cámara deshabilitada en esta plataforma.");
   }
 
   SystemChrome.setPreferredOrientations(
@@ -32,10 +40,15 @@ Future<void> main() async {
 
   await _requestLocationPermission();
 
-  runApp(ChangeNotifierProvider(
-    create: (_) => OrdenProvider(),
-    child: const MyApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => OrdenProvider(),),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..setFlavor(flavor),),
+      ],
+      child: const MyApp(),
+    )
+  );
 }
 
 Future<void> _requestLocationPermission() async {

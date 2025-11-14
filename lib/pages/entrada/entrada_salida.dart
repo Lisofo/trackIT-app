@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
@@ -20,7 +21,6 @@ import 'package:app_tec_sedel/services/marcas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-const String flavorEntrada = String.fromEnvironment('FLAVOR');
 class EntradSalida extends StatefulWidget {
   const EntradSalida({super.key});
 
@@ -45,6 +45,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   late UltimaTarea? ultimaTarea = context.watch<OrdenProvider>().ultimaTarea;
   bool parabrisas = true;
   final TextEditingController ultimaTareaController = TextEditingController();
+  late String flavor = flavor = context.read<AuthProvider>().flavor;
 
   @override
   void initState() {
@@ -73,13 +74,15 @@ class _EntradSalidaState extends State<EntradSalida> {
   }
   
   String getLogoPath() {
-    switch (flavorEntrada.toLowerCase()) {
+    switch (flavor.toLowerCase()) {
       case 'lopezmotors':
         return 'images/lopezMotorsLogo.jpg';
       case 'parabrisasejido':
         return 'images/banner.jpg';
       case 'automotoraargentina':
         return 'images/automotoraLogo.jpg';
+      case 'resysol':
+        return 'images/resysol_logo.jpg';
       default:
         return 'images/lopezMotorsLogo.jpg'; // fallback
     }

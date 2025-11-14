@@ -17,21 +17,31 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 
 class DetallePiezasScreen extends StatefulWidget {
-  final Cliente cliente;
-  final Unidad vehiculo;
-  final DateTime fecha;
-  final bool condIva;
-  final Orden ordenPrevia;
+  // Parámetros para automotora
+  final Cliente? cliente;
+  final Unidad? vehiculo;
+  final DateTime? fecha;
+  final bool? condIva;
+  final Orden? ordenPrevia;
+  
+  // Parámetros para resysol (producción química)
+  final Map<String, dynamic>? datosProduccion;
+  final List<Ingredient>? predefinedIngredients;
 
   const DetallePiezasScreen({
     super.key,
-    required this.cliente,
-    required this.vehiculo,
-    required this.fecha,
-    required this.condIva,
-    required this.ordenPrevia,
+    // Parámetros automotora
+    this.cliente,
+    this.vehiculo,
+    this.fecha,
+    this.condIva,
+    this.ordenPrevia,
+    // Parámetros resysol
+    this.datosProduccion,
+    this.predefinedIngredients,
   });
 
   @override
@@ -39,6 +49,7 @@ class DetallePiezasScreen extends StatefulWidget {
 }
 
 class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
+  // Variables para automotora
   List<Linea> lineas = [];
   List<Tarea> tareas = [];
   List<Tarifa> tarifas = [];
@@ -56,12 +67,33 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     'DC': false,
     'DP': false,
     'DM': false,
-    'DR': false, // Por defecto seleccionado según tu imagen
+    'DR': false,
     'II': false,
     'IO': false,
   };
 
-  // Métodos para calcular totales - ahora basados en Linea
+  // Variables para resysol (producción química)
+  List<Map<String, dynamic>> ingredients = [
+    {'codigo': '', 'nombre': '', 'cantidad': '', 'lote': '', 'af': '', 'control': '', 'isInstruction': false},
+  ];
+  
+  final List<TextEditingController> _qControllers = [];
+  final List<TextEditingController> _codigoControllers = [];
+  final List<TextEditingController> _nombreControllers = [];
+  final List<TextEditingController> _cantidadControllers = [];
+  final List<TextEditingController> _loteControllers = [];
+  final List<TextEditingController> _afControllers = [];
+  final List<TextEditingController> _controlControllers = [];
+
+  // Campos de envasado para resysol
+  final TextEditingController _tamborCompletoController = TextEditingController(text: '2000');
+  final TextEditingController _picoController = TextEditingController();
+  final TextEditingController _totalKgController = TextEditingController(text: '2105');
+  final TextEditingController _mermaKgController = TextEditingController(text: '5');
+  final TextEditingController _mermaPorcentajeController = TextEditingController(text: '0.2%');
+  final TextEditingController _observacionesEnvasadoController = TextEditingController();
+
+  // Métodos para automotora
   double get _totalChapa {
     double total = 0;
     for (var linea in lineas) {
@@ -98,7 +130,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     return _totalChapa + _totalPintura + _totalMecanica + _totalRepuestos;
   }
 
-  // Métodos para calcular costos reales
   double get _costoRealChapa {
     return _totalChapa * 1.0;
   }
@@ -114,10 +145,137 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarTareasYMateriales();
-    _cargarLineasExistentes();
-    _cargarTarifas();
+    final flavor = context.read<AuthProvider>().flavor;
+    
+    if (flavor == 'automotoraargentina') {
+      _cargarTareasYMateriales();
+      _cargarLineasExistentes();
+      _cargarTarifas();
+    } else if (flavor == 'resysol') {
+      _initializeProductionControllers();
+    }
   }
+
+  void _initializeProductionControllers() {
+    for (var ingredient in ingredients) {
+      _qControllers.add(TextEditingController(text: (ingredients.indexOf(ingredient) + 1).toString()));
+      _codigoControllers.add(TextEditingController(text: ingredient['codigo']));
+      _nombreControllers.add(TextEditingController(text: ingredient['nombre']));
+      _cantidadControllers.add(TextEditingController(text: ingredient['cantidad']));
+      _loteControllers.add(TextEditingController(text: ingredient['lote']));
+      _afControllers.add(TextEditingController(text: ingredient['af']));
+      _controlControllers.add(TextEditingController(text: ingredient['control']));
+    }
+    
+    // Configurar listeners para cálculos
+    for (var controller in _cantidadControllers) {
+      controller.addListener(_calculateTotalIngredients);
+    }
+    _totalKgController.addListener(_calculateMermaPercentage);
+    _mermaKgController.addListener(_calculateMermaPercentage);
+  }
+
+  // Métodos para resysol
+  void _calculateTotalIngredients() {
+    setState(() {});
+  }
+
+  void _calculateMermaPercentage() {
+    final totalKg = double.tryParse(_totalKgController.text.replaceAll(',', '.')) ?? 0;
+    final mermaKg = double.tryParse(_mermaKgController.text.replaceAll(',', '.')) ?? 0;
+    
+    if (totalKg > 0) {
+      final percentage = (mermaKg / totalKg) * 100;
+      _mermaPorcentajeController.text = '${percentage.toStringAsFixed(2)}%';
+    }
+  }
+
+  double get _ingredientsTotal {
+    double total = 0;
+    for (var controller in _cantidadControllers) {
+      final value = double.tryParse(controller.text.replaceAll(',', '.')) ?? 0;
+      total += value;
+    }
+    return total;
+  }
+
+  void _onIngredientSelected(Ingredient? selected, int rowIndex) {
+    if (selected == null) return;
+
+    setState(() {
+      _codigoControllers[rowIndex].text = selected.codigo;
+      _nombreControllers[rowIndex].text = selected.nombre;
+      _cantidadControllers[rowIndex].text = selected.cantidadBase;
+      _afControllers[rowIndex].text = selected.af;
+      ingredients[rowIndex]['isInstruction'] = false;
+    });
+  }
+
+  void _addNewIngredient() {
+    setState(() {
+      ingredients.add({
+        'codigo': '', 
+        'nombre': '', 
+        'cantidad': '', 
+        'lote': '', 
+        'af': '', 
+        'control': '',
+        'isInstruction': false
+      });
+      _qControllers.add(TextEditingController(text: (ingredients.length).toString()));
+      _codigoControllers.add(TextEditingController());
+      _nombreControllers.add(TextEditingController());
+      _cantidadControllers.add(TextEditingController());
+      _loteControllers.add(TextEditingController());
+      _afControllers.add(TextEditingController());
+      _controlControllers.add(TextEditingController());
+      
+      // Agregar listener para el nuevo controlador
+      _cantidadControllers.last.addListener(_calculateTotalIngredients);
+    });
+  }
+
+  void _addInstructionRow() {
+    setState(() {
+      ingredients.add({
+        'codigo': '', 
+        'nombre': 'Agregar bajo agitación mínima', 
+        'cantidad': '', 
+        'lote': '', 
+        'af': '', 
+        'control': '',
+        'isInstruction': true
+      });
+      _qControllers.add(TextEditingController(text: (ingredients.length).toString()));
+      _codigoControllers.add(TextEditingController());
+      _nombreControllers.add(TextEditingController(text: 'Agregar bajo agitación mínima'));
+      _cantidadControllers.add(TextEditingController());
+      _loteControllers.add(TextEditingController());
+      _afControllers.add(TextEditingController());
+      _controlControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeRow(int index) {
+    if (ingredients.isEmpty || index < 0 || index >= ingredients.length) return;
+    
+    setState(() {
+      ingredients.removeAt(index);
+      _qControllers.removeAt(index).dispose();
+      _codigoControllers.removeAt(index).dispose();
+      _nombreControllers.removeAt(index).dispose();
+      _cantidadControllers.removeAt(index).dispose();
+      _loteControllers.removeAt(index).dispose();
+      _afControllers.removeAt(index).dispose();
+      _controlControllers.removeAt(index).dispose();
+      
+      for (int i = 0; i < _qControllers.length; i++) {
+        _qControllers[i].text = (i + 1).toString();
+      }
+    });
+  }
+
+  // ... (métodos existentes para automotora)
 
   Future<void> _cargarTarifas() async {
     try {
@@ -161,13 +319,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   Future<void> _cargarLineasExistentes() async {
-    if (widget.ordenPrevia.ordenTrabajoId == 0) return;
+    if (widget.ordenPrevia?.ordenTrabajoId == 0) return;
     
     try {
       final token = context.read<OrdenProvider>().token;
       final lineasExistentes = await _lineasServices.getLineasDeOrden(
         context,
-        widget.ordenPrevia.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId,
         token,
       );
       
@@ -181,15 +339,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   void _actualizarOrdenConLineas() {    
-    // Actualizar el total con la suma de todos los montos
-    widget.ordenPrevia.totalOrdenTrabajo = _totalGeneral;
+    widget.ordenPrevia!.totalOrdenTrabajo = _totalGeneral;
   }
 
   Future<void> _editarOrden() async {
     try {
       final token = context.read<OrdenProvider>().token;
       
-      // Mostrar indicador de carga
       showDialog(
         context: context,
         barrierDismissible: true,
@@ -198,17 +354,14 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         ),
       );
       
-      // 1. Actualizar la orden con los totales
       _actualizarOrdenConLineas();
       
-      // 2. Actualizar la orden en el servidor (si es necesario)
       final ordenActualizada = await ordenServices.actualizarOrden(
         context, 
         token, 
-        widget.ordenPrevia
+        widget.ordenPrevia!
       );
             
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
       
       if (ordenActualizada != null) {
@@ -220,9 +373,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         );
       }
       
-    } catch (e) {
-      // Cerrar el diálogo de carga en caso de erro      
-      
+    } catch (e) {      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al completar la orden: $e'),
@@ -251,7 +402,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       return;
     }
 
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -263,11 +413,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     try {
       final token = context.read<OrdenProvider>().token;
       
-      // Crear la nueva línea usando el constructor completo
       final nuevaLinea = Linea(
         lineaId: 0,
-        ordenTrabajoId: widget.ordenPrevia.ordenTrabajoId,
-        itemId: 3098, // Va a cambiar segun el flavor
+        ordenTrabajoId: widget.ordenPrevia!.ordenTrabajoId,
+        itemId: 3098,
         codItem: '',
         descripcion: '',
         macroFamilia: '',
@@ -300,19 +449,16 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         pieza: piezaDescripcionSeleccionada ?? '',
       );
 
-      // Asignar los IDs de acción y pieza
       nuevaLinea.accionId = accionIdSeleccionado;
       nuevaLinea.piezaId = piezaIdSeleccionado;
 
-      // Hacer POST de la línea inmediatamente
       final lineaCreada = await _lineasServices.crearLinea(
         context,
-        widget.ordenPrevia.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId,
         nuevaLinea,
         token,
       );
 
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
 
       setState(() {
@@ -324,7 +470,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
       Navigator.of(context).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -339,7 +484,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   void _eliminarLinea(int index) async {
     final lineaAEliminar = lineas[index];
     
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -351,22 +495,19 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     try {
       final token = context.read<OrdenProvider>().token;
       
-      // Solo hacer DELETE si la línea ya existe en el servidor (lineaId != 0)
       if (lineaAEliminar.lineaId != 0) {
         await _lineasServices.eliminarLinea(
           context,
-          widget.ordenPrevia.ordenTrabajoId,
+          widget.ordenPrevia!.ordenTrabajoId,
           lineaAEliminar.lineaId,
           token,
         );
       }
 
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
 
       setState(() {
         lineas.removeAt(index);
-        // Recalcular ordinales si es necesario
         for (int i = 0; i < lineas.length; i++) {
           lineas[i].ordinal = i + 1;
         }
@@ -378,7 +519,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
       Navigator.of(context).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -393,21 +533,584 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final flavor = context.read<AuthProvider>().flavor;
     
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.primary,
-        title: Text('Detalle de Piezas ${widget.ordenPrevia.numeroOrdenTrabajo}', style: TextStyle(color: colors.onPrimary)),
+        title: Text(
+          flavor == 'resysol' 
+            ? 'Detalle de Producción'
+            : 'Detalle de Piezas ${widget.ordenPrevia?.numeroOrdenTrabajo}',
+          style: TextStyle(color: colors.onPrimary),
+        ),
         iconTheme: IconThemeData(color: colors.onPrimary),
-        leading: IconButton(
+        leading: flavor == 'automotoraargentina' ? IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Devolver la orden actualizada cuando se presiona retroceso
             Navigator.of(context).pop(widget.ordenPrevia);
           },
+        ) : null,
+      ),
+      body: flavor == 'resysol' 
+          ? _buildResysolUI(context)
+          : _buildAutomotoraUI(context),
+    );
+  }
+
+  Widget _buildResysolUI(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header con datos de producción
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.inventory_2_outlined, color: Colors.blue[700]),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'DATOS DE PRODUCCIÓN',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (widget.datosProduccion != null)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _buildDataChip(Icons.shopping_bag, 'Producto', widget.datosProduccion!['producto']),
+                        _buildDataChip(Icons.numbers, 'Número', widget.datosProduccion!['numero']),
+                        _buildDataChip(Icons.scale, 'Pedido', '${widget.datosProduccion!['pedido']} kg'),
+                        _buildDataChip(Icons.batch_prediction, 'Batches', widget.datosProduccion!['batches']),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Mezcla de componentes
+          _buildChemicalProductionCard(),
+
+          const SizedBox(height: 20),
+
+          // Envasado y control final
+          _buildChemicalPackagingCard(),
+
+          const SizedBox(height: 24),
+
+          // Botón de guardar
+          _buildChemicalActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataChip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[100]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.blue[700]),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.blue[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChemicalProductionCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'MEZCLA DE COMPONENTES',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange),
+            ),
+            const Divider(color: Colors.orange),
+            const SizedBox(height: 10),
+            const Text(
+              'Agregar bajo agitación mínima',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 10),
+            
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DataTable(
+                  headingRowColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) => Colors.blue.shade50,
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('Q', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Código', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Cantidad (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Lote', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Af', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Control', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: ingredients.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final ingredient = entry.value;
+                    
+                    return DataRow(
+                      color: MaterialStateProperty.resolveWith<Color?>(
+                        (Set<MaterialState> states) => 
+                          index % 2 == 0 ? Colors.grey.shade50 : null,
+                      ),
+                      cells: [
+                        DataCell(
+                          TextField(
+                            controller: _qControllers[index],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        DataCell(
+                          ingredient['isInstruction'] 
+                            ? const SizedBox.shrink()
+                            : TextField(
+                                controller: _codigoControllers[index],
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                enabled: !ingredient['isInstruction'],
+                              ),
+                        ),
+                        DataCell(
+                          ingredient['isInstruction']
+                            ? TextField(
+                                controller: _nombreControllers[index],
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                style: const TextStyle(fontStyle: FontStyle.italic),
+                              )
+                            : DropdownButton<Ingredient>(
+                                value: _nombreControllers[index].text.isEmpty 
+                                    ? null
+                                    : widget.predefinedIngredients?.firstWhere(
+                                        (element) => element.nombre == _nombreControllers[index].text,
+                                        orElse: () => Ingredient(codigo: '', nombre: '', cantidadBase: '', af: ''),
+                                      ),
+                                hint: const Text('Seleccione'),
+                                isExpanded: true,
+                                underline: const SizedBox(),
+                                items: widget.predefinedIngredients
+                                    ?.map((Ingredient item) {
+                                  return DropdownMenuItem<Ingredient>(
+                                    value: item,
+                                    child: Text(item.nombre),
+                                  );
+                                }).toList(),
+                                onChanged: (Ingredient? selected) {
+                                  if (selected != null) {
+                                    _onIngredientSelected(selected, index);
+                                  }
+                                },
+                              ),
+                        ),
+                        DataCell(
+                          TextField(
+                            controller: _cantidadControllers[index],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (value) {
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                        DataCell(
+                          TextField(
+                            controller: _loteControllers[index],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: TextField(
+                              controller: _afControllers[index],
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          TextField(
+                            controller: _controlControllers[index],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _removeRow(index),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Text('Total kg', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 10),
+                  Text(_ingredientsTotal.toStringAsFixed(1), 
+                       style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 20), 
+                  const Text('0.0'),
+                  const SizedBox(width: 20),
+                  Text('${(_ingredientsTotal > 0 ? 100 : 0).toStringAsFixed(1)}%'),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Agregar Ingrediente'),
+                  onPressed: _addNewIngredient,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.notes, size: 18),
+                  label: const Text('Agregar Instrucción'),
+                  onPressed: _addInstructionRow,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildChemicalPackagingCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ENVASADO Y CONTROL FINAL',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green),
+            ),
+            const Divider(color: Colors.green),
+            const SizedBox(height: 10),
+            const Center(
+              child: Text(
+                'FILTRAR - Sacar muestra - MEDIR Y ENVASAR',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Tabla de exportación anterior
+            Table(
+              border: TableBorder.all(color: Colors.grey.shade300),
+              columnWidths: const {
+                0: FixedColumnWidth(150),
+                1: FixedColumnWidth(150),
+                2: FixedColumnWidth(150),
+              },
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                  ),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: Text('EXPORTACIÓN ANTERIOR')),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: Text('TAMBOR COMPLETO')),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: Text('LOTE')),
+                    ),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Container(),
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: Text('kg')),
+                    ),
+                    Container(),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Campos de tambores
+            Table(
+              columnWidths: const {
+                0: FixedColumnWidth(120),
+                1: FixedColumnWidth(120),
+                2: FixedColumnWidth(120),
+              },
+              children: [
+                TableRow(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Tamb.#'),
+                    ),
+                    TextField(
+                      decoration: _inputDecoration(hint: '105'),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Tamb.#'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Tambor completo
+            Table(
+              columnWidths: const {
+                0: FixedColumnWidth(150),
+                1: FixedColumnWidth(150),
+                2: FixedColumnWidth(150),
+              },
+              children: [
+                TableRow(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Tamb completo'),
+                    ),
+                    TextField(
+                      controller: _tamborCompletoController,
+                      decoration: _inputDecoration(),
+                      keyboardType: TextInputType.number,
+                    ),
+                    TextField(
+                      decoration: _inputDecoration(hint: '12 13 14'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Totales y merma
+            Table(
+              columnWidths: const {
+                0: FixedColumnWidth(120),
+                1: FixedColumnWidth(120),
+              },
+              children: [
+                TableRow(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Total: kg'),
+                    ),
+                    TextField(
+                      controller: _totalKgController,
+                      decoration: _inputDecoration(),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Merma (kg)'),
+                    ),
+                    TextField(
+                      controller: _mermaKgController,
+                      decoration: _inputDecoration(),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Merma (%)'),
+                    ),
+                    TextField(
+                      controller: _mermaPorcentajeController,
+                      decoration: _inputDecoration(),
+                      readOnly: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            const Text('Observaciones'),
+            TextField(
+              controller: _observacionesEnvasadoController,
+              maxLines: 2,
+              decoration: _inputDecoration(hint: 'Ingrese observaciones aquí...'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChemicalActionButtons() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: _guardarProduccion,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Text('GUARDAR PRODUCCIÓN', style: TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({String? hint}) {
+    return InputDecoration(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      border: const OutlineInputBorder(),
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+    );
+  }
+
+  void _guardarProduccion() {
+    final datosCompletos = {
+      'datosBase': widget.datosProduccion,
+      'ingredientes': ingredients,
+      'totalKg': _totalKgController.text,
+      'mermaKg': _mermaKgController.text,
+      'mermaPorcentaje': _mermaPorcentajeController.text,
+      'observacionesEnvasado': _observacionesEnvasadoController.text,
+    };
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Producción guardada correctamente'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    print('Datos de producción: $datosCompletos');
+    
+    // Aquí puedes implementar la lógica para guardar en tu backend
+  }
+
+  Widget _buildAutomotoraUI(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    
+    return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -421,17 +1124,17 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Cliente: ${widget.cliente.nombre}', 
+                      Text('Cliente: ${widget.cliente!.nombre}', 
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
                       ),
                       const SizedBox(height: 8),
-                      Text('Vehículo: ${widget.vehiculo.displayInfo}'),
+                      Text('Vehículo: ${widget.vehiculo!.displayInfo}'),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text('Fecha: ${DateFormat('dd/MM/yyyy').format(widget.fecha)}'),
+                          Text('Fecha: ${DateFormat('dd/MM/yyyy').format(widget.fecha!)}'),
                           const SizedBox(width: 16),
-                          Text('Cond. IVA: ${widget.condIva ? 'Sí' : 'No'}'),
+                          Text('Cond. IVA: ${widget.condIva! ? 'Sí' : 'No'}'),
                         ],
                       ),
                     ],
@@ -441,7 +1144,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               
               const SizedBox(height: 24),
               
-              // Tabla de detalles de líneas
               const Text(
                 'Detalle de Piezas',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -512,7 +1214,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                                 DataCell(Center(child: Text(linea.mecanicaHs?.toStringAsFixed(1) ?? '0.0'))),
                                 DataCell(Center(child: Text(formatCurrency.format(linea.mecanicaMonto ?? 0)))),
                                 DataCell(Center(child: Text(formatCurrency.format(linea.repSinIva ?? 0)))),
-                                DataCell( // Nueva celda de edición
+                                DataCell(
                                   Center(
                                     child: IconButton(
                                       icon: const Icon(Icons.edit, color: Colors.blue),
@@ -542,7 +1244,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               
               const SizedBox(height: 16),
               
-              // Botón para agregar nueva línea
               Center(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -555,7 +1256,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               
               const SizedBox(height: 24),
               
-              // Totales presupuestados
               Card(
                 elevation: 2,
                 child: Padding(
@@ -591,7 +1291,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               
               const SizedBox(height: 16),
               
-              // Costos reales
               Card(
                 elevation: 2,
                 child: Padding(
@@ -619,7 +1318,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
               const SizedBox(height: 24),
 
-              // Botón para crear la orden
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -679,7 +1377,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   void _mostrarDialogoOpcionesImpresion() {
-    // Inicializar todas las opciones en false
     Map<String, bool> opcionesTemp = {
       'DC': false,
       'DP': false,
@@ -702,7 +1399,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   children: [
                     CheckboxListTile(
                       title: const Text('Detallar ítems de Chapa'),
-                      value: opcionesTemp['DC'] ?? false, // Usamos ?? false como seguridad
+                      value: opcionesTemp['DC'] ?? false,
                       onChanged: opcionesTemp['IO'] == false ? (bool? value) {
                         setStateDialog(() {
                           opcionesTemp['DC'] = value ?? false;
@@ -768,7 +1465,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     setState(() {
-                      _opcionesImpresion = opcionesTemp; // Guardar el nuevo estado
+                      _opcionesImpresion = opcionesTemp;
                     });
                     Navigator.of(context).pop();
                     await _imprimirConOpciones();
@@ -784,26 +1481,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  // Método para exportar (si es necesario)
-  // void _exportarConOpciones() {
-  //   // Lógica similar para exportar
-  //   List<String> opcionesSeleccionadas = [];
-    
-  //   _opcionesImpresion.forEach((key, value) {
-  //     if (value) {
-  //       opcionesSeleccionadas.add(key);
-  //     }
-  //   });
-    
-  //   String opcionesString = opcionesSeleccionadas.join(',');
-    
-  //   print('Opciones para exportar: $opcionesString');
-  //   // Aquí llamarías al método de exportación
-  // }
-
-  // Método para imprimir con las opciones seleccionadas
   Future<void> _imprimirConOpciones() async {
-    // Crear string con opciones seleccionadas separadas por coma
     List<String> opcionesSeleccionadas = [];
     
     _opcionesImpresion.forEach((key, value) {
@@ -814,13 +1492,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     
     String opcionesString = opcionesSeleccionadas.join(', ');
     
-    print('Opciones seleccionadas: $opcionesString'); // Para debug
+    print('Opciones seleccionadas: $opcionesString');
     
     try {
       await ordenServices.postimprimirOTAdm(
         context, 
-        widget.ordenPrevia, 
-        opcionesString, // Asumiendo que el método acepta este parámetro
+        widget.ordenPrevia!, 
+        opcionesString,
         context.read<OrdenProvider>().token
       );
       rptGenId = context.read<OrdenProvider>().rptGenId;
@@ -931,10 +1609,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   abrirUrl(String url, String token) async {
     Dio dio = Dio();
-    String link = "$url?authorization=$token"; // += '?authorization=$token';
+    String link = "$url?authorization=$token";
     print(link);
     try {
-      // Realizar la solicitud HTTP con el encabezado de autorización
       Response response = await dio.get(
         link,
         options: Options(
@@ -943,17 +1620,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           },
         ),
       );
-      // Verificar si la solicitud fue exitosa (código de estado 200)
       if (response.statusCode == 200) {
-        // Si la respuesta fue exitosa, abrir la URL en el navegador
         Uri uri = Uri.parse(link);
         await launchUrl(uri);
       } else {
-        // Si la solicitud no fue exitosa, mostrar un mensaje de error
         print('Error al cargar la URL: ${response.statusCode}');
       }
     } catch (e) {
-      // Manejar errores de solicitud
       print('Error al realizar la solicitud: $e');
     }
   }
@@ -961,12 +1634,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   Future<void> abrirUrlWeb(String url) async {
     Uri uri = Uri.parse(url);
     
-    // Verificar si la URL puede ser abierta
     if (await canLaunchUrl(uri)) {
-      // Si la URL es válida, abrirla en el navegador
       await launchUrl(uri);
     } else {
-      // Si no se puede abrir la URL, imprimir un mensaje de error
       print('No se puede abrir la URL: $url');
     }
   }
@@ -993,7 +1663,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Dropdown para Acción (Tareas)
                 if (isLoadingTareas)
                   const CircularProgressIndicator()
                 else
@@ -1023,7 +1692,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                 const SizedBox(height: 12),
                 
-                // Dropdown para Pieza (Materiales)
                 if (isLoadingMateriales)
                   const CircularProgressIndicator()
                 else
@@ -1053,7 +1721,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                 const SizedBox(height: 12),
                 
-                // Campos en fila para Chapa (Horas y Monto)
                 Row(
                   children: [
                     Expanded(
@@ -1083,7 +1750,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campo para Pintura
                 TextFormField(
                   controller: pinturaController,
                   decoration: const InputDecoration(
@@ -1095,7 +1761,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campos en fila para Mecánica (Horas y Monto)
                 Row(
                   children: [
                     Expanded(
@@ -1125,7 +1790,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campo para Precio Rep. s/iva
                 TextFormField(
                   controller: reptoController,
                   decoration: const InputDecoration(
@@ -1192,7 +1856,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       return;
     }
 
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1204,7 +1867,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     try {
       final token = context.read<OrdenProvider>().token;
       
-      // Actualizar la línea existente
       final lineaActualizada = Linea(
         lineaId: lineaOriginal.lineaId,
         ordenTrabajoId: lineaOriginal.ordenTrabajoId,
@@ -1241,15 +1903,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         pieza: piezaDescripcionSeleccionada ?? '',
       );
 
-      // Hacer PUT de la línea actualizada
       final lineaRespuesta = await _lineasServices.actualizarLinea(
         context,
-        widget.ordenPrevia.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId,
         lineaActualizada,
         token,
       );
 
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
 
       setState(() {
@@ -1261,7 +1921,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
       Navigator.of(context).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1312,7 +1971,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Dropdown para Acción (Tareas)
                 if (isLoadingTareas)
                   const CircularProgressIndicator()
                 else
@@ -1342,7 +2000,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                 const SizedBox(height: 12),
                 
-                // Dropdown para Pieza (Materiales)
                 if (isLoadingMateriales)
                   const CircularProgressIndicator()
                 else
@@ -1372,7 +2029,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                 const SizedBox(height: 12),
                 
-                // Campos en fila para Chapa (Horas y Monto)
                 Row(
                   children: [
                     Expanded(
@@ -1407,7 +2063,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campo para Pintura
                 TextFormField(
                   controller: pinturaController,
                   decoration: const InputDecoration(
@@ -1419,7 +2074,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campos en fila para Mecánica (Horas y Monto)
                 Row(
                   children: [
                     Expanded(
@@ -1454,7 +2108,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Campo para Precio Rep. s/iva
                 TextFormField(
                   controller: reptoController,
                   decoration: const InputDecoration(
@@ -1497,4 +2150,63 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       },
     );
   }
+
+  @override
+  void dispose() {
+    // Dispose de todos los controladores de resysol
+    for (var controller in _qControllers) {
+      controller.dispose();
+    }
+    for (var controller in _codigoControllers) {
+      controller.dispose();
+    }
+    for (var controller in _nombreControllers) {
+      controller.dispose();
+    }
+    for (var controller in _cantidadControllers) {
+      controller.dispose();
+    }
+    for (var controller in _loteControllers) {
+      controller.dispose();
+    }
+    for (var controller in _afControllers) {
+      controller.dispose();
+    }
+    for (var controller in _controlControllers) {
+      controller.dispose();
+    }
+    
+    _tamborCompletoController.dispose();
+    _picoController.dispose();
+    _totalKgController.dispose();
+    _mermaKgController.dispose();
+    _mermaPorcentajeController.dispose();
+    _observacionesEnvasadoController.dispose();
+    
+    super.dispose();
+  }
+}
+
+class Ingredient {
+  final String codigo;
+  final String nombre;
+  final String cantidadBase;
+  final String af;
+
+  Ingredient({
+    required this.codigo,
+    required this.nombre,
+    required this.cantidadBase,
+    required this.af,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Ingredient &&
+          runtimeType == other.runtimeType &&
+          nombre == other.nombre;
+
+  @override
+  int get hashCode => nombre.hashCode;
 }

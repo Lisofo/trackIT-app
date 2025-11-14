@@ -10,18 +10,21 @@ echo.
 echo Elige el flavor:
 echo [1] Automotora Argentina
 echo [2] Parabrisas Ejido
+echo [3] Resysol
 set /p FLAVOR_OPTION=Opcion:
 
 if "%FLAVOR_OPTION%"=="1" (
     set FLAVOR_BASE=automotoraargentina
 ) else if "%FLAVOR_OPTION%"=="2" (
     set FLAVOR_BASE=parabrisasejido
+) else if "%FLAVOR_OPTION%"=="3" (
+    set FLAVOR_BASE=resysol
 ) else (
     echo Opcion invalida. Saliendo...
     exit /b
 )
 
-:: Elegir entorno (QA o Prod)
+:: Elegir entorno (QA o Prod) para todos los flavors
 echo.
 echo Elige el entorno:
 echo [1] QA
@@ -41,6 +44,15 @@ if "%ENV_OPTION%"=="1" (
 
 :: Construir el nombre completo del flavor
 set FLAVOR_FULL=%FLAVOR_BASE%%FLAVOR_SUFFIX%
+
+:: Mostrar advertencia si se selecciona Resysol Prod (si aún no existe)
+if "%FLAVOR_BASE%"=="resysol" if "%IS_PROD%"=="true" (
+    echo.
+    echo ⚠ ADVERTENCIA: Resysol Produccion podria no estar configurado aun en el build.gradle
+    echo Si falla la compilacion, verifica que el flavor 'resysolProd' este definido.
+    echo.
+    timeout /t 3 /nobreak > nul
+)
 
 :: Elegir modo de build (release o debug)
 echo.
@@ -112,6 +124,8 @@ if "%BUILD_APK%"=="true" (
     flutter build apk --flavor %FLAVOR_FULL% --%BUILD_MODE% --dart-define=FLAVOR=%FLAVOR_BASE% --dart-define=IS_PROD=%IS_PROD%
     if errorlevel 1 (
         echo Error al compilar APK
+        echo.
+        echo Si el error es porque el flavor no existe, verifica que este definido en build.gradle
         pause
         exit /b
     )
@@ -140,15 +154,19 @@ if "%BUILD_WINDOWS%"=="true" (
     echo COMPILANDO WINDOWS...
     echo ========================================
     echo Verificando icono de Windows para %FLAVOR_BASE%...
-    if not exist "windows_assets\%FLAVOR_BASE%\app_icon.ico" (
-        echo Error: No se encuentra el icono de Windows para %FLAVOR_BASE%
-        echo Asegúrate de que existe el archivo: windows_assets\%FLAVOR_BASE%\app_icon.ico
-        pause
-        exit /b
+    
+    :: Verificar si existe carpeta específica del flavor, sino usar carpeta genérica
+    if exist "windows_assets\%FLAVOR_BASE%\app_icon.ico" (
+        echo Copiando icono específico para %FLAVOR_BASE%...
+        copy /Y "windows_assets\%FLAVOR_BASE%\app_icon.ico" "windows\runner\resources\app_icon.ico"
+    ) else if exist "windows_assets\default\app_icon.ico" (
+        echo Copiando icono por defecto...
+        copy /Y "windows_assets\default\app_icon.ico" "windows\runner\resources\app_icon.ico"
+    ) else (
+        echo ⚠ ADVERTENCIA: No se encuentra icono específico para %FLAVOR_BASE%
+        echo Se usará el icono por defecto de Flutter
     )
     
-    echo Copiando icono para Windows...
-    copy /Y "windows_assets\%FLAVOR_BASE%\app_icon.ico" "windows\runner\resources\app_icon.ico"
     flutter build windows --%BUILD_MODE% --dart-define=FLAVOR=%FLAVOR_BASE% --dart-define=IS_PROD=%IS_PROD%
     if errorlevel 1 (
         echo Error al compilar Windows

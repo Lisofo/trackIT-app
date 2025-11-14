@@ -47,6 +47,17 @@
                 "--dart-define", "FLAVOR=parabrisasejido",
                 "--dart-define", "IS_PROD=true"
             ]
+        },
+        {
+            "name": "Resysol QA",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor", "resysolQa",
+                "--dart-define", "FLAVOR=resysol",
+                "--dart-define", "IS_PROD=false"
+            ]
         }
         
     ]

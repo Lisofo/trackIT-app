@@ -87,22 +87,31 @@ android {
             versionNameSuffix "-qa"
             resValue "string", "app_name", "Parabrisas Ejido"
         }
+        resysolQa {
+            dimension "default"
+            applicationId "com.taller.resysol.qa"
+            versionNameSuffix "-qa"
+            resValue "string", "app_name", "Resysol QA"
+        }
     }
 
-    // sourecSets {
-    //     automotoraargentinaProd {
-    //         res.srcDirs = ['src/automotoraargentina/res']
-    //     }
-    //     automotoraargentinaQa {
-    //         res.srcDirs = ['src/automotoraargentina/res']
-    //     }
-    //     parabrisasejidoProd {
-    //         res.srcDirs = ['src/parabrisasejido/res']
-    //     }
-    //     parabrisasejidoQa {
-    //         res.srcDirs = ['src/parabrisasejido/res']
-    //     }
-    // }
+    sourceSets {
+        automotoraargentinaProd {
+            res.srcDirs = ['src/automotoraargentina/res']
+        }
+        automotoraargentinaQa {
+            res.srcDirs = ['src/automotoraargentina/res']
+        }
+        // parabrisasejidoProd {
+        //     res.srcDirs = ['src/parabrisasejido/res']
+        // }
+        // parabrisasejidoQa {
+        //     res.srcDirs = ['src/parabrisasejido/res']
+        // }
+        resysolQa {
+            res.srcDirs = ['src/resysol/res']
+        }
+    }
 }
 
 flutter {
