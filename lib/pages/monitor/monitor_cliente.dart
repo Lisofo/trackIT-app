@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/cliente.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
@@ -41,7 +42,7 @@ class MonitorClientesState extends State<MonitorClientes> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     searchController.addListener(_filtrarClientesEnTiempoReal);
     _scrollController.addListener(_scrollListener);
   }
@@ -338,7 +339,7 @@ class MonitorClientesState extends State<MonitorClientes> {
                                 ),
                                 child: ListTile(
                                   title: Text(
-                                    nombreCompleto,
+                                    "$nombreCompleto - ${cliente.codCliente}",
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: colors.onSurface,

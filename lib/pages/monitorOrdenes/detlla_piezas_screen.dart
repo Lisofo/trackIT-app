@@ -279,7 +279,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   Future<void> _cargarTarifas() async {
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       final tarifasCargadas = await ordenServices.getTarifas(context, token);
       setState(() {
         tarifas = tarifasCargadas;
@@ -290,7 +290,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   Future<void> _cargarTareasYMateriales() async {
-    final token = context.read<OrdenProvider>().token;
+    final token = context.read<AuthProvider>().token;
     
     setState(() {
       isLoadingTareas = true;
@@ -322,10 +322,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     if (widget.ordenPrevia?.ordenTrabajoId == 0) return;
     
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       final lineasExistentes = await _lineasServices.getLineasDeOrden(
         context,
-        widget.ordenPrevia!.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId!,
         token,
       );
       
@@ -344,7 +344,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   Future<void> _editarOrden() async {
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       
       showDialog(
         context: context,
@@ -411,11 +411,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
 
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       
       final nuevaLinea = Linea(
         lineaId: 0,
-        ordenTrabajoId: widget.ordenPrevia!.ordenTrabajoId,
+        ordenTrabajoId: widget.ordenPrevia!.ordenTrabajoId!,
         itemId: 3098,
         codItem: '',
         descripcion: '',
@@ -454,7 +454,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
       final lineaCreada = await _lineasServices.crearLinea(
         context,
-        widget.ordenPrevia!.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId!,
         nuevaLinea,
         token,
       );
@@ -493,12 +493,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
 
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       
       if (lineaAEliminar.lineaId != 0) {
         await _lineasServices.eliminarLinea(
           context,
-          widget.ordenPrevia!.ordenTrabajoId,
+          widget.ordenPrevia!.ordenTrabajoId!,
           lineaAEliminar.lineaId,
           token,
         );
@@ -1362,7 +1362,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   const Text('Generando PDF, espere por favor.'),
                   TextButton(
                     onPressed: () async {
-                      await ordenServices.patchInforme(context, reporte, 'D', context.read<OrdenProvider>().token);
+                      await ordenServices.patchInforme(context, reporte, 'D', context.read<AuthProvider>().token);
                       generandoInforme = false;
                       setState(() {});
                     }, 
@@ -1499,7 +1499,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         context, 
         widget.ordenPrevia!, 
         opcionesString,
-        context.read<OrdenProvider>().token
+        context.read<AuthProvider>().token
       );
       rptGenId = context.read<OrdenProvider>().rptGenId;
     } catch (e) {
@@ -1526,7 +1526,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         print('rptGenId es 0, saliendo del bucle');
         break;
       } 
-      reporte = await ordenServices.getReporte(context, rptGenId, context.read<OrdenProvider>().token);
+      reporte = await ordenServices.getReporte(context, rptGenId, context.read<AuthProvider>().token);
 
       if(reporte.generado == 'S'){
         await Future.delayed(const Duration(seconds: 1));
@@ -1534,7 +1534,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         if(kIsWeb){
           abrirUrlWeb(reporte.archivoUrl);
         } else{
-          await abrirUrl(reporte.archivoUrl, context.read<OrdenProvider>().token);
+          await abrirUrl(reporte.archivoUrl, context.read<AuthProvider>().token);
         }
         generandoInforme = false;
         informeGeneradoEsS = false;
@@ -1564,7 +1564,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             TextButton(
               onPressed: () async {
                 generandoInforme = false;
-                await ordenServices.patchInforme(context, reporte, 'D', context.read<OrdenProvider>().token);
+                await ordenServices.patchInforme(context, reporte, 'D', context.read<AuthProvider>().token);
                 Navigator.of(context).pop();
                 setState(() {});
               },
@@ -1589,13 +1589,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     generandoInforme = true;
     
     while (informeGeneradoEsS == false && generandoInforme){
-      reporte = await ordenServices.getReporte(context, rptGenId, context.read<OrdenProvider>().token);
+      reporte = await ordenServices.getReporte(context, rptGenId, context.read<AuthProvider>().token);
       if(reporte.generado == 'S'){
         informeGeneradoEsS = true;
         if(kIsWeb) {
           abrirUrlWeb(reporte.archivoUrl);
         } else {
-          await abrirUrl(reporte.archivoUrl, context.read<OrdenProvider>().token);
+          await abrirUrl(reporte.archivoUrl, context.read<AuthProvider>().token);
         }
         generandoInforme = false;
         setState(() {});
@@ -1865,7 +1865,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
 
     try {
-      final token = context.read<OrdenProvider>().token;
+      final token = context.read<AuthProvider>().token;
       
       final lineaActualizada = Linea(
         lineaId: lineaOriginal.lineaId,
@@ -1905,7 +1905,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
       final lineaRespuesta = await _lineasServices.actualizarLinea(
         context,
-        widget.ordenPrevia!.ordenTrabajoId,
+        widget.ordenPrevia!.ordenTrabajoId!,
         lineaActualizada,
         token,
       );

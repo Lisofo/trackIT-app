@@ -6,8 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 class MenuProvider {
-  Menu opciones = Menu.empty();
-  List<Ruta> rutas = [];
+   List<dynamic> opciones = [];
+  List<Ruta> rutas = []; // CAMBIÉ: List<Opcion> por List<Ruta>
   MenuProvider();
   List<dynamic> opciones2 = [];
 
@@ -15,7 +15,28 @@ class MenuProvider {
     final Menu? menu = await MenuServices().getMenu(context, token);
     if(menu != null){
       rutas = menu.rutas;
-      return rutas.where((Ruta ruta) => ruta.tipoOrden.contains(codTipoOrden)).toList();
+      // CORRECCIÓN: Buscar en las opciones de cada ruta
+      List<Opcion> opcionesFiltradas = [];
+      
+      for (var ruta in rutas) {
+        for (var opcion in ruta.opciones) {
+          if (opcion.tipoOrden != null && opcion.tipoOrden!.contains(codTipoOrden)) {
+            opcionesFiltradas.add(opcion);
+          }
+        }
+      }
+      
+      return opcionesFiltradas;
+    } else{
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> cargarDataAdm(BuildContext context, String token) async {
+    final menu = await MenuServices().getMenu(context, token);
+    if(menu != null){
+      opciones = menu.rutas;
+      return opciones;
     } else{
       return [];
     }

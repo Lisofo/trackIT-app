@@ -2,6 +2,7 @@
 
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
@@ -48,7 +49,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
     super.initState();
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
   }
 
   void _mostrarDialogoConfirmacion(String accion) {
@@ -189,7 +190,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente.nombre,
+                  orden.cliente!.nombre,
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -200,7 +201,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente.codCliente,
+                  orden.cliente!.codCliente,
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -224,12 +225,12 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     IconButton(onPressed: (){
-                      _launchMaps(orden.cliente.coordenadas);
+                      _launchMaps(orden.cliente?.coordenadas);
                     }, icon: Icon(Icons.person_pin, color: colors.primary))
                   ],
                 ),
                 Text(
-                  orden.cliente.direccion,
+                  orden.cliente!.direccion,
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -240,7 +241,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente.telefono1,
+                  orden.cliente!.telefono1,
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -254,7 +255,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     Text(
-                      context.watch<OrdenProvider>().orden.estado,
+                      context.watch<OrdenProvider>().orden.estado.toString(),
                       style: const TextStyle(fontSize: 16),
                     )
                   ],
@@ -269,7 +270,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                    Text(orden.tipoOrden.descripcion,
+                    Text(orden.tipoOrden!.descripcion.toString(),
                         style: const TextStyle(fontSize: 16))
                   ],
                 ),
@@ -280,9 +281,9 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   'Servicios: ',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                for (var i = 0; i < orden.servicio.length; i++) ...[
+                for (var i = 0; i < orden.servicio!.length; i++) ...[
                   Text(
-                    orden.servicio[i].descripcion,
+                    orden.servicio![i].descripcion,
                     style: const TextStyle(fontSize: 16),
                   )
                 ],
@@ -303,7 +304,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                     enabled: false,
                     minLines: 1,
                     maxLines: 100,
-                    initialValue: orden.cliente.notas,
+                    initialValue: orden.cliente?.notas,
                     decoration: const InputDecoration(
                         border: InputBorder.none,
                         fillColor: Colors.white,
@@ -378,9 +379,9 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
 
   Widget _listaItems() {
     final colors = Theme.of(context).colorScheme;
-    final String tipoOrden = orden.tipoOrden.codTipoOrden;
+    final String? tipoOrden = orden.tipoOrden!.codTipoOrden;
     return FutureBuilder(
-      future: menuProvider.cargarData(context, tipoOrden, token),
+      future: menuProvider.cargarData(context, tipoOrden!, token),
       initialData: const [],
       builder: (context, snapshot) {
         if(snapshot.connectionState == ConnectionState.waiting) {
@@ -390,12 +391,12 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No hay datos disponibles'));
         } else {
-          final List<Ruta> rutas = snapshot.data as List<Ruta>;
+          final List<Opcion> rutas = snapshot.data as List<Opcion>;
 
           return ListView.separated(
             itemCount: rutas.length,
             itemBuilder: (context, i) {
-              final Ruta ruta = rutas[i];
+              final Opcion ruta = rutas[i];
               return ListTile(
                 title: Text(ruta.texto),
                 leading: getIcon(ruta.icon, context),
@@ -421,8 +422,8 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
       await obtenerUbicacion();
       if (statusCode == 1){
         int ubicacionId = ubicacion.ubicacionId;
-        int uId = context.read<OrdenProvider>().uId;
-        String token = context.read<OrdenProvider>().token;
+        int uId = context.read<AuthProvider>().uId;
+        String token = context.read<AuthProvider>().token;
         await _ordenServices.patchOrden(context, orden, estado, ubicacionId, token);
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
@@ -446,11 +447,11 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
 
   obtenerUbicacion() async {
     await getLocation();
-    int uId = context.read<OrdenProvider>().uId;
+    int uId = context.read<AuthProvider>().uId;
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
-    String token = context.read<OrdenProvider>().token;
+    String token = context.read<AuthProvider>().token;
     await _ubicacionServices.postUbicacion(context, ubicacion, token);
     statusCode = await _ubicacionServices.getStatusCode();
     await _ubicacionServices.resetStatusCode();

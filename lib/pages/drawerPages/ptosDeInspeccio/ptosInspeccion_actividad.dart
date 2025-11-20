@@ -7,6 +7,7 @@ import 'package:app_tec_sedel/models/revision_materiales.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
 import 'package:app_tec_sedel/models/tareaXtpi.dart';
 import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/plagas_services.dart';
 import 'package:app_tec_sedel/services/ptos_services.dart';
@@ -66,7 +67,7 @@ class _PtosInspeccionActividadState extends State<PtosInspeccionActividad> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;

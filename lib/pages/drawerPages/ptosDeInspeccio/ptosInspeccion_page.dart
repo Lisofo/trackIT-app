@@ -5,6 +5,7 @@ import 'package:app_tec_sedel/models/plaga_objetivo.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
 import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
 import 'package:app_tec_sedel/models/zona.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/plagas_services.dart';
 import 'package:app_tec_sedel/services/ptos_services.dart';
 import 'package:app_tec_sedel/widgets/custom_form_dropdown.dart';
@@ -94,7 +95,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;
@@ -764,8 +765,8 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
 
   Future marcarPISinActividad(int idPIAccion, String comentario) async {
     for (var i = 0; i < puntosSeleccionados.length; i++) {
-      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId;
-      puntosSeleccionados[i].otRevisionId = orden.otRevisionId;
+      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId!;
+      puntosSeleccionados[i].otRevisionId = orden.otRevisionId!;
       puntosSeleccionados[i].descTipoPuntoInspeccion = '';
       puntosSeleccionados[i].idPIAccion = idPIAccion;
       puntosSeleccionados[i].piAccionId = idPIAccion;
@@ -784,8 +785,8 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
 
   Future marcarPITraslado(int idPIAccion, ZonaPI zonaSeleccionada, String sector, String comentario) async {
     for (var i = 0; i < puntosSeleccionados.length; i++) {
-      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId;
-      puntosSeleccionados[i].otRevisionId = orden.otRevisionId;
+      puntosSeleccionados[i].ordenTrabajoId = orden.ordenTrabajoId!;
+      puntosSeleccionados[i].otRevisionId = orden.otRevisionId!;
       puntosSeleccionados[i].tipoPuntoInspeccionId = selectedTipoPto.tipoPuntoInspeccionId;
       puntosSeleccionados[i].descTipoPuntoInspeccion = '';
       puntosSeleccionados[i].codPuntoInspeccion = puntosSeleccionados[i].codPuntoInspeccion != '' ? puntosSeleccionados[i].codPuntoInspeccion : codPuntoInspeccionController.text;
@@ -810,8 +811,8 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
   Future marcarPINuevo(int idPIAccion, ZonaPI zonaSeleccionada, String sector, String comentario) async {
     RevisionPtoInspeccion nuevaRevisionPtoInspeccion = RevisionPtoInspeccion(
       otPuntoInspeccionId: puntosSeleccionados.isNotEmpty ? puntosSeleccionados[0].otPuntoInspeccionId : 0,
-      ordenTrabajoId: orden.ordenTrabajoId,
-      otRevisionId: orden.otRevisionId,
+      ordenTrabajoId: orden.ordenTrabajoId!,
+      otRevisionId: orden.otRevisionId!,
       puntoInspeccionId: 0,
       planoId: 0,
       tipoPuntoInspeccionId: selectedTipoPto.tipoPuntoInspeccionId,

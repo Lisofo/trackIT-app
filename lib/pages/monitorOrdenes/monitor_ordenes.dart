@@ -30,7 +30,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final UnidadesServices unidadesServices = UnidadesServices();
   final CodiguerasServices codiguerasServices = CodiguerasServices();
   
-  // Variables para automotora
+  // Variables para ambos flavors
   List<Cliente> clientesLocales = [];
   List<Unidad> unidades = [];
   DateTime fecha = DateTime.now();
@@ -45,16 +45,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   bool _isEditMode = false;
   Orden? _ordenExistente;
 
-  // Variables para resysol (producción química)
-  final TextEditingController _fechaEmisionController = TextEditingController(text: DateFormat('dd/MM/yyyy').format(DateTime.now()));
-  final TextEditingController _numeroController = TextEditingController(text: '487');
-  final TextEditingController _productoController = TextEditingController(text: 'RESYMAS 9381');
-  final TextEditingController _refController = TextEditingController(text: 'N');
-  final TextEditingController _pedidoController = TextEditingController(text: '24000');
-  final TextEditingController _envaseController = TextEditingController(text: '200');
-  final TextEditingController _totTambController = TextEditingController(text: '120');
-  final TextEditingController _batchesController = TextEditingController(text: '3');
-  final TextEditingController _observacionesController = TextEditingController(text: 'controlar las puesta a tierra evitar recalentamiento');
+  // Variables específicas para resysol (producción química)
+  final TextEditingController _fechaEmisionController = TextEditingController();
+  final TextEditingController _numeroController = TextEditingController();
+  final TextEditingController _productoController = TextEditingController();
+  final TextEditingController _refController = TextEditingController();
+  final TextEditingController _pedidoController = TextEditingController();
+  final TextEditingController _envaseController = TextEditingController();
+  final TextEditingController _totTambController = TextEditingController();
+  final TextEditingController _batchesController = TextEditingController();
+  final TextEditingController _observacionesController = TextEditingController();
   final List<Ingredient> _predefinedIngredients = [
     Ingredient(codigo: '20001', nombre: 'ETANOL', cantidadBase: '160.0', af: '0%'),
     Ingredient(codigo: '21111', nombre: 'ACETATO DE ETILO CHINO', cantidadBase: '720.0', af: '8%'),
@@ -62,31 +62,50 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     Ingredient(codigo: '16423', nombre: 'NITROCELLULOSA RS 1/8 SEC', cantidadBase: '120.0', af: '6%'),
     Ingredient(codigo: '4250462', nombre: 'DILUYENTE ESPECIAL', cantidadBase: '500.0', af: '40.1%'),
   ];
+  late String flavor = "";
 
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
+    flavor = context.read<AuthProvider>().flavor;
     
-    final flavor = context.read<AuthProvider>().flavor;
-    if (flavor == 'automotoraargentina') {
-      _cargarOrdenExistente();
+    // Inicializar controladores de Resysol con valores vacíos
+    if (flavor == 'resysol') {
+      _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
     }
+    
+    // Cargar orden existente para ambos flavors
+    _cargarOrdenExistente();
   }
 
   Future<void> _cargarOrdenExistente() async {
     final ordenProvider = context.read<OrdenProvider>();
     ordenExistente = ordenProvider.orden;
 
-    if (ordenExistente.ordenTrabajoId != 0) {
+    // Verificar si hay una orden cargada desde la lista
+    if (ordenExistente.ordenTrabajoId != null && ordenExistente.ordenTrabajoId != 0) {
       setState(() {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
       });
 
-      await _cargarClienteDesdeAPI(ordenExistente.cliente.clienteId);
-      await _cargarUnidadesYSeleccionar(ordenExistente.cliente.clienteId, ordenExistente.unidad.unidadId);
-      _cargarDatosOrdenExistente();
+      // Cargar datos según el flavor
+      if (ordenExistente.cliente?.clienteId != null) {
+        await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
+        
+        // Para automotora, cargar unidades también
+        if (flavor == 'automotoraargentina' && ordenExistente.unidad?.unidadId != null) {
+          await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
+        }
+      }
+      
+      _cargarDatosComunesDesdeOrden();
+      
+      // Cargar datos específicos del flavor
+      if (flavor == 'resysol') {
+        _cargarDatosResysolDesdeOrden();
+      }
     }
   }
 
@@ -94,7 +113,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     try {
       final clientes = await clientServices.getClientes(
         context, 
-        ordenExistente.cliente.nombre,
+        ordenExistente.cliente?.nombre ?? '',
         '',
         '',
         '',
@@ -152,17 +171,38 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  void _cargarDatosOrdenExistente() {
+  void _cargarDatosComunesDesdeOrden() {
     if (_ordenExistente == null) return;
 
     setState(() {
-      _numOrdenController.text = _ordenExistente!.numeroOrdenTrabajo;
-      _comentClienteController.text = _ordenExistente!.comentarioCliente;
-      _comentTrabajoController.text = _ordenExistente!.comentarioTrabajo;
-      _descripcionController.text = _ordenExistente!.descripcion;
+      // Datos comunes para ambos flavors
+      _numOrdenController.text = _ordenExistente!.numeroOrdenTrabajo ?? '';
+      _comentClienteController.text = _ordenExistente!.comentarioCliente ?? '';
+      _comentTrabajoController.text = _ordenExistente!.comentarioTrabajo ?? '';
+      _descripcionController.text = _ordenExistente!.descripcion ?? '';
       
       if (_ordenExistente!.fechaOrdenTrabajo != null) {
         fecha = _ordenExistente!.fechaOrdenTrabajo!;
+      }
+    });
+  }
+
+  void _cargarDatosResysolDesdeOrden() {
+    if (_ordenExistente == null) return;
+
+    setState(() {
+      // Datos específicos de Resysol
+      _numeroController.text = _ordenExistente!.numeroOrdenTrabajo ?? '';
+      _productoController.text = _ordenExistente!.producto ?? _ordenExistente!.descripcion ?? '';
+      _pedidoController.text = _ordenExistente!.pedido ?? '';
+      _envaseController.text = _ordenExistente!.envase ?? '';
+      _totTambController.text = _ordenExistente!.totalTambores?.toString() ?? '';
+      _batchesController.text = _ordenExistente!.batches?.toString() ?? '';
+      _observacionesController.text = _ordenExistente!.comentarioTrabajo ?? _ordenExistente!.comentarioCliente ?? '';
+      
+      // Si no hay fecha específica, usar la fecha de la orden
+      if (_ordenExistente!.fechaOrdenTrabajo != null) {
+        _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(_ordenExistente!.fechaOrdenTrabajo!);
       }
     });
   }
@@ -177,61 +217,94 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
 
     if (resultado != null && resultado.clienteId != 0) {
-      List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
-        context, 
-        resultado.clienteId, 
-        token
-      );
-      setState(() {
-        clienteSeleccionado = resultado;
-        unidades = unidadesDelCliente;
-        unidadSeleccionada = null;
-      });
+      // Para automotora, cargar unidades también
+      if (flavor == 'automotoraargentina') {
+        List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
+          context, 
+          resultado.clienteId, 
+          token
+        );
+        setState(() {
+          clienteSeleccionado = resultado;
+          unidades = unidadesDelCliente;
+          unidadSeleccionada = null;
+        });
+      } else {
+        setState(() {
+          clienteSeleccionado = resultado;
+        });
+      }
+    }
+  }
+
+  int getTipoOrden() {
+    switch (flavor.toLowerCase()) {
+      case 'automotoraargentina':
+        return 5;
+      case 'parabrisasejido':
+        return 6;
+      case 'resysol':
+        return 7;
+      default:
+      return 7;
     }
   }
 
   Orden _crearOrdenEnMemoria() {
-    final ordenProvider = context.read<OrdenProvider>();
+    final authProvider = context.read<AuthProvider>();
+    
+    // Para resysol, crear una unidad vacía si no hay seleccionada
+    Unidad unidadResysol = unidadSeleccionada ?? Unidad.empty();
     
     return Orden(
       ordenTrabajoId: _isEditMode ? _ordenExistente!.ordenTrabajoId : 0,
-      numeroOrdenTrabajo: _numOrdenController.text,
-      descripcion: _descripcionController.text,
+      numeroOrdenTrabajo: flavor == 'resysol' ? _numeroController.text : _numOrdenController.text,
+      descripcion: flavor == 'resysol' ? _productoController.text : _descripcionController.text,
       fechaOrdenTrabajo: fecha,
       fechaVencimiento: _isEditMode ? _ordenExistente!.fechaVencimiento : null,
       fechaEntrega: _isEditMode ? _ordenExistente!.fechaEntrega : null,
       fechaDesde: _isEditMode ? _ordenExistente!.fechaDesde : fecha,
       fechaHasta: _isEditMode ? _ordenExistente!.fechaHasta : fecha,
-      ruc: clienteSeleccionado!.ruc,
+      ruc: clienteSeleccionado?.ruc ?? '',
       monedaId: 1,
       codMoneda: 'UYU',
       descMoneda: 'Peso Uruguayo',
       signo: '\$',
       totalOrdenTrabajo: _isEditMode ? _ordenExistente!.totalOrdenTrabajo : 0.0,
-      comentarioCliente: _comentClienteController.text,
+      comentarioCliente: flavor == 'resysol' ? _observacionesController.text : _comentClienteController.text,
       comentarios: _isEditMode ? _ordenExistente!.comentarios : '',
-      comentarioTrabajo: _comentTrabajoController.text,
+      comentarioTrabajo: flavor == 'resysol' ? _observacionesController.text : _comentTrabajoController.text,
       estado: _isEditMode ? _ordenExistente!.estado : 'PENDIENTE',
       presupuestoIdPlantilla: _isEditMode ? _ordenExistente!.presupuestoIdPlantilla : null,
       numeroPresupuesto: _isEditMode ? _ordenExistente!.numeroPresupuesto : null,
       descripcionPresupuesto: _isEditMode ? _ordenExistente!.descripcionPresupuesto : null,
       totalPresupuesto: _isEditMode ? _ordenExistente!.totalPresupuesto : null,
       plantilla: _isEditMode ? _ordenExistente!.plantilla : false,
-      unidadId: unidadSeleccionada!.unidadId,
-      matricula: unidadSeleccionada!.matricula,
+      unidadId: unidadResysol.unidadId,
+      matricula: unidadResysol.matricula,
       km: _isEditMode ? _ordenExistente!.km ?? unidadSeleccionada?.km : 0,
       regHs: _isEditMode ? _ordenExistente!.regHs ?? false : false,
       instrucciones: _isEditMode ? _ordenExistente!.instrucciones : '',
       tipoOrden: _isEditMode ? _ordenExistente!.tipoOrden : TipoOrden.empty(),
-      cliente: clienteSeleccionado!,
+      cliente: clienteSeleccionado ?? Cliente.empty(),
       tecnico: _isEditMode ? _ordenExistente!.tecnico : Tecnico.empty(),
-      unidad: unidadSeleccionada!,
+      unidad: unidadResysol,
       servicio: _isEditMode ? _ordenExistente!.servicio : [],
       otRevisionId: _isEditMode ? _ordenExistente!.otRevisionId : 0,
       planoId: _isEditMode ? _ordenExistente!.planoId : 0,
       alerta: _isEditMode ? _ordenExistente!.alerta : false,
-      tecnicoId: ordenProvider.tecnicoId,
-      clienteId: clienteSeleccionado!.clienteId,
+      tecnicoId: authProvider.tecnicoId,
+      clienteId: clienteSeleccionado?.clienteId ?? 0,
+      tipoOrdenId: getTipoOrden(),
+      // Campos específicos para resysol
+      producto: _productoController.text,
+      pedido: _pedidoController.text,
+      envase: _envaseController.text,
+      totalTambores: int.tryParse(_totTambController.text),
+      batches: int.tryParse(_batchesController.text),
+      totalkgs: 0.0, // Se calculará después
+      mermaKgs: 0.0, // Se calculará después
+      mermaPorcentual: 0.0, // Se calculará después
     );
   }
 
@@ -259,6 +332,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       'batches': _batchesController.text,
       'observaciones': _observacionesController.text,
       'fecha': DateTime.now(),
+      'cliente': clienteSeleccionado?.toMap(),
     };
   }
 
@@ -290,6 +364,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // SELECTOR DE CLIENTE PARA RESYSOL
+          _buildClienteCardResysol(),
+          const SizedBox(height: 20),
           _buildChemicalHeaderCard(),
           const SizedBox(height: 20),
           _buildChemicalProductionCard(),
@@ -302,8 +379,94 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
+  // WIDGET PARA SELECTOR DE CLIENTE EN RESYSOL
+  Widget _buildClienteCardResysol() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Datos del Cliente',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onDoubleTap: clienteSeleccionado != null ? _editarClienteSeleccionado : null,
+              child: TextFormField(
+                readOnly: true,
+                decoration: const InputDecoration(
+                  labelText: 'Buscar cliente...',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.search),
+                ),
+                controller: TextEditingController(
+                  text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
+                ),
+                onTap: () {
+                  _abrirBusquedaCliente(context);
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  _mostrarDialogoNuevoCliente(context);
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('Agregar Nuevo Cliente'),
+              ),
+            ),
+            if (clienteSeleccionado != null) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: clienteSeleccionado!.direccion),
+                decoration: const InputDecoration(
+                  labelText: 'Dirección',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: clienteSeleccionado!.telefono1),
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: clienteSeleccionado!.email),
+                decoration: const InputDecoration(
+                  labelText: 'Correo electrónico',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: 'RUC: ${clienteSeleccionado!.ruc}'),
+                decoration: const InputDecoration(
+                  labelText: 'Documento',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAutomotoraUI(BuildContext context) {
-    // final colors = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -336,7 +499,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   },
                 ),
               ),
-              if (ordenExistente.numeroOrdenTrabajo.isNotEmpty && ordenExistente.numeroOrdenTrabajo != '') ... [
+              if (ordenExistente.numeroOrdenTrabajo != null && ordenExistente.numeroOrdenTrabajo!.isNotEmpty && ordenExistente.numeroOrdenTrabajo != '') ... [
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextFormField(
@@ -629,9 +792,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                             _ordenExistente = result;
                           });
                           
-                          await _cargarClienteDesdeAPI(result.cliente.clienteId);
-                          await _cargarUnidadesYSeleccionar(result.cliente.clienteId, result.unidad.unidadId);
-                          _cargarDatosOrdenExistente();
+                          await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
+                          await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
+                          _cargarDatosComunesDesdeOrden();
                         }
                       }
                     } catch (e) {
@@ -874,9 +1037,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildInfoItem('Total Tambores', _totTambController.text),
-                      _buildInfoItem('Capacidad Envase', '${_envaseController.text} kg'),
-                      _buildInfoItem('Total Producción', '${_pedidoController.text} kg'),
+                      _buildInfoItem('Total Tambores', _totTambController.text.isEmpty ? '0' : _totTambController.text),
+                      _buildInfoItem('Capacidad Envase', '${_envaseController.text.isEmpty ? '0' : _envaseController.text} kg'),
+                      _buildInfoItem('Total Producción', '${_pedidoController.text.isEmpty ? '0' : _pedidoController.text} kg'),
                     ],
                   ),
                 ],
@@ -888,24 +1051,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
+  // MÉTODO PARA RESYSOL
   Widget _buildChemicalActionButtons() {
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: ElevatedButton(
-          onPressed: () async {
-            final datosProduccion = _crearDatosProduccion();
-            
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DetallePiezasScreen(
-                  datosProduccion: datosProduccion,
-                  predefinedIngredients: [..._predefinedIngredients],
-                ),
-              ),
-            );
-          },
+          onPressed: _crearOrdenResysol,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
             foregroundColor: Colors.white,
@@ -915,18 +1067,18 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
             elevation: 2,
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'CONTINUAR A DETALLE DE INGREDIENTES',
-                style: TextStyle(
+                _isEditMode ? 'CONTINUAR A DETALLE' : 'CREAR ORDEN Y CONTINUAR A DETALLE',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
               ),
-              SizedBox(width: 8),
-              Icon(Icons.arrow_forward, size: 20),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward, size: 20),
             ],
           ),
         ),
@@ -1013,6 +1165,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
+  // ignore: unused_element
   InputDecoration _inputDecoration({String? hint}) {
     return InputDecoration(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1161,6 +1314,67 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           unidadSeleccionada = unidades.isNotEmpty ? unidades.first : null;
         }
       });
+    }
+  }
+
+  // MÉTODO PARA CREAR O ACTUALIZAR ORDEN RESYSOL
+  Future<void> _crearOrdenResysol() async {
+    if (clienteSeleccionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe seleccionar un cliente')),
+      );
+      return;
+    }
+
+    final ordenCreada = _crearOrdenEnMemoria();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final ordenServices = OrdenServices();
+      final ordenGuardada = _isEditMode 
+          ? await ordenServices.actualizarOrden(context, token, ordenCreada)
+          : await ordenServices.postOrden(context, token, ordenCreada);
+      
+      Navigator.of(context).pop();
+      
+      if (ordenGuardada != null) {
+        // Navegar a DetallePiezasScreen con la orden creada/actualizada
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetallePiezasScreen(
+              // Parámetros para resysol
+              datosProduccion: _crearDatosProduccion(),
+              predefinedIngredients: [..._predefinedIngredients],
+              // También pasamos la orden creada/actualizada
+              ordenPrevia: ordenGuardada,
+            ),
+          ),
+        );
+
+        // Si estamos editando, actualizar el estado local
+        if (_isEditMode && mounted) {
+          setState(() {
+            ordenExistente = ordenGuardada;
+            _ordenExistente = ordenGuardada;
+          });
+        }
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al ${_isEditMode ? 'actualizar' : 'crear'} la orden: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

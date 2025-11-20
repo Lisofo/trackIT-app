@@ -3,7 +3,7 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
 import 'package:app_tec_sedel/models/ubicacion_mapa.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/tecnico_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_mapa_services.dart';
@@ -65,7 +65,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     _animationController = AnimationController(
       vsync: this, 
       duration: const Duration(milliseconds: 500)
@@ -74,7 +74,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> loadTecnicos() async {
-    final token = context.watch<OrdenProvider>().token;
+    final token = context.watch<AuthProvider>().token;
     final loadedTecnicos = await TecnicoServices().getAllTecnicos(context, token);
     setState(() {
       tecnicos = loadedTecnicos;

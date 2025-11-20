@@ -20,11 +20,6 @@
                     "texto": "Monitor de clientes"
                 },
                 {
-                    "ruta": "/monitorVehiculos",
-                    "icon": "calendar_month",
-                    "texto": "Monitor de vehiculos"
-                },
-                {
                     "ruta": "/monitorTareas",
                     "icon": "calendar_month",
                     "texto": "Monitor de acciones"

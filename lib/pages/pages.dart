@@ -1,3 +1,5 @@
+export 'package:app_tec_sedel/config/router/error_page.dart';
+
 export 'package:app_tec_sedel/pages/login/login.dart';
 export 'package:app_tec_sedel/pages/entrada/entrada_salida.dart';
 export 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_estado.dart';

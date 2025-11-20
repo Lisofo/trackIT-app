@@ -19,12 +19,12 @@ class Menu {
 
   factory Menu.fromJson(Map<String, dynamic> json) => Menu(
     nombreApp: json["nombreApp"],
-    rutas: List<Ruta>.from(json["rutas"].map((x) => Ruta.fromMap(x))),
+    rutas: List<Ruta>.from(json["rutas"].map((x) => Ruta.fromJson(x))),
   );
 
   Map<String, dynamic> toMap() => {
     "nombreApp": nombreApp,
-    "rutas": List<dynamic>.from(rutas.map((x) => x.toMap())),
+    "rutas": List<dynamic>.from(rutas.map((x) => x.toJson())),
   };
 
   Menu.empty(){
@@ -34,33 +34,58 @@ class Menu {
 }
 
 class Ruta {
+  late String camino;
+  late List<Opcion> opciones;
+
+  Ruta({
+    required this.camino,
+    required this.opciones,
+  });
+
+  factory Ruta.fromJson(Map<String, dynamic> json) => Ruta(
+    camino: json["camino"],
+    opciones: List<Opcion>.from(json["opciones"].map((x) => Opcion.fromJson(x))),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "camino": camino,
+    "opciones": List<dynamic>.from(opciones.map((x) => x.toJson())),
+  };
+
+  Ruta.empty(){
+    camino = '';
+    opciones = [];
+  }
+}
+
+class Opcion {
   late String ruta;
   late String icon;
   late String texto;
-  late String tipoOrden;
+  late String? tipoOrden;
 
-  Ruta({
+  Opcion({
     required this.ruta,
     required this.icon,
     required this.texto,
-    required this.tipoOrden,
+    this.tipoOrden,
   });
 
-  factory Ruta.fromMap(Map<String, dynamic> json) => Ruta(
-    ruta: json["ruta"],
-    icon: json["icon"],
-    texto: json["texto"],
-    tipoOrden: json["tipoOrden"],
+  factory Opcion.fromJson(Map<String, dynamic> json) => Opcion(
+    ruta: json["ruta"] as String? ?? '',
+    icon: json["icon"] as String? ?? '',
+    texto: json["texto"] as String? ?? '',
+    tipoOrden: json["tipoOrden"] as String? ?? '',
   );
 
-  Map<String, dynamic> toMap() => {
+  Map<String, dynamic> toJson() => {
     "ruta": ruta,
     "icon": icon,
     "texto": texto,
     "tipoOrden": tipoOrden,
   };
 
-  Ruta.empty(){
+  Opcion.empty(){
     ruta = '';
     icon = '';
     texto = '';

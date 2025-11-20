@@ -64,9 +64,9 @@ class _EntradSalidaState extends State<EntradSalida> {
     return true;
   }
   cargarDatos() async {
-    nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
-    tecnicoId = context.read<OrdenProvider>().tecnicoId;
-    token = context.read<OrdenProvider>().token;
+    nombreUsuario = context.read<AuthProvider>().nombreUsuario;
+    tecnicoId = context.read<AuthProvider>().tecnicoId;
+    token = context.read<AuthProvider>().token;
     ultimaTarea = await ordenServices.ultimaTarea(context, token);
     Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultimaTarea!);
     // await obtenerObjeto();
@@ -252,7 +252,7 @@ class _EntradSalidaState extends State<EntradSalida> {
 
   obtenerUbicacion() async {
     await getLocation();
-    int uId = context.read<OrdenProvider>().uId;
+    int uId = context.read<AuthProvider>().uId;
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
@@ -479,7 +479,7 @@ class _EntradSalidaState extends State<EntradSalida> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                Provider.of<AuthProvider>(context, listen: false).setToken('');
                 router.go('/');
               },
               child: const Text(

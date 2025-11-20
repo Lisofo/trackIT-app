@@ -2,12 +2,11 @@
 
 import 'dart:convert';
 
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 import 'package:app_tec_sedel/config/config.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
 
 class LoginServices {
   int? statusCode;
@@ -53,10 +52,10 @@ class LoginServices {
 
       if (statusCode == 1) {
         print(response.data['token']);
-        Provider.of<OrdenProvider>(context, listen: false).setToken(response.data['token']);
-        Provider.of<OrdenProvider>(context, listen: false).setUsuarioId(response.data['uid']);
-        Provider.of<OrdenProvider>(context, listen: false).setNombreUsuario(response.data['name']);
-        // Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
+        Provider.of<AuthProvider>(context, listen: false).setToken(response.data['token']);
+        Provider.of<AuthProvider>(context, listen: false).setUsuarioId(response.data['uid']);
+        Provider.of<AuthProvider>(context, listen: false).setNombreUsuario(response.data['name']);
+        // Provider.of<AuthProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
       } else {
         print(response.statusMessage);
       }
@@ -107,10 +106,10 @@ class LoginServices {
 
       if (statusCode == 1) {
         print(response.data['token']);
-        Provider.of<OrdenProvider>(context, listen: false).setToken(response.data['token']);
-        Provider.of<OrdenProvider>(context, listen: false).setUsuarioId(response.data['uid']);
-        Provider.of<OrdenProvider>(context, listen: false).setNombreUsuario(response.data['name']);
-        Provider.of<OrdenProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
+        Provider.of<AuthProvider>(context, listen: false).setToken(response.data['token']);
+        Provider.of<AuthProvider>(context, listen: false).setUsuarioId(response.data['uid']);
+        Provider.of<AuthProvider>(context, listen: false).setNombreUsuario(response.data['name']);
+        Provider.of<AuthProvider>(context, listen: false).setTecnicoId(response.data['tecnicoId']);
       } else {
         print(response.statusMessage);
       }

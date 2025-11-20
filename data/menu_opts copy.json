@@ -15,9 +15,44 @@
                     "texto": "Monitor de ordenes"
                 },
                 {
-                    "ruta": "/registroMarca",
+                    "ruta": "/monitorClientes",
                     "icon": "calendar_month",
-                    "texto": "Registro de vehículo"
+                    "texto": "Monitor de clientes"
+                },
+                {
+                    "ruta": "/monitorVehiculos",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de vehiculos"
+                },
+                {
+                    "ruta": "/monitorTareas",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de acciones"
+                },
+                {
+                    "ruta": "/monitorMateriales",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de piezas"
+                },
+                {
+                    "ruta": "/monitorTecnicos",
+                    "icon": "calendar_month",
+                    "texto": "Monitor de tecnicos"
+                },
+                {
+                    "ruta": "/dashboard",
+                    "icon": "calendar_month",
+                    "texto": "Dashboard"
+                },
+                {
+                    "ruta": "/mapa",
+                    "icon": "calendar_month",
+                    "texto": "Ubicaciones"
+                },
+                {
+                    "ruta": "/camera",
+                    "icon": "calendar_month",
+                    "texto": "Prueba Camara"
                 }
             ]
         }

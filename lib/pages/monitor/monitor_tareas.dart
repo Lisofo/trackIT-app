@@ -1,7 +1,7 @@
 // monitor_tareas.dart
 import 'dart:async';
 import 'package:app_tec_sedel/models/tarea.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/tareas_services.dart';
 import 'package:app_tec_sedel/widgets/dialogo_tarea.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +35,7 @@ class MonitorTareasState extends State<MonitorTareas> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     searchController.addListener(_filtrarTareasEnTiempoReal);
     _scrollController.addListener(_scrollListener);
     _cargarTareasIniciales();

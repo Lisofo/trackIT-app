@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -39,8 +40,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
-    tecnicoId = context.read<OrdenProvider>().tecnicoId;
+    token = context.read<AuthProvider>().token;
+    tecnicoId = context.read<AuthProvider>().tecnicoId;
     
     // Verificar si hay una unidad seleccionada (viene desde MonitorVehiculos)
     final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
@@ -150,8 +151,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
 
   void _filtrarYRecargarOrdenes() async {
     try {
-      token = context.read<OrdenProvider>().token;
-      tecnicoId = context.read<OrdenProvider>().tecnicoId;
+      token = context.read<AuthProvider>().token;
+      tecnicoId = context.read<AuthProvider>().tecnicoId;
       
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
@@ -316,9 +317,10 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                         const SizedBox(
                                           height: 10,
                                         ),
+                                        if (orden.descripcion != null)
                                         SizedBox(
                                           width: MediaQuery.of(context).size.width * 0.7,
-                                          child: Text(orden.descripcion)
+                                          child: Text(orden.descripcion.toString())
                                         ),
                                       ],
                                     ),
@@ -326,25 +328,29 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                     Column(
                                       children: [
                                         if (MediaQuery.of(context).size.width < 1000)... [
-                                          if(orden.alerta)
+                                          if(orden.alerta != null && orden.alerta == true)
                                           const Icon(
                                             Icons.flag,
                                             color:Colors.red
                                           ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                          Text(orden.estado)
+                                          if (orden.matricula != null) ...[
+                                            Text(
+                                              orden.matricula ?? '', style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                            
+                                          Text(orden.estado ?? "")
                                         ]
                                         else ... [
-                                          if(orden.alerta)
+                                          if(orden.alerta != null && orden.alerta == true)
                                           const Icon(
                                             Icons.flag,
                                             color:Colors.red
                                           ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
+                                          if (orden.matricula != null)
+                                            Text(
+                                              orden.matricula ?? '', style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
                                         ]
                                       ],
                                     ),
@@ -375,29 +381,31 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                     const SizedBox(
                                       width: 10,
                                     ),
-                                    Text(orden.descripcion),
+                                    Text(orden.descripcion.toString()),
                                     const Spacer(),
                                     Column(
                                       children: [
                                         if (MediaQuery.of(context).size.width < 1000)... [
-                                          if(orden.alerta)
+                                          if(orden.alerta != null && orden.alerta == true)
                                           const Icon(
                                             Icons.flag,
                                             color:Colors.red
                                           ),
+                                          if (orden.matricula != null)
                                           Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            orden.matricula ?? "", style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
-                                          Text(orden.estado)
+                                          Text(orden.estado?? '')
                                         ]
                                         else ... [
-                                          if(orden.alerta)
+                                          if(orden.alerta != null && orden.alerta == true)
                                           const Icon(
                                             Icons.flag,
                                             color:Colors.red
                                           ),
+                                          if (orden.matricula != '')
                                           Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
+                                            orden.matricula ?? "", style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                         ],
 
@@ -407,28 +415,28 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                                 ),
                               ],
                               if (MediaQuery.of(context).size.width < 1000)... [
-                                Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
-                                Text(orden.comentarioCliente),
-                                Text(orden.comentarioTrabajo),
+                                Text('${orden.cliente?.codCliente} - ${orden.cliente?.nombre}',),
+                                Text(orden.comentarioCliente ?? ''),
+                                Text(orden.comentarioTrabajo ?? ''),
                               ]else ... [
                                 Row(
                                   children: [
                                     SizedBox(
-                                      width: MediaQuery.of(context).size.width *0.2,
-                                      child: Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',)
+                                      width: MediaQuery.of(context).size.width * 0.2,
+                                      child: Text('${orden.cliente?.codCliente} - ${orden.cliente?.nombre}',)
                                       ),
                                     const VerticalDivider(),
                                     SizedBox(
                                       width: MediaQuery.of(context).size.width *0.3,
-                                      child: Text(orden.comentarioCliente)
+                                      child: Text(orden.comentarioCliente ?? '')
                                     ),
                                     const VerticalDivider(),
                                     SizedBox(
                                       width: MediaQuery.of(context).size.width *0.3,
-                                      child: Text(orden.comentarioTrabajo)
+                                      child: Text(orden.comentarioTrabajo?? '')
                                     ),
                                     const Spacer(),
-                                    Text(orden.estado)
+                                    Text(orden.estado.toString())
                                   ],
                                 ),
                               ],
@@ -473,7 +481,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                Provider.of<AuthProvider>(context, listen: false).setToken('');
                 router.go('/');
               },
               child: const Text(

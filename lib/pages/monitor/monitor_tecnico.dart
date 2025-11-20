@@ -1,7 +1,7 @@
 // monitor_tecnicos.dart
 import 'dart:async';
 import 'package:app_tec_sedel/models/tecnico.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/tecnicos_services.dart';
 import 'package:app_tec_sedel/widgets/dialogo_tecnico.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +35,7 @@ class MonitorTecnicosState extends State<MonitorTecnicos> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     searchController.addListener(_filtrarTecnicosEnTiempoReal);
     _scrollController.addListener(_scrollListener);
     _cargarTecnicosIniciales();

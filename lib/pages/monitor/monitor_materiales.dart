@@ -1,7 +1,7 @@
 // monitor_materiales.dart
 import 'dart:async';
 import 'package:app_tec_sedel/models/material.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/widgets/dialogo_material.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +35,7 @@ class MonitorMaterialesState extends State<MonitorMateriales> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     searchController.addListener(_filtrarMaterialesEnTiempoReal);
     _scrollController.addListener(_scrollListener);
     _cargarMaterialesIniciales();

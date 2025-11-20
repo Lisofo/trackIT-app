@@ -32,7 +32,7 @@ final router = GoRouter(
     GoRoute(path: '/monitorTecnicos', builder: (context, state) => const MonitorTecnicos(),),
     GoRoute(path: '/Dashboard', builder: (context, state) => const DashboardPage(),),
     GoRoute(path: '/mapa', builder: (context, state) => const MapaPage(),),
-    GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),),
-    
-  ]
+    GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),)
+  ],
+  errorBuilder: (context, state) => const ErrorPage(),
 );

@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -60,8 +61,8 @@ class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
 
   cargarDatos() async {
     try {
-      token = context.read<OrdenProvider>().token;
-      tecnicoId = context.read<OrdenProvider>().tecnicoId;
+      token = context.read<AuthProvider>().token;
+      tecnicoId = context.read<AuthProvider>().tecnicoId;
       // ordenes = await ordenServices.getOrden(context, tecnicoId.toString(), opcionActual, opcionActual, token);
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
       setState(() {});
@@ -224,16 +225,16 @@ class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
                                         : 'Fecha no disponible',
                                   ),
                                   const Expanded(child: Text('')),
-                                  Text(ordenesFiltradas[i].tipoOrden.descripcion),
+                                  Text(ordenesFiltradas[i].tipoOrden!.descripcion.toString()),
                                 ],
                               ),
-                              Text('${ordenesFiltradas[i].cliente.codCliente} - ${ordenesFiltradas[i].cliente.nombre}',),
-                              Text(ordenesFiltradas[i].cliente.direccion),
-                              Text(ordenesFiltradas[i].cliente.telefono1),
-                              Text(ordenesFiltradas[i].cliente.notas),
-                              Text(ordenesFiltradas[i].instrucciones),
-                              for (var j = 0; j < ordenesFiltradas[i].servicio.length; j++) ...[
-                                Text(ordenesFiltradas[i].servicio[j].descripcion,)
+                              Text('${ordenesFiltradas[i].cliente?.codCliente} - ${ordenesFiltradas[i].cliente?.nombre}',),
+                              Text(ordenesFiltradas[i].cliente!.direccion),
+                              Text(ordenesFiltradas[i].cliente!.telefono1),
+                              Text(ordenesFiltradas[i].cliente!.notas),
+                              Text(ordenesFiltradas[i].instrucciones.toString()),
+                              for (var j = 0; j < ordenesFiltradas[i].servicio!.length; j++) ...[
+                                Text(ordenesFiltradas[i].servicio![j].descripcion,)
                               ],
                             ],
                           ),

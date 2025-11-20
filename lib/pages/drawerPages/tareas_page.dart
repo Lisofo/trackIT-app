@@ -3,6 +3,7 @@ import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/revision_tarea.dart';
 import 'package:app_tec_sedel/models/tarea.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
@@ -57,7 +58,7 @@ class _TareasPageState extends State<TareasPage> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       tareas = await TareasServices().getTareas(context, token);
       orden = context.read<OrdenProvider>().orden;
@@ -408,8 +409,8 @@ class _TareasPageState extends State<TareasPage> {
   Future<void> posteoRevisionTarea(BuildContext context) async {
     var nuevaTarea = RevisionTarea(
       otTareaId: 0,
-      ordenTrabajoId: orden.ordenTrabajoId,
-      otRevisionId: orden.otRevisionId,
+      ordenTrabajoId: orden.ordenTrabajoId!,
+      otRevisionId: orden.otRevisionId!,
       tareaId: selectedTarea.tareaId,
       codTarea: selectedTarea.codTarea,
       descripcion: selectedTarea.descripcion,
