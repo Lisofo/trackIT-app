@@ -866,140 +866,30 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             if (isLoadingProductionLines || isLoadingMaterialesResysol)
               const Center(child: CircularProgressIndicator())
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DataTable(
-                    headingRowColor: MaterialStateProperty.resolveWith<Color>(
-                      (Set<MaterialState> states) => Colors.blue.shade50,
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    // Header de la tabla
+                    _buildProductionTableHeader(),
+                    // Lista reordenable SIN scroll interno
+                    ReorderableListView(
+                      shrinkWrap: true, // Cambiado a true
+                      physics: const NeverScrollableScrollPhysics(), // Deshabilita el scroll interno
+                      padding: EdgeInsets.zero,
+                      buildDefaultDragHandles: false,
+                      onReorder: (oldIndex, newIndex) {
+                        _reordenarLineasProduccion(oldIndex, newIndex);
+                      },
+                      children: [
+                        for (int index = 0; index < productionLines.length; index++)
+                          _buildReorderableProductionRow(index, productionLines[index]),
+                      ],
                     ),
-                    columns: const [
-                      DataColumn(label: Text('Q', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Código', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Cantidad (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Lote', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Af', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Control', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: productionLines.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final linea = entry.value;
-                      final isInstruction = linea.piezaId == 0;
-                      
-                      // Encontrar el material correspondiente en la lista
-                      Materiales? materialSeleccionado;
-                      if (!isInstruction && linea.itemId != 0) {
-                        try {
-                          materialSeleccionado = materialesList.firstWhere(
-                            (m) => m.materialId == linea.itemId,
-                          );
-                        } catch (e) {
-                          materialSeleccionado = null;
-                        }
-                      }
-                      
-                      return DataRow(
-                        color: MaterialStateProperty.resolveWith<Color?>(
-                          (Set<MaterialState> states) => 
-                            index % 2 == 0 ? Colors.grey.shade50 : null,
-                        ),
-                        cells: [
-                          DataCell(
-                            Center(child: Text((index + 1).toString())),
-                          ),
-                          DataCell(
-                            isInstruction 
-                              ? const SizedBox.shrink()
-                              : Text(linea.codItem),
-                          ),
-                          DataCell(
-                            isInstruction
-                              ? TextField(
-                                  controller: _instruccionController[index],
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                                  ),
-                                  style: const TextStyle(fontStyle: FontStyle.italic),
-                                )
-                              : DropdownButton<Materiales>(
-                                  value: materialSeleccionado,
-                                  hint: const Text('Seleccione material'),
-                                  isExpanded: true,
-                                  underline: const SizedBox(),
-                                  items: [
-                                    const DropdownMenuItem<Materiales>(
-                                      value: null,
-                                      child: Text('Seleccione material'),
-                                    ),
-                                    ...materialesList.map((Materiales material) {
-                                      return DropdownMenuItem<Materiales>(
-                                        value: material,
-                                        child: Text(material.descripcion),
-                                      );
-                                    }),
-                                  ],
-                                  onChanged: (Materiales? selected) {
-                                    _onMaterialSelected(selected, index);
-                                  },
-                                ),
-                          ),
-                          DataCell(
-                            TextField(
-                              controller: _cantidadControllers[index],
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            ),
-                          ),
-                          DataCell(
-                            TextField(
-                              controller: _loteControllers[index],
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Center(
-                              child: TextField(
-                                controller: _afControllers[index],
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            TextField(
-                              controller: _controlControllers[index],
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _eliminarLineaResysol(index),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                  ],
                 ),
               ),
             
@@ -1014,8 +904,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 children: [
                   const Text('Total kg', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 10),
-                  Text(_ingredientsTotal.toStringAsFixed(1), 
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_ingredientsTotal.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -1051,191 +940,710 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
+  // Nuevo método para reordenar las líneas
+  void _reordenarLineasProduccion(int oldIndex, int newIndex) {
+    setState(() {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+      
+      // Reordenar las líneas
+      final Linea item = productionLines.removeAt(oldIndex);
+      productionLines.insert(newIndex, item);
+      
+      // Reordenar los controladores
+      final cantidadController = _cantidadControllers.removeAt(oldIndex);
+      final loteController = _loteControllers.removeAt(oldIndex);
+      final afController = _afControllers.removeAt(oldIndex);
+      final controlController = _controlControllers.removeAt(oldIndex);
+      final instruccionController = _instruccionController.removeAt(oldIndex);
+      
+      _cantidadControllers.insert(newIndex, cantidadController);
+      _loteControllers.insert(newIndex, loteController);
+      _afControllers.insert(newIndex, afController);
+      _controlControllers.insert(newIndex, controlController);
+      _instruccionController.insert(newIndex, instruccionController);
+      
+      // Actualizar los ordinales
+      for (int i = 0; i < productionLines.length; i++) {
+        productionLines[i].ordinal = i + 1;
+      }
+    });
+  }
+
+  // Header de la tabla de producción
+  Widget _buildProductionTableHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(width: 40, child: Center(child: Icon(Icons.drag_handle, size: 16))),
+          SizedBox(width: 8),
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                'Q',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                'Código',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Text(
+                'Nombre',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                'Cantidad (kg)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                'Lote',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                'Af (%)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                'Control',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 60,
+            child: Center(
+              child: Text(
+                '',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Fila reordenable de producción
+  Widget _buildReorderableProductionRow(int index, Linea linea) {
+    final isInstruction = linea.piezaId == 0;
+    
+    Materiales? materialSeleccionado;
+    if (!isInstruction && linea.itemId != 0) {
+      try {
+        materialSeleccionado = materialesList.firstWhere(
+          (m) => m.materialId == linea.itemId,
+        );
+      } catch (e) {
+        materialSeleccionado = null;
+      }
+    }
+    
+    return Container(
+      key: Key('productionLine_${linea.lineaId}_$index'),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade300,
+            width: index < productionLines.length - 1 ? 1 : 0,
+          ),
+        ),
+      ),
+      child: Material(
+        color: index % 2 == 0 ? Colors.grey.shade50 : Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          child: Row(
+            children: [
+              // Handle para reordenar
+              SizedBox(
+                width: 40,
+                child: Center(
+                  child: ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(
+                      Icons.drag_handle,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              
+              // Columna Q (número)
+              Expanded(
+                flex: 1,
+                child: Center(
+                  child: Text(
+                    (index + 1).toString(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              
+              // Columna Código
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: isInstruction 
+                    ? const SizedBox.shrink()
+                    : Text(
+                        linea.codItem,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                ),
+              ),
+              
+              // Columna Nombre
+              Expanded(
+                flex: 3,
+                child: isInstruction
+                  ? TextField(
+                      controller: _instruccionController[index],
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        hintText: 'Ingrese instrucción...',
+                      ),
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                    )
+                  : DropdownButton<Materiales>(
+                      value: materialSeleccionado,
+                      hint: const Text('Seleccione material'),
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      items: [
+                        const DropdownMenuItem<Materiales>(
+                          value: null,
+                          child: Text('Seleccione material', style: TextStyle(fontSize: 12)),
+                        ),
+                        ...materialesList.map((Materiales material) {
+                          return DropdownMenuItem<Materiales>(
+                            value: material,
+                            child: Text(
+                              material.descripcion,
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (Materiales? selected) {
+                        _onMaterialSelected(selected, index);
+                      },
+                    ),
+              ),
+              
+              // Columna Cantidad
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _cantidadControllers[index],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+              ),
+              
+              // Columna Lote
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _loteControllers[index],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              // Columna Af
+              Expanded(
+                flex: 1,
+                child: TextField(
+                  controller: _afControllers[index],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+              ),
+              
+              // Columna Control
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _controlControllers[index],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8), 
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              // Columna Eliminar
+              SizedBox(
+                width: 60,
+                child: Center(
+                  child: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                    onPressed: () => _eliminarLineaResysol(index),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Rediseño profesional y responsivo de _buildChemicalPackagingCard
   Widget _buildChemicalPackagingCard() {
     return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'ENVASADO Y CONTROL FINAL',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green),
+            // Header de la sección
+            Row(
+              children: [
+                Icon(Icons.inventory_2, color: Colors.green[700], size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'ENVASADO Y CONTROL FINAL',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 8),
             const Divider(color: Colors.green),
-            const SizedBox(height: 10),
-            const Center(
-              child: Text(
-                'FILTRAR - Sacar muestra - MEDIR Y ENVASAR',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+            const SizedBox(height: 20),
+
+            // Instrucción principal
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Center(
+                child: Text(
+                  'FILTRAR - Sacar muestra - MEDIR Y ENVASAR',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.green,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
             
-            // Tabla de exportación anterior
-            Table(
-              border: TableBorder.all(color: Colors.grey.shade300),
-              columnWidths: const {
-                0: FixedColumnWidth(150),
-                1: FixedColumnWidth(150),
-                2: FixedColumnWidth(150),
-              },
-              children: [
-                TableRow(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+            const SizedBox(height: 24),
+
+            // Exportación anterior
+            _buildPackagingSection(
+              title: 'EXPORTACIÓN ANTERIOR',
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    // Header de la tabla
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'EXPORTACIÓN ANTERIOR',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'TAMBOR COMPLETO',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'LOTE',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Fila de unidades
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      child: const Row(
+                        children: [
+                          Expanded(child: SizedBox()),
+                          Expanded(
+                            child: Center(
+                              child: Text('kg', style: TextStyle(color: Colors.grey)),
+                            ),
+                          ),
+                          Expanded(child: SizedBox()),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Campos de tambores - Diseño responsivo
+            _buildPackagingSection(
+              title: 'REGISTRO DE TAMBORES',
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 600;
+                  
+                  if (isWide) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildPackagingField(
+                            label: 'Tambor #1',
+                            controller: TextEditingController(),
+                            hint: 'Ingrese número',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildPackagingField(
+                            label: 'Tambor #2',
+                            controller: TextEditingController(),
+                            hint: 'Ingrese número',
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Column(
+                      children: [
+                        _buildPackagingField(
+                          label: 'Tambor #1',
+                          controller: TextEditingController(),
+                          hint: 'Ingrese número',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPackagingField(
+                          label: 'Tambor #2',
+                          controller: TextEditingController(),
+                          hint: 'Ingrese número',
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Tambor completo - Diseño responsivo
+            _buildPackagingSection(
+              title: 'TAMBOR COMPLETO',
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 600;
+                  
+                  if (isWide) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildPackagingField(
+                            label: 'Tambor completo (kg)',
+                            controller: _tamborCompletoController,
+                            hint: 'Ingrese cantidad',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildPackagingField(
+                            label: 'Lotes',
+                            controller: TextEditingController(),
+                            hint: 'Ingrese lotes',
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Column(
+                      children: [
+                        _buildPackagingField(
+                          label: 'Tambor completo (kg)',
+                          controller: _tamborCompletoController,
+                          hint: 'Ingrese cantidad',
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPackagingField(
+                          label: 'Lotes',
+                          controller: TextEditingController(),
+                          hint: 'Ingrese lotes',
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Totales y merma - Diseño responsivo
+            _buildPackagingSection(
+              title: 'CONTROL DE CALIDAD',
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 500;
+                    
+                    if (isWide) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildPackagingField(
+                              label: 'Total producción (kg)',
+                              controller: _totalKgController,
+                              hint: 'Ingrese total',
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _calculateMermaPercentage(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildPackagingField(
+                              label: 'Merma (kg)',
+                              controller: _mermaKgController,
+                              hint: 'Ingrese merma',
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _calculateMermaPercentage(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildPackagingField(
+                              label: 'Merma (%)',
+                              controller: _mermaPorcentajeController,
+                              hint: 'Calculado automáticamente',
+                              readOnly: true,
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return Column(
+                        children: [
+                          _buildPackagingField(
+                            label: 'Total producción (kg)',
+                            controller: _totalKgController,
+                            hint: 'Ingrese total',
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculateMermaPercentage(),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildPackagingField(
+                            label: 'Merma (kg)',
+                            controller: _mermaKgController,
+                            hint: 'Ingrese merma',
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculateMermaPercentage(),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildPackagingField(
+                            label: 'Merma (%)',
+                            controller: _mermaPorcentajeController,
+                            hint: 'Calculado automáticamente',
+                            readOnly: true,
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Observaciones
+            _buildPackagingSection(
+              title: 'OBSERVACIONES FINALES',
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: TextField(
+                  controller: _observacionesEnvasadoController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.all(16),
+                    border: InputBorder.none,
+                    hintText: 'Ingrese observaciones sobre el proceso de envasado...',
+                    hintStyle: TextStyle(color: Colors.grey),
                   ),
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Center(child: Text('EXPORTACIÓN ANTERIOR')),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Center(child: Text('TAMBOR COMPLETO')),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Center(child: Text('LOTE')),
-                    ),
-                  ],
                 ),
-                TableRow(
-                  children: [
-                    Container(),
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Center(child: Text('kg')),
-                    ),
-                    Container(),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Campos de tambores
-            Table(
-              columnWidths: const {
-                0: FixedColumnWidth(120),
-                1: FixedColumnWidth(120),
-                2: FixedColumnWidth(120),
-              },
-              children: [
-                TableRow(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Tamb.#'),
-                    ),
-                    TextField(
-                      decoration: _inputDecoration(hint: 'Ingrese número'),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Tamb.#'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Tambor completo
-            Table(
-              columnWidths: const {
-                0: FixedColumnWidth(150),
-                1: FixedColumnWidth(150),
-                2: FixedColumnWidth(150),
-              },
-              children: [
-                TableRow(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Tamb completo'),
-                    ),
-                    TextField(
-                      controller: _tamborCompletoController,
-                      decoration: _inputDecoration(hint: 'Ingrese cantidad'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    TextField(
-                      decoration: _inputDecoration(hint: 'Ingrese lotes'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Totales y merma
-            Table(
-              columnWidths: const {
-                0: FixedColumnWidth(120),
-                1: FixedColumnWidth(120),
-              },
-              children: [
-                TableRow(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Total: kg'),
-                    ),
-                    TextField(
-                      controller: _totalKgController,
-                      decoration: _inputDecoration(hint: 'Ingrese total'),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _calculateMermaPercentage(),
-                    ),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Merma (kg)'),
-                    ),
-                    TextField(
-                      controller: _mermaKgController,
-                      decoration: _inputDecoration(hint: 'Ingrese merma'),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _calculateMermaPercentage(),
-                    ),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Merma (%)'),
-                    ),
-                    TextField(
-                      controller: _mermaPorcentajeController,
-                      decoration: _inputDecoration(),
-                      readOnly: true,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            const Text('Observaciones'),
-            TextField(
-              controller: _observacionesEnvasadoController,
-              maxLines: 2,
-              decoration: _inputDecoration(hint: 'Ingrese observaciones aquí...'),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Widget auxiliar para secciones de envasado
+  Widget _buildPackagingSection({required String title, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.blueGrey,
+          ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
+
+  // Widget auxiliar para campos de envasado
+  Widget _buildPackagingField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.blueGrey,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            readOnly: readOnly,
+            onChanged: onChanged,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: const TextStyle(color: Colors.grey),
+              filled: true,
+              fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

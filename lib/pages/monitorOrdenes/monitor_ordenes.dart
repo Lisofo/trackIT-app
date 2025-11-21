@@ -15,6 +15,10 @@ import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/services/unidades_services.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:app_tec_sedel/models/reporte.dart';
 
 class MonitorOrdenes extends StatefulWidget {
   const MonitorOrdenes({super.key});
@@ -29,6 +33,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final ClientServices clientServices = ClientServices();
   final UnidadesServices unidadesServices = UnidadesServices();
   final CodiguerasServices codiguerasServices = CodiguerasServices();
+  final OrdenServices ordenServices = OrdenServices();
   
   // Variables para ambos flavors
   List<Cliente> clientesLocales = [];
@@ -56,6 +61,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _batchesController = TextEditingController();
   final TextEditingController _observacionesController = TextEditingController();
   late String flavor = "";
+
+  // Variables para impresión
+  late bool generandoInforme = false;
+  late bool informeGeneradoEsS = false;
+  late Reporte reporte = Reporte.empty();
+  late int rptGenId = 0;
+  Map<String, bool> _opcionesImpresion = {
+    'DC': false,
+    'DP': false,
+    'DM': false,
+    'DR': false,
+    'II': false,
+    'IO': false,
+  };
 
   @override
   void initState() {
@@ -328,6 +347,280 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     };
   }
 
+  // MÉTODOS DE IMPRESIÓN PARA RESYSOL
+  void _mostrarDialogoOpcionesImpresion() {
+    Map<String, bool> opcionesTemp = {
+      'DC': false,
+      'DP': false,
+      'DM': false,
+      'DR': false,
+      'II': false,
+      'IO': false,
+    };
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Opciones de Impresión', textAlign: TextAlign.center),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Chapa'),
+                      value: opcionesTemp['DC'] ?? false,
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DC'] = value ?? false;
+                        });
+                      } : null,
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Pintura'),
+                      value: opcionesTemp['DP'] ?? false,
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DP'] = value ?? false;
+                        });
+                      } : null,
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Mecánica'),
+                      value: opcionesTemp['DM'] ?? false,
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DM'] = value ?? false;
+                        });
+                      } : null,
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Detallar ítems de Repuestos'),
+                      value: opcionesTemp['DR'] ?? false,
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['DR'] = value ?? false;
+                        });
+                      } : null,
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Imprimir la observación'),
+                      value: opcionesTemp['II'] ?? false,
+                      onChanged: opcionesTemp['IO'] == false ? (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['II'] = value ?? false;
+                        });
+                      } : null,
+                    ),
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      title: const Text('Impresión para USO INTERNO'),
+                      value: opcionesTemp['IO'] ?? false,                                                                                        
+                      onChanged: (opcionesTemp["DC"] == true || opcionesTemp["DP"] == true || opcionesTemp["DM"] == true || opcionesTemp["DR"] == true || opcionesTemp["II"] == true) ? null : (bool? value) {
+                        setStateDialog(() {
+                          opcionesTemp['IO'] = value ?? false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cerrar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _opcionesImpresion = opcionesTemp;
+                    });
+                    Navigator.of(context).pop();
+                    await _imprimirConOpciones();
+                    await generarInformeCompleto();
+                  },
+                  child: const Text('Imprimir'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _imprimirConOpciones() async {
+    if (_ordenExistente == null || _ordenExistente!.ordenTrabajoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay una orden válida para imprimir')),
+      );
+      return;
+    }
+
+    List<String> opcionesSeleccionadas = [];
+    
+    _opcionesImpresion.forEach((key, value) {
+      if (value) {
+        opcionesSeleccionadas.add(key);
+      }
+    });
+    
+    String opcionesString = opcionesSeleccionadas.join(', ');
+    
+    print('Opciones seleccionadas: $opcionesString');
+    
+    try {
+      await ordenServices.postimprimirOTAdm(
+        context, 
+        _ordenExistente!, 
+        opcionesString,
+        token
+      );
+      rptGenId = context.read<OrdenProvider>().rptGenId;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al imprimir: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> generarInformeCompleto() async {
+    if (_ordenExistente == null) return;
+
+    int contador = 0;
+    generandoInforme = true;
+    informeGeneradoEsS = false;
+    
+    setState(() {});
+    while (contador < 15 && informeGeneradoEsS == false && generandoInforme){
+      print(contador);
+      if (rptGenId == 0) {
+        informeGeneradoEsS = false;
+        generandoInforme = false;
+        print('rptGenId es 0, saliendo del bucle');
+        break;
+      } 
+      reporte = await ordenServices.getReporte(context, rptGenId, token);
+
+      if(reporte.generado == 'S'){
+        await Future.delayed(const Duration(seconds: 1));
+        informeGeneradoEsS = true;
+        if(kIsWeb){
+          abrirUrlWeb(reporte.archivoUrl);
+        } else{
+          await abrirUrl(reporte.archivoUrl, token);
+        }
+        generandoInforme = false;
+        informeGeneradoEsS = false;
+        context.read<OrdenProvider>().setRptId(0);
+        setState(() {});
+      }else{
+        await Future.delayed(const Duration(seconds: 1));
+      }
+      contador++;
+    }
+    if(informeGeneradoEsS != true && generandoInforme){
+      await popUpInformeDemoro();
+      
+      print('informe demoro en generarse');
+    }
+  }
+
+  Future<void> popUpInformeDemoro() async{
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Su PDF esta tardando demasiado en generarse, quiere seguir esperando?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                generandoInforme = false;
+                await ordenServices.patchInforme(context, reporte, 'D', token);
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+              child: const Text('No'),
+            ),
+            TextButton(
+              child: const Text('Si'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                print('dije SI');
+                await generarInformeInfinite();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> generarInformeInfinite() async {
+    
+    generandoInforme = true;
+    
+    while (informeGeneradoEsS == false && generandoInforme){
+      reporte = await ordenServices.getReporte(context, rptGenId, token);
+      if(reporte.generado == 'S'){
+        informeGeneradoEsS = true;
+        if(kIsWeb) {
+          abrirUrlWeb(reporte.archivoUrl);
+        } else {
+          await abrirUrl(reporte.archivoUrl, token);
+        }
+        generandoInforme = false;
+        setState(() {});
+      }else{
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+    setState(() {});
+
+  }
+
+  Future<void> abrirUrl(String url, String token) async {
+    Dio dio = Dio();
+    String link = "$url?authorization=$token";
+    print(link);
+    try {
+      Response response = await dio.get(
+        link,
+        options: Options(
+          headers: {
+            'Authorization': 'headers $token',
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        Uri uri = Uri.parse(link);
+        await launchUrl(uri);
+      } else {
+        print('Error al cargar la URL: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error al realizar la solicitud: $e');
+    }
+  }
+
+  Future<void> abrirUrlWeb(String url) async {
+    Uri uri = Uri.parse(url);
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      print('No se puede abrir la URL: $url');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -343,6 +636,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           style: TextStyle(color: colors.onPrimary),
         ),
         iconTheme: IconThemeData(color: colors.onPrimary),
+        actions: [
+          // Botón de impresión para Resysol cuando hay ordenTrabajoId
+          if (flavor == 'resysol' && _ordenExistente?.ordenTrabajoId != null && _ordenExistente!.ordenTrabajoId! > 0)
+            IconButton(
+              icon: const Icon(Icons.print),
+              onPressed: _mostrarDialogoOpcionesImpresion,
+            ),
+        ],
       ),
       body: flavor == 'resysol' 
           ? _buildResysolUI(context)
@@ -1048,31 +1349,52 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        child: ElevatedButton(
-          onPressed: _crearOrdenResysol,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue[700],
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        child: Column(
+          children: [
+            // Botón principal
+            ElevatedButton(
+              onPressed: _crearOrdenResysol,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[700],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isEditMode ? 'CONTINUAR A DETALLE' : 'CREAR ORDEN Y CONTINUAR A DETALLE',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 20),
+                ],
+              ),
             ),
-            elevation: 2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _isEditMode ? 'CONTINUAR A DETALLE' : 'CREAR ORDEN Y CONTINUAR A DETALLE',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            
+            // Botón de impresión (solo cuando hay ordenTrabajoId)
+            if (_isEditMode && _ordenExistente?.ordenTrabajoId != null && _ordenExistente!.ordenTrabajoId! > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: ElevatedButton.icon(
+                  onPressed: _mostrarDialogoOpcionesImpresion,
+                  icon: const Icon(Icons.print),
+                  label: const Text('IMPRIMIR ORDEN'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[700],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, size: 20),
-            ],
-          ),
+          ],
         ),
       ),
     );

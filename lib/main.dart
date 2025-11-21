@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // Añade este import
 
 import 'package:app_tec_sedel/config/config.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
@@ -19,7 +20,7 @@ List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isAndroid || Platform.isIOS) {
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     try {
       cameras = await availableCameras();
     } on CameraException catch (e) {
@@ -27,7 +28,11 @@ Future<void> main() async {
     }
   } else {
     cameras = [];
-    print("Cámara deshabilitada en esta plataforma.");
+    if (kIsWeb) {
+      print("Cámara deshabilitada en web.");
+    } else {
+      print("Cámara deshabilitada en esta plataforma.");
+    }
   }
 
   SystemChrome.setPreferredOrientations(
