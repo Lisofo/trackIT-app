@@ -309,7 +309,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       repSinIva: 0.0,
       accionId: 0,
       accion: '',
-      piezaId: 0,
+      piezaId: 1,
       pieza: '',
       af: 0.0,
       control: '',
@@ -322,6 +322,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _loteControllers.add(TextEditingController());
       _afControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
+      _instruccionController.add(TextEditingController());
     });
   }
 
