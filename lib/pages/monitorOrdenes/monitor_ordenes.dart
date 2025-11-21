@@ -55,13 +55,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _totTambController = TextEditingController();
   final TextEditingController _batchesController = TextEditingController();
   final TextEditingController _observacionesController = TextEditingController();
-  final List<Ingredient> _predefinedIngredients = [
-    Ingredient(codigo: '20001', nombre: 'ETANOL', cantidadBase: '160.0', af: '0%'),
-    Ingredient(codigo: '21111', nombre: 'ACETATO DE ETILO CHINO', cantidadBase: '720.0', af: '8%'),
-    Ingredient(codigo: '16423', nombre: 'NITROCELLULOSA RS 1/8', cantidadBase: '1080.0', af: '52%'),
-    Ingredient(codigo: '16423', nombre: 'NITROCELLULOSA RS 1/8 SEC', cantidadBase: '120.0', af: '6%'),
-    Ingredient(codigo: '4250462', nombre: 'DILUYENTE ESPECIAL', cantidadBase: '500.0', af: '40.1%'),
-  ];
   late String flavor = "";
 
   @override
@@ -74,7 +67,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     if (flavor == 'resysol') {
       _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
     }
-    
     // Cargar orden existente para ambos flavors
     _cargarOrdenExistente();
   }
@@ -194,8 +186,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       // Datos específicos de Resysol
       _numeroController.text = _ordenExistente!.numeroOrdenTrabajo ?? '';
       _productoController.text = _ordenExistente!.producto ?? _ordenExistente!.descripcion ?? '';
-      _pedidoController.text = _ordenExistente!.pedido ?? '';
-      _envaseController.text = _ordenExistente!.envase ?? '';
+      _pedidoController.text = _ordenExistente!.pedido.toString();
+      _envaseController.text = _ordenExistente!.envase.toString();
       _totTambController.text = _ordenExistente!.totalTambores?.toString() ?? '';
       _batchesController.text = _ordenExistente!.batches?.toString() ?? '';
       _observacionesController.text = _ordenExistente!.comentarioTrabajo ?? _ordenExistente!.comentarioCliente ?? '';
@@ -298,8 +290,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       tipoOrdenId: getTipoOrden(),
       // Campos específicos para resysol
       producto: _productoController.text,
-      pedido: _pedidoController.text,
-      envase: _envaseController.text,
+      pedido: int.tryParse(_pedidoController.text),
+      envase: int.tryParse(_envaseController.text),
       totalTambores: int.tryParse(_totTambController.text),
       batches: int.tryParse(_batchesController.text),
       totalkgs: 0.0, // Se calculará después
@@ -1352,7 +1344,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             builder: (context) => DetallePiezasScreen(
               // Parámetros para resysol
               datosProduccion: _crearDatosProduccion(),
-              predefinedIngredients: [..._predefinedIngredients],
               // También pasamos la orden creada/actualizada
               ordenPrevia: ordenGuardada,
             ),

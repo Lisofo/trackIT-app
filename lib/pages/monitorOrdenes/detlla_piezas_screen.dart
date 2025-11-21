@@ -29,7 +29,6 @@ class DetallePiezasScreen extends StatefulWidget {
   
   // Parámetros para resysol (producción química)
   final Map<String, dynamic>? datosProduccion;
-  final List<Ingredient>? predefinedIngredients;
 
   const DetallePiezasScreen({
     super.key,
@@ -41,7 +40,6 @@ class DetallePiezasScreen extends StatefulWidget {
     this.ordenPrevia,
     // Parámetros resysol
     this.datosProduccion,
-    this.predefinedIngredients,
   });
 
   @override
@@ -73,24 +71,24 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   };
 
   // Variables para resysol (producción química)
-  List<Map<String, dynamic>> ingredients = [
-    {'codigo': '', 'nombre': '', 'cantidad': '', 'lote': '', 'af': '', 'control': '', 'isInstruction': false},
-  ];
-  
-  final List<TextEditingController> _qControllers = [];
-  final List<TextEditingController> _codigoControllers = [];
-  final List<TextEditingController> _nombreControllers = [];
+  List<Linea> productionLines = [];
+  List<Materiales> materialesList = [];
+  bool isLoadingProductionLines = false;
+  bool isLoadingMaterialesResysol = false;
+
+  // Controladores para resysol
   final List<TextEditingController> _cantidadControllers = [];
   final List<TextEditingController> _loteControllers = [];
   final List<TextEditingController> _afControllers = [];
   final List<TextEditingController> _controlControllers = [];
+  final List<TextEditingController> _instruccionController = [];
 
   // Campos de envasado para resysol
-  final TextEditingController _tamborCompletoController = TextEditingController(text: '2000');
+  final TextEditingController _tamborCompletoController = TextEditingController();
   final TextEditingController _picoController = TextEditingController();
-  final TextEditingController _totalKgController = TextEditingController(text: '2105');
-  final TextEditingController _mermaKgController = TextEditingController(text: '5');
-  final TextEditingController _mermaPorcentajeController = TextEditingController(text: '0.2%');
+  final TextEditingController _totalKgController = TextEditingController();
+  final TextEditingController _mermaKgController = TextEditingController();
+  final TextEditingController _mermaPorcentajeController = TextEditingController();
   final TextEditingController _observacionesEnvasadoController = TextEditingController();
 
   // Métodos para automotora
@@ -152,34 +150,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _cargarLineasExistentes();
       _cargarTarifas();
     } else if (flavor == 'resysol') {
-      _initializeProductionControllers();
+      _cargarMaterialesResysol();
+      _cargarProductionLinesExistentes();
     }
-  }
-
-  void _initializeProductionControllers() {
-    for (var ingredient in ingredients) {
-      _qControllers.add(TextEditingController(text: (ingredients.indexOf(ingredient) + 1).toString()));
-      _codigoControllers.add(TextEditingController(text: ingredient['codigo']));
-      _nombreControllers.add(TextEditingController(text: ingredient['nombre']));
-      _cantidadControllers.add(TextEditingController(text: ingredient['cantidad']));
-      _loteControllers.add(TextEditingController(text: ingredient['lote']));
-      _afControllers.add(TextEditingController(text: ingredient['af']));
-      _controlControllers.add(TextEditingController(text: ingredient['control']));
-    }
-    
-    // Configurar listeners para cálculos
-    for (var controller in _cantidadControllers) {
-      controller.addListener(_calculateTotalIngredients);
-    }
-    _totalKgController.addListener(_calculateMermaPercentage);
-    _mermaKgController.addListener(_calculateMermaPercentage);
   }
 
   // Métodos para resysol
-  void _calculateTotalIngredients() {
-    setState(() {});
-  }
-
   void _calculateMermaPercentage() {
     final totalKg = double.tryParse(_totalKgController.text.replaceAll(',', '.')) ?? 0;
     final mermaKg = double.tryParse(_mermaKgController.text.replaceAll(',', '.')) ?? 0;
@@ -199,84 +175,291 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     return total;
   }
 
-  void _onIngredientSelected(Ingredient? selected, int rowIndex) {
-    if (selected == null) return;
+  Future<void> _cargarMaterialesResysol() async {
+    setState(() {
+      isLoadingMaterialesResysol = true;
+    });
+    try {
+      final token = context.read<AuthProvider>().token;
+      final materialesService = MaterialesServices();
+      final materialesCargados = await materialesService.getMateriales(context, token);
+      setState(() {
+        materialesList = materialesCargados;
+        isLoadingMaterialesResysol = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingMaterialesResysol = false;
+      });
+      print('Error cargando materiales: $e');
+    }
+  }
+
+  Future<void> _cargarProductionLinesExistentes() async {
+    if (widget.ordenPrevia?.ordenTrabajoId == null || widget.ordenPrevia!.ordenTrabajoId == 0) {
+      return;
+    }
+    
+    setState(() {
+      isLoadingProductionLines = true;
+    });
+    try {
+      final token = context.read<AuthProvider>().token;
+      final lineasExistentes = await _lineasServices.getLineasDeOrden(
+        context,
+        widget.ordenPrevia!.ordenTrabajoId!,
+        token,
+      );
+      setState(() {
+        productionLines = lineasExistentes;
+        isLoadingProductionLines = false;
+      });
+      _initializeProductionControllers();
+    } catch (e) {
+      setState(() {
+        isLoadingProductionLines = false;
+      });
+      print('Error cargando líneas de producción: $e');
+    }
+  }
+
+  void _initializeProductionControllers() {
+    // Limpiar controladores existentes
+    for (var controller in _cantidadControllers) {
+      controller.dispose();
+    }
+    for (var controller in _loteControllers) {
+      controller.dispose();
+    }
+    for (var controller in _afControllers) {
+      controller.dispose();
+    }
+    for (var controller in _controlControllers) {
+      controller.dispose();
+    }
+
+    _cantidadControllers.clear();
+    _loteControllers.clear();
+    _afControllers.clear();
+    _controlControllers.clear();
+
+    // Inicializar controladores con los datos de las líneas
+    for (var linea in productionLines) {
+      _cantidadControllers.add(TextEditingController(text: linea.cantidad > 0 ? linea.cantidad.toString() : ''));
+      _loteControllers.add(TextEditingController(text: linea.lote));
+      _afControllers.add(TextEditingController(text: linea.af! > 0.0 ? linea.af.toString() : ''));
+      _controlControllers.add(TextEditingController(text: linea.control));
+      _instruccionController.add(TextEditingController(text: linea.comentario));
+    }
+  }
+
+  void _onMaterialSelected(Materiales? selected, int rowIndex) {
+    if (selected == null) {
+      // Si se selecciona "Seleccione material", limpiar los datos
+      setState(() {
+        productionLines[rowIndex].itemId = 0;
+        productionLines[rowIndex].codItem = '';
+        productionLines[rowIndex].descripcion = '';
+        productionLines[rowIndex].mo = '';
+      });
+      return;
+    }
 
     setState(() {
-      _codigoControllers[rowIndex].text = selected.codigo;
-      _nombreControllers[rowIndex].text = selected.nombre;
-      _cantidadControllers[rowIndex].text = selected.cantidadBase;
-      _afControllers[rowIndex].text = selected.af;
-      ingredients[rowIndex]['isInstruction'] = false;
+      productionLines[rowIndex].itemId = selected.materialId; // Asignar materialId
+      productionLines[rowIndex].codItem = selected.codMaterial;
+      productionLines[rowIndex].descripcion = selected.descripcion;
+      productionLines[rowIndex].mo = '';
+      productionLines[rowIndex].piezaId = selected.materialId;
+      
     });
+    // No llamar a _actualizarLineaProduccion aquí - se hará al guardar
   }
 
   void _addNewIngredient() {
+    final nuevaLinea = Linea(
+      lineaId: 0, // Indicar que es nueva
+      ordenTrabajoId: widget.ordenPrevia?.ordenTrabajoId ?? 0,
+      itemId: 0, // Se asignará cuando se seleccione el material
+      codItem: '',
+      descripcion: '',
+      macroFamilia: '',
+      familia: '',
+      grupoInventario: '',
+      ordinal: productionLines.length + 1,
+      cantidad: 0.0,
+      costoUnitario: 0.0,
+      descuento1: 0,
+      descuento2: 0,
+      descuento3: 0,
+      precioVenta: 0.0,
+      comentario: '',
+      ivaId: 0,
+      iva: '',
+      valor: 0,
+      codGruInv: '',
+      gruInvId: 0,
+      avance: 0,
+      mo: 'MA', // Material
+      chapaHs: 0.0,
+      chapaMonto: 0.0,
+      pinturaMonto: 0.0,
+      mecanicaHs: 0.0,
+      mecanicaMonto: 0.0,
+      repSinIva: 0.0,
+      accionId: 0,
+      accion: '',
+      piezaId: 0,
+      pieza: '',
+      af: 0.0,
+      control: '',
+      lote: '',
+    );
+
     setState(() {
-      ingredients.add({
-        'codigo': '', 
-        'nombre': '', 
-        'cantidad': '', 
-        'lote': '', 
-        'af': '', 
-        'control': '',
-        'isInstruction': false
-      });
-      _qControllers.add(TextEditingController(text: (ingredients.length).toString()));
-      _codigoControllers.add(TextEditingController());
-      _nombreControllers.add(TextEditingController());
+      productionLines.add(nuevaLinea);
       _cantidadControllers.add(TextEditingController());
       _loteControllers.add(TextEditingController());
       _afControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
-      
-      // Agregar listener para el nuevo controlador
-      _cantidadControllers.last.addListener(_calculateTotalIngredients);
     });
   }
 
   void _addInstructionRow() {
+    final nuevaLinea = Linea(
+      lineaId: 0, // Indicar que es nueva
+      ordenTrabajoId: widget.ordenPrevia?.ordenTrabajoId ?? 0,
+      itemId: 1, // Siempre 1 para instrucciones
+      codItem: '',
+      descripcion: '',
+      macroFamilia: '',
+      familia: '',
+      grupoInventario: '',
+      ordinal: productionLines.length + 1,
+      cantidad: 0.0,
+      costoUnitario: 0.0,
+      descuento1: 0,
+      descuento2: 0,
+      descuento3: 0,
+      precioVenta: 0.0,
+      comentario: '',
+      ivaId: 0,
+      iva: '',
+      valor: 0,
+      codGruInv: '',
+      gruInvId: 0,
+      avance: 0,
+      mo: 'IN', // Instrucción
+      chapaHs: 0.0,
+      chapaMonto: 0.0,
+      pinturaMonto: 0.0,
+      mecanicaHs: 0.0,
+      mecanicaMonto: 0.0,
+      repSinIva: 0.0,
+      accionId: 0,
+      accion: '',
+      piezaId: 0,
+      pieza: '',
+      af: 0.0,
+      lote: '',
+      control: '',
+    );
+
     setState(() {
-      ingredients.add({
-        'codigo': '', 
-        'nombre': 'Agregar bajo agitación mínima', 
-        'cantidad': '', 
-        'lote': '', 
-        'af': '', 
-        'control': '',
-        'isInstruction': true
-      });
-      _qControllers.add(TextEditingController(text: (ingredients.length).toString()));
-      _codigoControllers.add(TextEditingController());
-      _nombreControllers.add(TextEditingController(text: 'Agregar bajo agitación mínima'));
+      productionLines.add(nuevaLinea);
       _cantidadControllers.add(TextEditingController());
       _loteControllers.add(TextEditingController());
       _afControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
+      _instruccionController.add(TextEditingController());
     });
   }
 
-  void _removeRow(int index) {
-    if (ingredients.isEmpty || index < 0 || index >= ingredients.length) return;
-    
-    setState(() {
-      ingredients.removeAt(index);
-      _qControllers.removeAt(index).dispose();
-      _codigoControllers.removeAt(index).dispose();
-      _nombreControllers.removeAt(index).dispose();
-      _cantidadControllers.removeAt(index).dispose();
-      _loteControllers.removeAt(index).dispose();
-      _afControllers.removeAt(index).dispose();
-      _controlControllers.removeAt(index).dispose();
+  void _eliminarLineaResysol(int index) async {
+    if (productionLines.isEmpty || index < 0 || index >= productionLines.length) return;
+
+    final linea = productionLines[index];
+    final bool esLineaExistente = linea.lineaId != 0;
+
+    // Mostrar diálogo de confirmación
+    bool? confirmado = await _mostrarDialogoConfirmacionEliminacion(context);
+    if (confirmado != true) return;
+
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final token = context.read<AuthProvider>().token;
       
-      for (int i = 0; i < _qControllers.length; i++) {
-        _qControllers[i].text = (i + 1).toString();
+      // Si es una línea existente, eliminarla del servidor
+      if (esLineaExistente) {
+        await _lineasServices.eliminarLinea(
+          context,
+          widget.ordenPrevia!.ordenTrabajoId!,
+          linea.lineaId,
+          token,
+        );
       }
-    });
+
+      // Cerrar el diálogo de carga
+      Navigator.of(context).pop();
+
+      // Remover localmente
+      setState(() {
+        productionLines.removeAt(index);
+        _cantidadControllers.removeAt(index).dispose();
+        _loteControllers.removeAt(index).dispose();
+        _afControllers.removeAt(index).dispose();
+        _controlControllers.removeAt(index).dispose();
+        _instruccionController.removeAt(index).dispose();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Línea eliminada correctamente')),
+      );
+
+    } catch (e) {
+      // Cerrar el diálogo de carga en caso de error
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al eliminar la línea: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  // ... (métodos existentes para automotora)
+  Future<bool?> _mostrarDialogoConfirmacionEliminacion(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar eliminación'),
+          content: const Text('¿Está seguro de que desea eliminar esta línea?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  // Métodos para automotora
   Future<void> _cargarTarifas() async {
     try {
       final token = context.read<AuthProvider>().token;
@@ -446,7 +629,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         accionId: accionIdSeleccionado,
         accion: accionDescripcionSeleccionada ?? '',
         piezaId: piezaIdSeleccionado,
-        pieza: piezaDescripcionSeleccionada ?? '',
+        pieza: piezaDescripcionSeleccionada ?? '', 
+        af: null,
+        control: '',
+        lote: ''
       );
 
       nuevaLinea.accionId = accionIdSeleccionado;
@@ -590,10 +776,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        _buildDataChip(Icons.shopping_bag, 'Producto', widget.datosProduccion!['producto']),
-                        _buildDataChip(Icons.numbers, 'Número', widget.datosProduccion!['numero']),
-                        _buildDataChip(Icons.scale, 'Pedido', '${widget.datosProduccion!['pedido']} kg'),
-                        _buildDataChip(Icons.batch_prediction, 'Batches', widget.datosProduccion!['batches']),
+                        _buildDataChip(Icons.shopping_bag, 'Producto', widget.datosProduccion!['producto'] ?? ''),
+                        _buildDataChip(Icons.numbers, 'Número', widget.datosProduccion!['numero'] ?? ''),
+                        _buildDataChip(Icons.scale, 'Pedido', '${widget.datosProduccion!['pedido'] ?? ''} kg'),
+                        _buildDataChip(Icons.batch_prediction, 'Batches', widget.datosProduccion!['batches'] ?? ''),
                       ],
                     ),
                 ],
@@ -644,7 +830,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               Text(
-                value,
+                value.isNotEmpty ? value : '-',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -676,148 +862,145 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             ),
             const SizedBox(height: 10),
             
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DataTable(
-                  headingRowColor: MaterialStateProperty.resolveWith<Color>(
-                    (Set<MaterialState> states) => Colors.blue.shade50,
+            if (isLoadingProductionLines || isLoadingMaterialesResysol)
+              const Center(child: CircularProgressIndicator())
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  columns: const [
-                    DataColumn(label: Text('Q', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Código', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Cantidad (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Lote', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Af', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Control', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                  rows: ingredients.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final ingredient = entry.value;
-                    
-                    return DataRow(
-                      color: MaterialStateProperty.resolveWith<Color?>(
-                        (Set<MaterialState> states) => 
-                          index % 2 == 0 ? Colors.grey.shade50 : null,
-                      ),
-                      cells: [
-                        DataCell(
-                          TextField(
-                            controller: _qControllers[index],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
+                  child: DataTable(
+                    headingRowColor: MaterialStateProperty.resolveWith<Color>(
+                      (Set<MaterialState> states) => Colors.blue.shade50,
+                    ),
+                    columns: const [
+                      DataColumn(label: Text('Q', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Código', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Cantidad (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Lote', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Af', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Control', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: productionLines.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final linea = entry.value;
+                      final isInstruction = linea.piezaId == 0;
+                      
+                      // Encontrar el material correspondiente en la lista
+                      Materiales? materialSeleccionado;
+                      if (!isInstruction && linea.itemId != 0) {
+                        try {
+                          materialSeleccionado = materialesList.firstWhere(
+                            (m) => m.materialId == linea.itemId,
+                          );
+                        } catch (e) {
+                          materialSeleccionado = null;
+                        }
+                      }
+                      
+                      return DataRow(
+                        color: MaterialStateProperty.resolveWith<Color?>(
+                          (Set<MaterialState> states) => 
+                            index % 2 == 0 ? Colors.grey.shade50 : null,
                         ),
-                        DataCell(
-                          ingredient['isInstruction'] 
-                            ? const SizedBox.shrink()
-                            : TextField(
-                                controller: _codigoControllers[index],
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        cells: [
+                          DataCell(
+                            Center(child: Text((index + 1).toString())),
+                          ),
+                          DataCell(
+                            isInstruction 
+                              ? const SizedBox.shrink()
+                              : Text(linea.codItem),
+                          ),
+                          DataCell(
+                            isInstruction
+                              ? TextField(
+                                  controller: _instruccionController[index],
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                  ),
+                                  style: const TextStyle(fontStyle: FontStyle.italic),
+                                )
+                              : DropdownButton<Materiales>(
+                                  value: materialSeleccionado,
+                                  hint: const Text('Seleccione material'),
+                                  isExpanded: true,
+                                  underline: const SizedBox(),
+                                  items: [
+                                    const DropdownMenuItem<Materiales>(
+                                      value: null,
+                                      child: Text('Seleccione material'),
+                                    ),
+                                    ...materialesList.map((Materiales material) {
+                                      return DropdownMenuItem<Materiales>(
+                                        value: material,
+                                        child: Text(material.descripcion),
+                                      );
+                                    }),
+                                  ],
+                                  onChanged: (Materiales? selected) {
+                                    _onMaterialSelected(selected, index);
+                                  },
                                 ),
-                                enabled: !ingredient['isInstruction'],
-                              ),
-                        ),
-                        DataCell(
-                          ingredient['isInstruction']
-                            ? TextField(
-                                controller: _nombreControllers[index],
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                                ),
-                                style: const TextStyle(fontStyle: FontStyle.italic),
-                              )
-                            : DropdownButton<Ingredient>(
-                                value: _nombreControllers[index].text.isEmpty 
-                                    ? null
-                                    : widget.predefinedIngredients?.firstWhere(
-                                        (element) => element.nombre == _nombreControllers[index].text,
-                                        orElse: () => Ingredient(codigo: '', nombre: '', cantidadBase: '', af: ''),
-                                      ),
-                                hint: const Text('Seleccione'),
-                                isExpanded: true,
-                                underline: const SizedBox(),
-                                items: widget.predefinedIngredients
-                                    ?.map((Ingredient item) {
-                                  return DropdownMenuItem<Ingredient>(
-                                    value: item,
-                                    child: Text(item.nombre),
-                                  );
-                                }).toList(),
-                                onChanged: (Ingredient? selected) {
-                                  if (selected != null) {
-                                    _onIngredientSelected(selected, index);
-                                  }
-                                },
-                              ),
-                        ),
-                        DataCell(
-                          TextField(
-                            controller: _cantidadControllers[index],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            onChanged: (value) {
-                              setState(() {});
-                            },
                           ),
-                        ),
-                        DataCell(
-                          TextField(
-                            controller: _loteControllers[index],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: TextField(
-                              controller: _afControllers[index],
+                          DataCell(
+                            TextField(
+                              controller: _cantidadControllers[index],
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8),
                               ),
-                              textAlign: TextAlign.center,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             ),
                           ),
-                        ),
-                        DataCell(
-                          TextField(
-                            controller: _controlControllers[index],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          DataCell(
+                            TextField(
+                              controller: _loteControllers[index],
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                              ),
                             ),
                           ),
-                        ),
-                        DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _removeRow(index),
+                          DataCell(
+                            Center(
+                              child: TextField(
+                                controller: _afControllers[index],
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                          DataCell(
+                            TextField(
+                              controller: _controlControllers[index],
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _eliminarLineaResysol(index),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
             
             const SizedBox(height: 10),
             Container(
@@ -831,11 +1014,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   const Text('Total kg', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 10),
                   Text(_ingredientsTotal.toStringAsFixed(1), 
-                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 20), 
-                  const Text('0.0'),
-                  const SizedBox(width: 20),
-                  Text('${(_ingredientsTotal > 0 ? 100 : 0).toStringAsFixed(1)}%'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -953,7 +1132,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                       child: Text('Tamb.#'),
                     ),
                     TextField(
-                      decoration: _inputDecoration(hint: '105'),
+                      decoration: _inputDecoration(hint: 'Ingrese número'),
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8.0),
@@ -982,11 +1161,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     ),
                     TextField(
                       controller: _tamborCompletoController,
-                      decoration: _inputDecoration(),
+                      decoration: _inputDecoration(hint: 'Ingrese cantidad'),
                       keyboardType: TextInputType.number,
                     ),
                     TextField(
-                      decoration: _inputDecoration(hint: '12 13 14'),
+                      decoration: _inputDecoration(hint: 'Ingrese lotes'),
                     ),
                   ],
                 ),
@@ -1010,8 +1189,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     ),
                     TextField(
                       controller: _totalKgController,
-                      decoration: _inputDecoration(),
+                      decoration: _inputDecoration(hint: 'Ingrese total'),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => _calculateMermaPercentage(),
                     ),
                   ],
                 ),
@@ -1023,8 +1203,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     ),
                     TextField(
                       controller: _mermaKgController,
-                      decoration: _inputDecoration(),
+                      decoration: _inputDecoration(hint: 'Ingrese merma'),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => _calculateMermaPercentage(),
                     ),
                   ],
                 ),
@@ -1074,6 +1255,120 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
+  Future<void> _guardarProduccion() async {
+    if (widget.ordenPrevia?.ordenTrabajoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay una orden válida para guardar')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final token = context.read<AuthProvider>().token;
+      
+      // 1. Primero actualizar la orden con los datos de envasado
+      final ordenActualizada = await _actualizarOrdenProduccion();
+      
+      if (ordenActualizada == null) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al actualizar la orden')),
+        );
+        return;
+      }
+
+      // 2. Actualizar cada línea con los valores de los controladores
+      for (int i = 0; i < productionLines.length; i++) {
+        productionLines[i].cantidad = double.tryParse(_cantidadControllers[i].text.replaceAll(',', '.')) ?? 0.0;
+        productionLines[i].lote = _loteControllers[i].text;
+        productionLines[i].af = double.tryParse(_afControllers[i].text.replaceAll(',', '.')) ?? 0.0;
+        productionLines[i].control = _controlControllers[i].text;
+        productionLines[i].comentario = _instruccionController[i].text;
+      }
+
+      // 3. Procesar cada línea (POST para nuevas, PUT para existentes)
+      for (int i = 0; i < productionLines.length; i++) {
+        final linea = productionLines[i];
+        
+        if (linea.lineaId == 0) {
+          // Línea nueva - hacer POST
+          final lineaCreada = await _lineasServices.crearLinea(
+            context,
+            widget.ordenPrevia!.ordenTrabajoId!,
+            linea,
+            token,
+          );
+          // Actualizar con el ID generado por el servidor
+          productionLines[i] = lineaCreada;
+        } else {
+          // Línea existente - hacer PUT
+          final lineaActualizada = await _lineasServices.actualizarLinea(
+            context,
+            widget.ordenPrevia!.ordenTrabajoId!,
+            linea,
+            token,
+          );
+          productionLines[i] = lineaActualizada;
+        }
+      }
+
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Producción guardada correctamente'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar la producción: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<Orden?> _actualizarOrdenProduccion() async {
+    try {
+      final token = context.read<AuthProvider>().token;
+      final ordenServices = OrdenServices();
+
+      // Actualizar los campos de producción en la orden
+      widget.ordenPrevia!.totalkgs = double.tryParse(_totalKgController.text.replaceAll(',', '.'));
+      widget.ordenPrevia!.mermaKgs = double.tryParse(_mermaKgController.text.replaceAll(',', '.'));
+      
+      // Calcular merma porcentual si hay datos
+      final totalKg = widget.ordenPrevia!.totalkgs ?? 0;
+      final mermaKg = widget.ordenPrevia!.mermaKgs ?? 0;
+      if (totalKg > 0) {
+        widget.ordenPrevia!.mermaPorcentual = (mermaKg / totalKg) * 100;
+      }
+      
+      widget.ordenPrevia!.comentarioTrabajo = _observacionesEnvasadoController.text;
+
+      return await ordenServices.actualizarOrden(
+        context, 
+        token, 
+        widget.ordenPrevia!
+      );
+    } catch (e) {
+      print('Error actualizando orden: $e');
+      return null;
+    }
+  }
+
   InputDecoration _inputDecoration({String? hint}) {
     return InputDecoration(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1084,28 +1379,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  void _guardarProduccion() {
-    final datosCompletos = {
-      'datosBase': widget.datosProduccion,
-      'ingredientes': ingredients,
-      'totalKg': _totalKgController.text,
-      'mermaKg': _mermaKgController.text,
-      'mermaPorcentaje': _mermaPorcentajeController.text,
-      'observacionesEnvasado': _observacionesEnvasadoController.text,
-    };
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Producción guardada correctamente'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    
-    print('Datos de producción: $datosCompletos');
-    
-    // Aquí puedes implementar la lógica para guardar en tu backend
-  }
-
+  // Resto del código para automotora (sin cambios)
   Widget _buildAutomotoraUI(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
@@ -1901,6 +2175,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         accion: accionDescripcionSeleccionada ?? '',
         piezaId: piezaIdSeleccionado,
         pieza: piezaDescripcionSeleccionada ?? '',
+        af: null,
+        lote: '',
+        control: ''
       );
 
       final lineaRespuesta = await _lineasServices.actualizarLinea(
@@ -2154,15 +2431,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   @override
   void dispose() {
     // Dispose de todos los controladores de resysol
-    for (var controller in _qControllers) {
-      controller.dispose();
-    }
-    for (var controller in _codigoControllers) {
-      controller.dispose();
-    }
-    for (var controller in _nombreControllers) {
-      controller.dispose();
-    }
     for (var controller in _cantidadControllers) {
       controller.dispose();
     }
@@ -2185,28 +2453,4 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     
     super.dispose();
   }
-}
-
-class Ingredient {
-  final String codigo;
-  final String nombre;
-  final String cantidadBase;
-  final String af;
-
-  Ingredient({
-    required this.codigo,
-    required this.nombre,
-    required this.cantidadBase,
-    required this.af,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Ingredient &&
-          runtimeType == other.runtimeType &&
-          nombre == other.nombre;
-
-  @override
-  int get hashCode => nombre.hashCode;
 }

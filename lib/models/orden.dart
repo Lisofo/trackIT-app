@@ -61,8 +61,8 @@ class Orden {
   late bool? credito;
   late int? alertaUsuId;
   late String? producto;
-  late String? pedido;
-  late String? envase;
+  late int? pedido;
+  late int? envase;
   late int? totalTambores;
   late int? batches;
   late double? totalkgs;
@@ -168,8 +168,8 @@ class Orden {
     credito: json["credito"] as bool?,
     alertaUsuId: json["alertaUsuId"] as int?,
     producto: json["producto"] as String?,
-    pedido: json["pedido"] as String?,
-    envase: json["envase"] as String?,
+    pedido: json["pedido"] as int?,
+    envase: json["envase"] as int?,
     totalTambores: json["totalTambores"] as int?,
     batches: json["batches"] as int?,
     totalkgs: (json["totalkgs"] as num?)?.toDouble(),
@@ -248,6 +248,15 @@ class Orden {
     "km": km,
     "instrucciones": instrucciones,
     "plantilla": plantilla ?? false,
+    // Campos específicos para producción química
+    "producto": producto,
+    "pedido": pedido,
+    "envase": envase,
+    "totalTambores": totalTambores,
+    "batches": batches,
+    "totalkgs": totalkgs,
+    "mermaKgs": mermaKgs,
+    "mermaPorcentual": mermaPorcentual,
   };
 
   String getStringFecha(DateTime? fecha) {
