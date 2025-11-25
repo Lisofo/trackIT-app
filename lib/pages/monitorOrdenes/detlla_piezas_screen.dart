@@ -21,25 +21,21 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 
 class DetallePiezasScreen extends StatefulWidget {
-  // Parámetros para automotora
   final Cliente? cliente;
   final Unidad? vehiculo;
   final DateTime? fecha;
   final bool? condIva;
   final Orden? ordenPrevia;
   
-  // Parámetros para resysol (producción química)
   final Map<String, dynamic>? datosProduccion;
 
   const DetallePiezasScreen({
     super.key,
-    // Parámetros automotora
     this.cliente,
     this.vehiculo,
     this.fecha,
     this.condIva,
     this.ordenPrevia,
-    // Parámetros resysol
     this.datosProduccion,
   });
 
@@ -48,7 +44,6 @@ class DetallePiezasScreen extends StatefulWidget {
 }
 
 class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
-  // Variables para automotora
   List<Linea> lineas = [];
   List<Tarea> tareas = [];
   List<Tarifa> tarifas = [];
@@ -71,20 +66,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     'IO': false,
   };
 
-  // Variables para resysol (producción química)
   List<Linea> productionLines = [];
   List<Materiales> materialesList = [];
   bool isLoadingProductionLines = false;
   bool isLoadingMaterialesResysol = false;
 
-  // Controladores para resysol
   final List<TextEditingController> _cantidadControllers = [];
   final List<TextEditingController> _loteControllers = [];
   final List<TextEditingController> _factorControllers = [];
   final List<TextEditingController> _controlControllers = [];
   final List<TextEditingController> _instruccionController = [];
+  List<bool> lineasIncluidasEnPorcentaje = [];
 
-  // Campos de envasado para resysol
   final TextEditingController _tamborCompletoController = TextEditingController();
   final TextEditingController _picoController = TextEditingController();
   final TextEditingController _totalKgController = TextEditingController();
@@ -92,7 +85,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   final TextEditingController _mermaPorcentajeController = TextEditingController();
   final TextEditingController _observacionesEnvasadoController = TextEditingController();
 
-  // Métodos para automotora
   double get _totalChapa {
     double total = 0;
     for (var linea in lineas) {
@@ -165,6 +157,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     return total;
   }
 
+  void _recalcularPorcentajes() {
+    setState(() {});
+  }
+
   Future<void> _cargarMaterialesResysol() async {
     setState(() {
       isLoadingMaterialesResysol = true;
@@ -214,8 +210,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   void _initializeProductionControllers() {
-    // Limpiar controladores existentes
     for (var controller in _cantidadControllers) {
+      controller.removeListener(_recalcularPorcentajes);
       controller.dispose();
     }
     for (var controller in _loteControllers) {
@@ -227,25 +223,32 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     for (var controller in _controlControllers) {
       controller.dispose();
     }
+    for (var controller in _instruccionController) {
+      controller.dispose();
+    }
 
     _cantidadControllers.clear();
     _loteControllers.clear();
     _factorControllers.clear();
     _controlControllers.clear();
+    _instruccionController.clear();
+    lineasIncluidasEnPorcentaje.clear();
 
-    // Inicializar controladores con los datos de las líneas
     for (var linea in productionLines) {
-      _cantidadControllers.add(TextEditingController(text: linea.cantidad > 0 ? linea.cantidad.toString() : ''));
+      var cantidadController = TextEditingController(text: linea.cantidad > 0 ? linea.cantidad.toString() : '');
+      cantidadController.addListener(_recalcularPorcentajes);
+      _cantidadControllers.add(cantidadController);
       _loteControllers.add(TextEditingController(text: linea.lote));
       _factorControllers.add(TextEditingController(text: linea.factor! > 0.0 ? linea.factor.toString() : ''));
       _controlControllers.add(TextEditingController(text: linea.control > 0 ? linea.control.toString() : ''));
       _instruccionController.add(TextEditingController(text: linea.comentario));
+      
+      lineasIncluidasEnPorcentaje.add(true);
     }
   }
 
   void _onMaterialSelected(Materiales? selected, int rowIndex) {
     if (selected == null) {
-      // Si se selecciona "Seleccione material", limpiar los datos
       setState(() {
         productionLines[rowIndex].itemId = 0;
         productionLines[rowIndex].codItem = '';
@@ -256,21 +259,20 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     }
 
     setState(() {
-      productionLines[rowIndex].itemId = selected.materialId; // Asignar materialId
+      productionLines[rowIndex].itemId = selected.materialId;
       productionLines[rowIndex].codItem = selected.codMaterial;
       productionLines[rowIndex].descripcion = selected.descripcion;
       productionLines[rowIndex].mo = '';
       productionLines[rowIndex].piezaId = selected.materialId;
       
     });
-    // No llamar a _actualizarLineaProduccion aquí - se hará al guardar
   }
 
   void _addNewIngredient() {
     final nuevaLinea = Linea(
-      lineaId: 0, // Indicar que es nueva
+      lineaId: 0,
       ordenTrabajoId: widget.ordenPrevia?.ordenTrabajoId ?? 0,
-      itemId: 0, // Se asignará cuando se seleccione el material
+      itemId: 0,
       codItem: '',
       descripcion: '',
       macroFamilia: '',
@@ -290,7 +292,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       codGruInv: '',
       gruInvId: 0,
       avance: 0,
-      mo: 'MA', // Material
+      mo: 'MA',
       chapaHs: 0.0,
       chapaMonto: 0.0,
       pinturaMonto: 0.0,
@@ -308,19 +310,23 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
     setState(() {
       productionLines.add(nuevaLinea);
-      _cantidadControllers.add(TextEditingController());
+      var cantidadController = TextEditingController();
+      cantidadController.addListener(_recalcularPorcentajes);
+      _cantidadControllers.add(cantidadController);
       _loteControllers.add(TextEditingController());
       _factorControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
       _instruccionController.add(TextEditingController());
+      
+      lineasIncluidasEnPorcentaje.add(true);
     });
   }
 
   void _addInstructionRow() {
     final nuevaLinea = Linea(
-      lineaId: 0, // Indicar que es nueva
+      lineaId: 0,
       ordenTrabajoId: widget.ordenPrevia?.ordenTrabajoId ?? 0,
-      itemId: 1, // Siempre 1 para instrucciones
+      itemId: 1,
       codItem: '',
       descripcion: '',
       macroFamilia: '',
@@ -340,7 +346,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       codGruInv: '',
       gruInvId: 0,
       avance: 0,
-      mo: 'IN', // Instrucción
+      mo: 'IN',
       chapaHs: 0.0,
       chapaMonto: 0.0,
       pinturaMonto: 0.0,
@@ -358,11 +364,15 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
     setState(() {
       productionLines.add(nuevaLinea);
-      _cantidadControllers.add(TextEditingController());
+      var cantidadController = TextEditingController();
+      cantidadController.addListener(_recalcularPorcentajes);
+      _cantidadControllers.add(cantidadController);
       _loteControllers.add(TextEditingController());
       _factorControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
       _instruccionController.add(TextEditingController());
+      
+      lineasIncluidasEnPorcentaje.add(true);
     });
   }
 
@@ -372,11 +382,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     final linea = productionLines[index];
     final bool esLineaExistente = linea.lineaId != 0;
 
-    // Mostrar diálogo de confirmación
     bool? confirmado = await _mostrarDialogoConfirmacionEliminacion(context);
     if (confirmado != true) return;
 
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -388,7 +396,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     try {
       final token = context.read<AuthProvider>().token;
       
-      // Si es una línea existente, eliminarla del servidor
       if (esLineaExistente) {
         await _lineasServices.eliminarLinea(
           context,
@@ -398,17 +405,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         );
       }
 
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
 
-      // Remover localmente
       setState(() {
         productionLines.removeAt(index);
+        _cantidadControllers[index].removeListener(_recalcularPorcentajes);
         _cantidadControllers.removeAt(index).dispose();
         _loteControllers.removeAt(index).dispose();
         _factorControllers.removeAt(index).dispose();
         _controlControllers.removeAt(index).dispose();
         _instruccionController.removeAt(index).dispose();
+        
+        lineasIncluidasEnPorcentaje.removeAt(index);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -416,8 +424,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -449,8 +458,25 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       },
     );
   }
+  
+  double get _totalPercentageSum {
+    double totalPercentage = 0;
+    if (_ingredientsTotal == 0) return 0.0;
+    
+    for (int i = 0; i < productionLines.length; i++) {
+      if (lineasIncluidasEnPorcentaje.length > i && lineasIncluidasEnPorcentaje[i]) {
+        final cantidadLinea = double.tryParse(_cantidadControllers[i].text.replaceAll(',', '.')) ?? 0.0;
+        final porcentaje = (cantidadLinea / _ingredientsTotal) * 100;
+        totalPercentage += porcentaje;
+      }
+    }
+    return totalPercentage;
+  }
 
-  // Métodos para automotora
+  double get _visualPercentage {
+    return _totalPercentageSum * 0.695;
+  }
+
   Future<void> _cargarTarifas() async {
     try {
       final token = context.read<AuthProvider>().token;
@@ -535,7 +561,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         token, 
         widget.ordenPrevia!
       );
-            
+              
       Navigator.of(context).pop();
       
       if (ordenActualizada != null) {
@@ -547,7 +573,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         );
       }
       
-    } catch (e) {      
+    } catch (e) {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al completar la orden: $e'),
@@ -647,7 +677,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -696,7 +728,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -741,7 +775,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con datos de producción
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -771,6 +804,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                         _buildDataChip(Icons.numbers, 'Número', widget.datosProduccion!['numero'] ?? ''),
                         _buildDataChip(Icons.scale, 'Pedido', '${widget.datosProduccion!['pedido'] ?? ''} kg'),
                         _buildDataChip(Icons.batch_prediction, 'Batches', widget.datosProduccion!['batches'] ?? ''),
+                        _buildDataChip(Icons.format_list_numbered, 'N° Batches', widget.datosProduccion!['numBatches'] ?? ''),
+                        _buildDataChip(Icons.calendar_today, 'Fecha Prod', widget.datosProduccion!['iniciadaEn'] ?? ''),
+                        _buildDataChip(Icons.production_quantity_limits, 'Producción', widget.datosProduccion!['produccion'] ?? ''),
+                        _buildDataChip(Icons.local_mall, 'Bolsas', widget.datosProduccion!['bolsas'] ?? ''),
+                        _buildDataChip(Icons.percent, 'N.V %', widget.datosProduccion!['nvporc'] ?? ''),
+                        _buildDataChip(Icons.analytics, 'Visc. (cps) 25°', widget.datosProduccion!['visc'] ?? ''),
                       ],
                     ),
                 ],
@@ -779,12 +818,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Mezcla de componentes
           _buildChemicalProductionCard(),
 
           const SizedBox(height: 24),
 
-          // Botón de guardar
           _buildChemicalActionButtons(),
         ],
       ),
@@ -858,12 +895,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Header de la tabla
                     _buildProductionTableHeader(),
-                    // Lista reordenable SIN scroll interno
                     ReorderableListView(
-                      shrinkWrap: true, // Cambiado a true
-                      physics: const NeverScrollableScrollPhysics(), // Deshabilita el scroll interno
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: EdgeInsets.zero,
                       buildDefaultDragHandles: false,
                       onReorder: (oldIndex, newIndex) {
@@ -890,6 +925,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   const Text('Total kg', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 10),
                   Text(_ingredientsTotal.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Text('${_visualPercentage.toStringAsFixed(1)}%')
                 ],
               ),
             ),
@@ -925,38 +962,35 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  // Nuevo método para reordenar las líneas
   void _reordenarLineasProduccion(int oldIndex, int newIndex) {
     setState(() {
       if (oldIndex < newIndex) {
         newIndex -= 1;
       }
       
-      // Reordenar las líneas
       final Linea item = productionLines.removeAt(oldIndex);
       productionLines.insert(newIndex, item);
       
-      // Reordenar los controladores
       final cantidadController = _cantidadControllers.removeAt(oldIndex);
       final loteController = _loteControllers.removeAt(oldIndex);
       final factorController = _factorControllers.removeAt(oldIndex);
       final controlController = _controlControllers.removeAt(oldIndex);
       final instruccionController = _instruccionController.removeAt(oldIndex);
+      final checkboxEstado = lineasIncluidasEnPorcentaje.removeAt(oldIndex);
       
       _cantidadControllers.insert(newIndex, cantidadController);
       _loteControllers.insert(newIndex, loteController);
       _factorControllers.insert(newIndex, factorController);
       _controlControllers.insert(newIndex, controlController);
       _instruccionController.insert(newIndex, instruccionController);
+      lineasIncluidasEnPorcentaje.insert(newIndex, checkboxEstado);
       
-      // Actualizar los ordinales
       for (int i = 0; i < productionLines.length; i++) {
         productionLines[i].ordinal = i + 1;
       }
     });
   }
 
-  // Header de la tabla de producción
   Widget _buildProductionTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -977,6 +1011,16 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               child: Text(
                 'Q',
                 style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 50,
+            child: Center(
+              child: Text(
+                'Incl.',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -1034,7 +1078,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               ),
             ),
           ),
-          // NUEVA COLUMNA DE PORCENTAJE
           Expanded(
             flex: 2,
             child: Center(
@@ -1058,7 +1101,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  // Fila reordenable de producción
   Widget _buildReorderableProductionRow(int index, Linea linea) {
     final isInstruction = linea.piezaId == 0;
     
@@ -1089,7 +1131,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           child: Row(
             children: [
-              // Handle para reordenar
               SizedBox(
                 width: 40,
                 child: Center(
@@ -1105,7 +1146,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               ),
               const SizedBox(width: 8),
               
-              // Columna Q (número)
               Expanded(
                 flex: 1,
                 child: Center(
@@ -1116,7 +1156,24 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               
-              // Columna Código
+              SizedBox(
+                width: 50,
+                child: Center(
+                  child: Checkbox(
+                    value: lineasIncluidasEnPorcentaje.length > index 
+                        ? lineasIncluidasEnPorcentaje[index] 
+                        : false,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (lineasIncluidasEnPorcentaje.length > index) {
+                          lineasIncluidasEnPorcentaje[index] = value ?? false;
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ),
+              
               Expanded(
                 flex: 2,
                 child: Center(
@@ -1132,7 +1189,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               
-              // Columna Nombre
               Expanded(
                 flex: 3,
                 child: isInstruction
@@ -1173,8 +1229,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           );
                         },
                         searchDelay: const Duration(milliseconds: 100),
-                        // Filtro personalizado para buscar por código o descripción
-                        
                       ),
                       onChanged: (Materiales? selected) {
                         _onMaterialSelected(selected, index);
@@ -1192,7 +1246,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                     )
               ),
               
-              // Columna Cantidad
               Expanded(
                 flex: 2,
                 child: TextField(
@@ -1203,10 +1256,14 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                   textAlign: TextAlign.center,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    setState(() {
+                      
+                    });
+                  },
                 ),
               ),
               
-              // Columna Lote
               Expanded(
                 flex: 2,
                 child: TextField(
@@ -1219,7 +1276,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               
-              // Columna Factor
               Expanded(
                 flex: 1,
                 child: TextField(
@@ -1233,7 +1289,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               
-              // Columna Control
               Expanded(
                 flex: 2,
                 child: TextField(
@@ -1257,7 +1312,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   ),
                 ),
               ),
-              // Columna Eliminar
               SizedBox(
                 width: 60,
                 child: Center(
@@ -1275,13 +1329,17 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   }
 
   String _calcularPorcentajeLinea(int index) {
-    if (_ingredientsTotal == 0) return '0.0%';
+    if (_ingredientsTotal == 0) return '0%';
+    
+    if (lineasIncluidasEnPorcentaje.length <= index ) {
+      return '0%';
+    }
     
     final cantidadLinea = double.tryParse(_cantidadControllers[index].text.replaceAll(',', '.')) ?? 0.0;
-    if (cantidadLinea == 0) return '0.0%';
+    if (cantidadLinea == 0) return '0%';
     
     final porcentaje = (cantidadLinea / _ingredientsTotal) * 100;
-    return '${porcentaje.toStringAsFixed(1)}%';
+    return '${porcentaje.round()}%';
   }
 
   Widget _buildChemicalActionButtons() {
@@ -1320,18 +1378,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     try {
       final token = context.read<AuthProvider>().token;
       
-      // 1. Primero actualizar la orden con los datos de envasado
       final ordenActualizada = await _actualizarOrdenProduccion();
       
       if (ordenActualizada == null) {
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al actualizar la orden')),
         );
         return;
       }
 
-      // 2. Actualizar cada línea con los valores de los controladores
       for (int i = 0; i < productionLines.length; i++) {
         productionLines[i].cantidad = double.tryParse(_cantidadControllers[i].text.replaceAll(',', '.')) ?? 0.0;
         productionLines[i].lote = _loteControllers[i].text;
@@ -1340,22 +1398,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         productionLines[i].comentario = _instruccionController[i].text;
       }
 
-      // 3. Procesar cada línea (POST para nuevas, PUT para existentes)
       for (int i = 0; i < productionLines.length; i++) {
         final linea = productionLines[i];
         
         if (linea.lineaId == 0) {
-          // Línea nueva - hacer POST
           final lineaCreada = await _lineasServices.crearLinea(
             context,
             widget.ordenPrevia!.ordenTrabajoId!,
             linea,
             token,
           );
-          // Actualizar con el ID generado por el servidor
           productionLines[i] = lineaCreada;
         } else {
-          // Línea existente - hacer PUT
           final lineaActualizada = await _lineasServices.actualizarLinea(
             context,
             widget.ordenPrevia!.ordenTrabajoId!,
@@ -1376,7 +1430,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar la producción: $e'),
@@ -1391,11 +1447,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       final token = context.read<AuthProvider>().token;
       final ordenServices = OrdenServices();
 
-      // Actualizar los campos de producción en la orden
       widget.ordenPrevia!.totalkgs = double.tryParse(_totalKgController.text.replaceAll(',', '.'));
       widget.ordenPrevia!.mermaKgs = double.tryParse(_mermaKgController.text.replaceAll(',', '.'));
       
-      // Calcular merma porcentual si hay datos
       final totalKg = widget.ordenPrevia!.totalkgs ?? 0;
       final mermaKg = widget.ordenPrevia!.mermaKgs ?? 0;
       if (totalKg > 0) {
@@ -1415,7 +1469,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     }
   }
 
-  // Resto del código para automotora (sin cambios)
   Widget _buildAutomotoraUI(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final formatCurrency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
@@ -2234,7 +2287,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
 
     } catch (e) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2466,8 +2521,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   @override
   void dispose() {
-    // Dispose de todos los controladores de resysol
     for (var controller in _cantidadControllers) {
+      controller.removeListener(_recalcularPorcentajes);
       controller.dispose();
     }
     for (var controller in _loteControllers) {
@@ -2477,6 +2532,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       controller.dispose();
     }
     for (var controller in _controlControllers) {
+      controller.dispose();
+    }
+    for (var controller in _instruccionController) {
       controller.dispose();
     }
     

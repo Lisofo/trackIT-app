@@ -60,6 +60,15 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _totTambController = TextEditingController();
   final TextEditingController _batchesController = TextEditingController();
   final TextEditingController _observacionesController = TextEditingController();
+  
+  // Nuevos campos para Resysol (Ahora Datos Adicionales integrados)
+  final TextEditingController _numBatchesController = TextEditingController();
+  final TextEditingController _iniciadaEnController = TextEditingController();
+  final TextEditingController _produccionController = TextEditingController();
+  final TextEditingController _bolsasController = TextEditingController();
+  final TextEditingController _nvporcController = TextEditingController();
+  final TextEditingController _viscController = TextEditingController();
+  
   late String flavor = "";
 
   // Variables para impresión
@@ -76,6 +85,36 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     'IO': false,
   };
 
+  // =========================================================================
+  // METODO PARA CALCULAR TOTAL TAMBORES (APLICADO)
+  // =========================================================================
+  void _calcularTotalTambores() {
+    // Reemplazamos ',' por '.' para asegurar el parseo correcto de decimales
+    double pedido = double.tryParse(_pedidoController.text.replaceAll(',', '.')) ?? 0.0;
+    double envase = double.tryParse(_envaseController.text.replaceAll(',', '.')) ?? 0.0;
+
+    if (envase > 0) {
+      double total = pedido / envase;
+      // Si es entero, mostramos entero, si no, con 2 decimales
+      String formattedTotal = total % 1 == 0 ? total.toInt().toString() : total.toStringAsFixed(2);
+      
+      // Actualizar solo si el valor es diferente para evitar loops infinitos o re-renders innecesarios
+      if (_totTambController.text != formattedTotal) {
+        // Usar setState solo para asegurar que el cambio se refleje si la UI necesita ser reconstruida
+        setState(() {
+          _totTambController.text = formattedTotal;
+        });
+      }
+    } else {
+      if (_totTambController.text != '0') {
+        setState(() {
+          _totTambController.text = '0';
+        });
+      }
+    }
+  }
+
+
   @override
   void initState() {
     super.initState();
@@ -85,9 +124,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     // Inicializar controladores de Resysol con valores vacíos
     if (flavor == 'resysol') {
       _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+      
+      // APLICADO: Listeners para cálculo automático de tambores
+      _pedidoController.addListener(_calcularTotalTambores);
+      _envaseController.addListener(_calcularTotalTambores);
     }
-    // Cargar orden existente para ambos flavors
-    _cargarOrdenExistente();
+    
+    // Cargar orden existente después de que el widget esté construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarOrdenExistente();
+    });
   }
 
   Future<void> _cargarOrdenExistente() async {
@@ -101,21 +147,51 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         _ordenExistente = ordenExistente;
       });
 
-      // Cargar datos según el flavor
-      if (ordenExistente.cliente?.clienteId != null) {
-        await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
-        
-        // Para automotora, cargar unidades también
-        if (flavor == 'automotoraargentina' && ordenExistente.unidad?.unidadId != null) {
-          await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
+      // Verificar que el widget esté montado antes de mostrar el diálogo
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        // Cargar datos según el flavor
+        if (ordenExistente.cliente?.clienteId != null) {
+          await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
+          
+          // Para automotora, cargar unidades también
+          if (flavor == 'automotoraargentina' && ordenExistente.unidad?.unidadId != null) {
+            await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
+          }
         }
-      }
-      
-      _cargarDatosComunesDesdeOrden();
-      
-      // Cargar datos específicos del flavor
-      if (flavor == 'resysol') {
-        _cargarDatosResysolDesdeOrden();
+        
+        _cargarDatosComunesDesdeOrden();
+        
+        // Cargar datos específicos del flavor
+        if (flavor == 'resysol') {
+          _cargarDatosResysolDesdeOrden();
+        }
+
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cargar la orden existente: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -207,15 +283,28 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       _productoController.text = _ordenExistente!.producto ?? _ordenExistente!.descripcion ?? '';
       _pedidoController.text = _ordenExistente!.pedido.toString();
       _envaseController.text = _ordenExistente!.envase.toString();
-      _totTambController.text = _ordenExistente!.totalTambores?.toString() ?? '';
+      // _totTambController.text = _ordenExistente!.totalTambores?.toString() ?? ''; // Se calculará
       _batchesController.text = _ordenExistente!.batches?.toString() ?? '';
       _observacionesController.text = _ordenExistente!.comentarioTrabajo ?? _ordenExistente!.comentarioCliente ?? '';
+      
+      // Nuevos campos (Datos Adicionales)
+      _numBatchesController.text = _ordenExistente!.numBatches?.toString() ?? '';
+      if (_ordenExistente!.iniciadaEn != null) {
+        _iniciadaEnController.text = DateFormat('dd/MM/yyyy').format(_ordenExistente!.iniciadaEn!);
+      }
+      _produccionController.text = _ordenExistente!.produccion?.toString() ?? '';
+      _bolsasController.text = _ordenExistente!.bolsas ?? '';
+      _nvporcController.text = _ordenExistente!.nvporc ?? '';
+      _viscController.text = _ordenExistente!.visc ?? '';
       
       // Si no hay fecha específica, usar la fecha de la orden
       if (_ordenExistente!.fechaOrdenTrabajo != null) {
         _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(_ordenExistente!.fechaOrdenTrabajo!);
       }
     });
+    
+    // APLICADO: Calcular Total Tambores al cargar después de cargar inputs
+    _calcularTotalTambores();
   }
 
   void _abrirBusquedaCliente(BuildContext context) async {
@@ -267,6 +356,19 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     // Para resysol, crear una unidad vacía si no hay seleccionada
     Unidad unidadResysol = unidadSeleccionada ?? Unidad.empty();
     
+    // Convertir el Total Tambores calculado a int/double para el modelo
+    int? totalTamboresInt;
+    
+    // Intentar parsear como double primero, si es posible convertir a int
+    double? calculatedTotal = double.tryParse(_totTambController.text.replaceAll(',', '.'));
+    if (calculatedTotal != null) {
+      if (calculatedTotal == calculatedTotal.toInt()) {
+        totalTamboresInt = calculatedTotal.toInt();
+      } else {
+        totalTamboresInt = 0;
+      }
+    }
+
     return Orden(
       ordenTrabajoId: _isEditMode ? _ordenExistente!.ordenTrabajoId : 0,
       numeroOrdenTrabajo: flavor == 'resysol' ? _numeroController.text : _numOrdenController.text,
@@ -311,11 +413,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       producto: _productoController.text,
       pedido: int.tryParse(_pedidoController.text),
       envase: int.tryParse(_envaseController.text),
-      totalTambores: int.tryParse(_totTambController.text),
+      totalTambores: totalTamboresInt,
       batches: int.tryParse(_batchesController.text),
       totalkgs: 0.0, // Se calculará después
       mermaKgs: 0.0, // Se calculará después
       mermaPorcentual: 0.0, // Se calculará después
+      // Nuevos campos
+      numBatches: int.tryParse(_numBatchesController.text),
+      iniciadaEn: _iniciadaEnController.text.isNotEmpty 
+          ? DateFormat('dd/MM/yyyy').parse(_iniciadaEnController.text) 
+          : null,
+      produccion: int.tryParse(_produccionController.text),
+      bolsas: _bolsasController.text,
+      nvporc: _nvporcController.text,
+      visc: _viscController.text,
     );
   }
 
@@ -344,6 +455,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       'observaciones': _observacionesController.text,
       'fecha': DateTime.now(),
       'cliente': clienteSeleccionado?.toMap(),
+      // Nuevos campos
+      'numBatches': _numBatchesController.text,
+      'iniciadaEn': _iniciadaEnController.text,
+      'produccion': _produccionController.text,
+      'bolsas': _bolsasController.text,
+      'nvporc': _nvporcController.text,
+      'visc': _viscController.text,
     };
   }
 
@@ -651,6 +769,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
+  // APLICADO: Se elimina la referencia a _buildChemicalAdditionalDataCard()
   Widget _buildResysolUI(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -660,11 +779,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           // SELECTOR DE CLIENTE PARA RESYSOL
           _buildClienteCardResysol(),
           const SizedBox(height: 20),
-          _buildChemicalHeaderCard(),
+          _buildChemicalHeaderCard(), // Ahora incluye los Datos Adicionales
+          // const SizedBox(height: 20), // Eliminado por unificación
+          // _buildChemicalAdditionalDataCard(), // ELIMINADO
           const SizedBox(height: 20),
-          _buildChemicalProductionCard(),
-          const SizedBox(height: 20),
-          _buildChemicalPackagingCard(),
+          _buildChemicalProductionCard(), // Ahora incluye numBatches y Total Tambores (Calculado)
           const SizedBox(height: 24),
           _buildChemicalActionButtons(),
         ],
@@ -1104,6 +1223,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
+  // APLICADO: Se unifican los campos de Datos Adicionales aquí
   Widget _buildChemicalHeaderCard() {
     return Card(
       elevation: 4,
@@ -1172,7 +1292,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             
             const SizedBox(height: 20),
             
-            // Tercera fila - Pedido y Envase
+            // Tercera fila - Pedido y Envase (Inputs para cálculo de Tambores)
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1193,11 +1313,78 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
+
+            // APLICADO: Nuevos campos de Datos Adicionales integrados (Inicio)
+            const SizedBox(height: 20),
+            const Divider(), // Separador visual
+            const SizedBox(height: 10),
+            const Text(
+              'Detalle de Producción',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 10),
+            
+            // Fila 4: Fecha Producción, Producción (Kg), Bolsas
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _buildLabeledTextField(
+                  label: 'Fecha Producción',
+                  controller: _iniciadaEnController,
+                  width: 200,
+                  readOnly: true,
+                  onTap: () => _selectDate(context, _iniciadaEnController),
+                  icon: Icons.calendar_today,
+                ),
+                _buildLabeledTextField(
+                  label: 'Producción (Kg)',
+                  controller: _produccionController,
+                  width: 150,
+                  keyboardType: TextInputType.number,
+                ),
+                _buildLabeledTextField(
+                  label: 'Bolsas',
+                  controller: _bolsasController,
+                  width: 150,
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+            
+            // Fila 5: N.V % y Visc.
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _buildLabeledTextField(
+                  label: 'N.V %',
+                  controller: _nvporcController,
+                  width: 120,
+                  keyboardType: TextInputType.number,
+                ),
+                _buildLabeledTextField(
+                  label: 'Visc. (cps) 25°',
+                  controller: _viscController,
+                  width: 120,
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+             // APLICADO: Nuevos campos de Datos Adicionales integrados (Fin)
           ],
         ),
       ),
     );
   }
+
+  // ELIMINADO: _buildChemicalAdditionalDataCard() fue eliminado por solicitud.
 
   Widget _buildChemicalProductionCard() {
     return Card(
@@ -1224,10 +1411,17 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
             const Divider(height: 24),
             
+            // APLICADO: N° Batches, Batches y Total Tambores al mismo nivel
             Wrap(
               spacing: 16,
               runSpacing: 16,
               children: [
+                _buildLabeledTextField( // APLICADO: numBatches movido aquí
+                  label: 'N° Batches',
+                  controller: _numBatchesController,
+                  width: 150,
+                  keyboardType: TextInputType.number,
+                ),
                 _buildLabeledTextField(
                   label: 'Batches',
                   controller: _batchesController,
@@ -1239,6 +1433,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   controller: _totTambController,
                   width: 180,
                   keyboardType: TextInputType.number,
+                  readOnly: true, // Es de solo lectura porque se calcula
                 ),
               ],
             ),
@@ -1282,67 +1477,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  Widget _buildChemicalPackagingCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.inventory_2, color: Colors.orange[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  'ENVASADO',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.blueGrey,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            
-            // Información de envasado
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Resumen de Envasado',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildInfoItem('Total Tambores', _totTambController.text.isEmpty ? '0' : _totTambController.text),
-                      _buildInfoItem('Capacidad Envase', '${_envaseController.text.isEmpty ? '0' : _envaseController.text} kg'),
-                      _buildInfoItem('Total Producción', '${_pedidoController.text.isEmpty ? '0' : _pedidoController.text} kg'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  
 
   // MÉTODO PARA RESYSOL
   Widget _buildChemicalActionButtons() {
@@ -1452,41 +1587,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           ),
         ],
       ),
-    );
-  }
-
-  // Widget auxiliar para mostrar información en el resumen
-  Widget _buildInfoItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Colors.blueGrey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ignore: unused_element
-  InputDecoration _inputDecoration({String? hint}) {
-    return InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: const OutlineInputBorder(),
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
     );
   }
 
@@ -1681,7 +1781,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         }
       }
     } catch (e) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al ${_isEditMode ? 'actualizar' : 'crear'} la orden: $e'),
@@ -1689,5 +1792,39 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    // APLICADO: Remover listeners
+    _pedidoController.removeListener(_calcularTotalTambores);
+    _envaseController.removeListener(_calcularTotalTambores);
+    
+    // Dispose de los controladores de Resysol
+    _numBatchesController.dispose();
+    _iniciadaEnController.dispose();
+    _produccionController.dispose();
+    _bolsasController.dispose();
+    _nvporcController.dispose();
+    _viscController.dispose();
+    _totTambController.dispose(); // ADDED
+    _fechaEmisionController.dispose(); // ADDED
+    _numeroController.dispose(); // ADDED
+    _productoController.dispose(); // ADDED
+    _refController.dispose(); // ADDED
+    _pedidoController.dispose(); // ADDED
+    _envaseController.dispose(); // ADDED
+    _batchesController.dispose(); // ADDED
+    _observacionesController.dispose(); // ADDED
+    
+    // Dispose de los controladores de Automotora/Sedel
+    _numOrdenController.dispose();
+    _comentClienteController.dispose();
+    _comentTrabajoController.dispose();
+    _descripcionController.dispose();
+    
+    // Si tienes otros controladores no listados, agrégalos aquí.
+    
+    super.dispose();
   }
 }

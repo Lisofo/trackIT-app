@@ -170,7 +170,7 @@ class Linea {
     'pieza': pieza,
     'lote': lote,
     'control': control,
-    'af': factor,
+    'factor': factor,
   };
 
   Linea.empty(){
