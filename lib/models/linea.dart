@@ -43,8 +43,8 @@ class Linea {
   late String pieza;
   late String accion;
   late String lote;
-  late double? af;
-  late String control;
+  late double? factor;
+  late double control;
 
   Linea({
     required this.lineaId,
@@ -80,7 +80,7 @@ class Linea {
     required this.accion,
     required this.piezaId,
     required this.pieza,
-    required this.af,
+    required this.factor,
     required this.control,
     required this.lote
   });
@@ -119,8 +119,8 @@ class Linea {
     piezaId: json["piezaId"] as int? ?? 0,
     pieza: json["pieza"] as String? ?? '',
     accion: json["accion"] as String? ?? '',
-    af: (json["af"] as num?)?.toDouble() ?? 0.0,
-    control: json['control'] as String? ?? '',
+    factor: (json["factor"] as num?)?.toDouble() ?? 0.0,
+    control: (json["control"] as num?)?.toDouble() ?? 0.0,
     lote: json['lote'] as String? ?? '',
   );
 
@@ -170,7 +170,7 @@ class Linea {
     'pieza': pieza,
     'lote': lote,
     'control': control,
-    'af': af,
+    'af': factor,
   };
 
   Linea.empty(){

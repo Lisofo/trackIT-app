@@ -12,6 +12,7 @@ import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:dio/dio.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +80,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   // Controladores para resysol
   final List<TextEditingController> _cantidadControllers = [];
   final List<TextEditingController> _loteControllers = [];
-  final List<TextEditingController> _afControllers = [];
+  final List<TextEditingController> _factorControllers = [];
   final List<TextEditingController> _controlControllers = [];
   final List<TextEditingController> _instruccionController = [];
 
@@ -155,17 +156,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     }
   }
 
-  // Métodos para resysol
-  void _calculateMermaPercentage() {
-    final totalKg = double.tryParse(_totalKgController.text.replaceAll(',', '.')) ?? 0;
-    final mermaKg = double.tryParse(_mermaKgController.text.replaceAll(',', '.')) ?? 0;
-    
-    if (totalKg > 0) {
-      final percentage = (mermaKg / totalKg) * 100;
-      _mermaPorcentajeController.text = '${percentage.toStringAsFixed(2)}%';
-    }
-  }
-
   double get _ingredientsTotal {
     double total = 0;
     for (var controller in _cantidadControllers) {
@@ -231,7 +221,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     for (var controller in _loteControllers) {
       controller.dispose();
     }
-    for (var controller in _afControllers) {
+    for (var controller in _factorControllers) {
       controller.dispose();
     }
     for (var controller in _controlControllers) {
@@ -240,15 +230,15 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
     _cantidadControllers.clear();
     _loteControllers.clear();
-    _afControllers.clear();
+    _factorControllers.clear();
     _controlControllers.clear();
 
     // Inicializar controladores con los datos de las líneas
     for (var linea in productionLines) {
       _cantidadControllers.add(TextEditingController(text: linea.cantidad > 0 ? linea.cantidad.toString() : ''));
       _loteControllers.add(TextEditingController(text: linea.lote));
-      _afControllers.add(TextEditingController(text: linea.af! > 0.0 ? linea.af.toString() : ''));
-      _controlControllers.add(TextEditingController(text: linea.control));
+      _factorControllers.add(TextEditingController(text: linea.factor! > 0.0 ? linea.factor.toString() : ''));
+      _controlControllers.add(TextEditingController(text: linea.control > 0 ? linea.control.toString() : ''));
       _instruccionController.add(TextEditingController(text: linea.comentario));
     }
   }
@@ -311,8 +301,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       accion: '',
       piezaId: 1,
       pieza: '',
-      af: 0.0,
-      control: '',
+      factor: 0.0,
+      control: 0.0,
       lote: '',
     );
 
@@ -320,7 +310,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       productionLines.add(nuevaLinea);
       _cantidadControllers.add(TextEditingController());
       _loteControllers.add(TextEditingController());
-      _afControllers.add(TextEditingController());
+      _factorControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
       _instruccionController.add(TextEditingController());
     });
@@ -361,16 +351,16 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       accion: '',
       piezaId: 0,
       pieza: '',
-      af: 0.0,
+      factor: 0.0,
       lote: '',
-      control: '',
+      control: 0.0,
     );
 
     setState(() {
       productionLines.add(nuevaLinea);
       _cantidadControllers.add(TextEditingController());
       _loteControllers.add(TextEditingController());
-      _afControllers.add(TextEditingController());
+      _factorControllers.add(TextEditingController());
       _controlControllers.add(TextEditingController());
       _instruccionController.add(TextEditingController());
     });
@@ -416,7 +406,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         productionLines.removeAt(index);
         _cantidadControllers.removeAt(index).dispose();
         _loteControllers.removeAt(index).dispose();
-        _afControllers.removeAt(index).dispose();
+        _factorControllers.removeAt(index).dispose();
         _controlControllers.removeAt(index).dispose();
         _instruccionController.removeAt(index).dispose();
       });
@@ -631,8 +621,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         accion: accionDescripcionSeleccionada ?? '',
         piezaId: piezaIdSeleccionado,
         pieza: piezaDescripcionSeleccionada ?? '', 
-        af: null,
-        control: '',
+        factor: null,
+        control: 0.0,
         lote: ''
       );
 
@@ -792,11 +782,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           // Mezcla de componentes
           _buildChemicalProductionCard(),
 
-          const SizedBox(height: 20),
-
-          // Envasado y control final
-          _buildChemicalPackagingCard(),
-
           const SizedBox(height: 24),
 
           // Botón de guardar
@@ -852,7 +837,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'MEZCLA DE COMPONENTES',
+              'MEZCLA DE MATERIALES',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange),
             ),
             const Divider(color: Colors.orange),
@@ -916,7 +901,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Agregar Ingrediente'),
+                  label: const Text('Agregar Material'),
                   onPressed: _addNewIngredient,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade700,
@@ -954,13 +939,13 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       // Reordenar los controladores
       final cantidadController = _cantidadControllers.removeAt(oldIndex);
       final loteController = _loteControllers.removeAt(oldIndex);
-      final afController = _afControllers.removeAt(oldIndex);
+      final factorController = _factorControllers.removeAt(oldIndex);
       final controlController = _controlControllers.removeAt(oldIndex);
       final instruccionController = _instruccionController.removeAt(oldIndex);
       
       _cantidadControllers.insert(newIndex, cantidadController);
       _loteControllers.insert(newIndex, loteController);
-      _afControllers.insert(newIndex, afController);
+      _factorControllers.insert(newIndex, factorController);
       _controlControllers.insert(newIndex, controlController);
       _instruccionController.insert(newIndex, instruccionController);
       
@@ -1035,7 +1020,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             flex: 1,
             child: Center(
               child: Text(
-                'Af (%)',
+                'Factor',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -1045,6 +1030,16 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             child: Center(
               child: Text(
                 'Control',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          // NUEVA COLUMNA DE PORCENTAJE
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                '%',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -1150,31 +1145,51 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                       ),
                       style: const TextStyle(fontStyle: FontStyle.italic),
                     )
-                  : DropdownButton<Materiales>(
-                      value: materialSeleccionado,
-                      hint: const Text('Seleccione material'),
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      items: [
-                        const DropdownMenuItem<Materiales>(
-                          value: null,
-                          child: Text('Seleccione material', style: TextStyle(fontSize: 12)),
+                  : DropdownSearch<Materiales>(
+                      selectedItem: materialSeleccionado,
+                      items: materialesList,
+                      itemAsString: (Materiales material) => material.descripcion,
+                      compareFn: (Materiales item1, Materiales item2) => item1.materialId == item2.materialId,
+                      dropdownBuilder: (context, Materiales? selectedItem) {
+                        return Text(
+                          selectedItem != null ? selectedItem.descripcion : 'Seleccione material',
+                          style: const TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                      popupProps: PopupProps.menu(
+                        showSearchBox: true,
+                        searchFieldProps: const TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: 'Buscar por descripción...',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                          ),
                         ),
-                        ...materialesList.map((Materiales material) {
-                          return DropdownMenuItem<Materiales>(
-                            value: material,
-                            child: Text(
-                              material.descripcion,
-                              style: const TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        itemBuilder: (context, Materiales item, bool isSelected) {
+                          return ListTile(
+                            title: Text(item.descripcion),
                           );
-                        }),
-                      ],
+                        },
+                        searchDelay: const Duration(milliseconds: 100),
+                        // Filtro personalizado para buscar por código o descripción
+                        
+                      ),
                       onChanged: (Materiales? selected) {
                         _onMaterialSelected(selected, index);
                       },
-                    ),
+                      dropdownButtonProps: const DropdownButtonProps(
+                        padding: EdgeInsets.zero,
+                      ),
+                      dropdownDecoratorProps: const DropDownDecoratorProps(
+                        baseStyle: TextStyle(fontSize: 12),
+                        dropdownSearchDecoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    )
               ),
               
               // Columna Cantidad
@@ -1204,11 +1219,11 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                 ),
               ),
               
-              // Columna Af
+              // Columna Factor
               Expanded(
                 flex: 1,
                 child: TextField(
-                  controller: _afControllers[index],
+                  controller: _factorControllers[index],
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 8),
@@ -1230,7 +1245,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: Text(
+                    _calcularPorcentajeLinea(index),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
               // Columna Eliminar
               SizedBox(
                 width: 60,
@@ -1248,403 +1274,14 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
-  // Rediseño profesional y responsivo de _buildChemicalPackagingCard
-  Widget _buildChemicalPackagingCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header de la sección
-            Row(
-              children: [
-                Icon(Icons.inventory_2, color: Colors.green[700], size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'ENVASADO Y CONTROL FINAL',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Divider(color: Colors.green),
-            const SizedBox(height: 20),
-
-            // Instrucción principal
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: const Center(
-                child: Text(
-                  'FILTRAR - Sacar muestra - MEDIR Y ENVASAR',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.green,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-
-            // Exportación anterior
-            _buildPackagingSection(
-              title: 'EXPORTACIÓN ANTERIOR',
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    // Header de la tabla
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                'EXPORTACIÓN ANTERIOR',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                'TAMBOR COMPLETO',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                'LOTE',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Fila de unidades
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      child: const Row(
-                        children: [
-                          Expanded(child: SizedBox()),
-                          Expanded(
-                            child: Center(
-                              child: Text('kg', style: TextStyle(color: Colors.grey)),
-                            ),
-                          ),
-                          Expanded(child: SizedBox()),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Campos de tambores - Diseño responsivo
-            _buildPackagingSection(
-              title: 'REGISTRO DE TAMBORES',
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 600;
-                  
-                  if (isWide) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildPackagingField(
-                            label: 'Tambor #1',
-                            controller: TextEditingController(),
-                            hint: 'Ingrese número',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildPackagingField(
-                            label: 'Tambor #2',
-                            controller: TextEditingController(),
-                            hint: 'Ingrese número',
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      children: [
-                        _buildPackagingField(
-                          label: 'Tambor #1',
-                          controller: TextEditingController(),
-                          hint: 'Ingrese número',
-                        ),
-                        const SizedBox(height: 16),
-                        _buildPackagingField(
-                          label: 'Tambor #2',
-                          controller: TextEditingController(),
-                          hint: 'Ingrese número',
-                        ),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Tambor completo - Diseño responsivo
-            _buildPackagingSection(
-              title: 'TAMBOR COMPLETO',
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 600;
-                  
-                  if (isWide) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildPackagingField(
-                            label: 'Tambor completo (kg)',
-                            controller: _tamborCompletoController,
-                            hint: 'Ingrese cantidad',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildPackagingField(
-                            label: 'Lotes',
-                            controller: TextEditingController(),
-                            hint: 'Ingrese lotes',
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      children: [
-                        _buildPackagingField(
-                          label: 'Tambor completo (kg)',
-                          controller: _tamborCompletoController,
-                          hint: 'Ingrese cantidad',
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildPackagingField(
-                          label: 'Lotes',
-                          controller: TextEditingController(),
-                          hint: 'Ingrese lotes',
-                        ),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Totales y merma - Diseño responsivo
-            _buildPackagingSection(
-              title: 'CONTROL DE CALIDAD',
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth > 500;
-                    
-                    if (isWide) {
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: _buildPackagingField(
-                              label: 'Total producción (kg)',
-                              controller: _totalKgController,
-                              hint: 'Ingrese total',
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculateMermaPercentage(),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildPackagingField(
-                              label: 'Merma (kg)',
-                              controller: _mermaKgController,
-                              hint: 'Ingrese merma',
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculateMermaPercentage(),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildPackagingField(
-                              label: 'Merma (%)',
-                              controller: _mermaPorcentajeController,
-                              hint: 'Calculado automáticamente',
-                              readOnly: true,
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      return Column(
-                        children: [
-                          _buildPackagingField(
-                            label: 'Total producción (kg)',
-                            controller: _totalKgController,
-                            hint: 'Ingrese total',
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateMermaPercentage(),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPackagingField(
-                            label: 'Merma (kg)',
-                            controller: _mermaKgController,
-                            hint: 'Ingrese merma',
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateMermaPercentage(),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPackagingField(
-                            label: 'Merma (%)',
-                            controller: _mermaPorcentajeController,
-                            hint: 'Calculado automáticamente',
-                            readOnly: true,
-                          ),
-                        ],
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Observaciones
-            _buildPackagingSection(
-              title: 'OBSERVACIONES FINALES',
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: TextField(
-                  controller: _observacionesEnvasadoController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.all(16),
-                    border: InputBorder.none,
-                    hintText: 'Ingrese observaciones sobre el proceso de envasado...',
-                    hintStyle: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Widget auxiliar para secciones de envasado
-  Widget _buildPackagingSection({required String title, required Widget child}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Colors.blueGrey,
-          ),
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
-    );
-  }
-
-  // Widget auxiliar para campos de envasado
-  Widget _buildPackagingField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-    bool readOnly = false,
-    ValueChanged<String>? onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Colors.blueGrey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            readOnly: readOnly,
-            onChanged: onChanged,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              border: InputBorder.none,
-              hintText: hint,
-              hintStyle: const TextStyle(color: Colors.grey),
-              filled: true,
-              fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
-            ),
-          ),
-        ),
-      ],
-    );
+  String _calcularPorcentajeLinea(int index) {
+    if (_ingredientsTotal == 0) return '0.0%';
+    
+    final cantidadLinea = double.tryParse(_cantidadControllers[index].text.replaceAll(',', '.')) ?? 0.0;
+    if (cantidadLinea == 0) return '0.0%';
+    
+    final porcentaje = (cantidadLinea / _ingredientsTotal) * 100;
+    return '${porcentaje.toStringAsFixed(1)}%';
   }
 
   Widget _buildChemicalActionButtons() {
@@ -1698,8 +1335,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       for (int i = 0; i < productionLines.length; i++) {
         productionLines[i].cantidad = double.tryParse(_cantidadControllers[i].text.replaceAll(',', '.')) ?? 0.0;
         productionLines[i].lote = _loteControllers[i].text;
-        productionLines[i].af = double.tryParse(_afControllers[i].text.replaceAll(',', '.')) ?? 0.0;
-        productionLines[i].control = _controlControllers[i].text;
+        productionLines[i].factor = double.tryParse(_factorControllers[i].text.replaceAll(',', '.')) ?? 0.0;
+        productionLines[i].control = double.tryParse(_controlControllers[i].text.replaceAll('.', '.')) ?? 0.0;
         productionLines[i].comentario = _instruccionController[i].text;
       }
 
@@ -1776,16 +1413,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       print('Error actualizando orden: $e');
       return null;
     }
-  }
-
-  InputDecoration _inputDecoration({String? hint}) {
-    return InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: const OutlineInputBorder(),
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-    );
   }
 
   // Resto del código para automotora (sin cambios)
@@ -2584,9 +2211,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         accion: accionDescripcionSeleccionada ?? '',
         piezaId: piezaIdSeleccionado,
         pieza: piezaDescripcionSeleccionada ?? '',
-        af: null,
+        factor: null,
         lote: '',
-        control: ''
+        control: 0.0
       );
 
       final lineaRespuesta = await _lineasServices.actualizarLinea(
@@ -2846,7 +2473,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     for (var controller in _loteControllers) {
       controller.dispose();
     }
-    for (var controller in _afControllers) {
+    for (var controller in _factorControllers) {
       controller.dispose();
     }
     for (var controller in _controlControllers) {

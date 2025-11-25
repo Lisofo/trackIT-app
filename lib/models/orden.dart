@@ -69,6 +69,14 @@ class Orden {
   late double? mermaKgs;
   late double? mermaPorcentual;
 
+  // Campos adicionales del JSON
+  late int? numBatches;
+  late DateTime? iniciadaEn;
+  late int? produccion;
+  late String? bolsas;
+  late String? nvporc;
+  late String? visc;
+
   Orden({
     this.ordenTrabajoId,
     this.numeroOrdenTrabajo,
@@ -121,6 +129,13 @@ class Orden {
     this.totalkgs,
     this.mermaKgs,
     this.mermaPorcentual,
+    // Campos adicionales
+    this.numBatches,
+    this.iniciadaEn,
+    this.produccion,
+    this.bolsas,
+    this.nvporc,
+    this.visc,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -175,6 +190,13 @@ class Orden {
     totalkgs: (json["totalkgs"] as num?)?.toDouble(),
     mermaKgs: (json["mermaKgs"] as num?)?.toDouble(),
     mermaPorcentual: (json["mermaPorcentual"] as num?)?.toDouble(),
+    // Campos adicionales
+    numBatches: json["numBatches"] as int?,
+    iniciadaEn: json["iniciadaEn"] != null ? DateTime.tryParse(json["iniciadaEn"]) : null,
+    produccion: json["produccion"] as int?,
+    bolsas: json["bolsas"] as String?,
+    nvporc: json["nvporc"] as String?,
+    visc: json["visc"] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -228,6 +250,13 @@ class Orden {
     "totalkgs": totalkgs,
     "mermaKgs": mermaKgs,
     "mermaPorcentual": mermaPorcentual,
+    // Campos adicionales
+    "numBatches": numBatches,
+    "iniciadaEn": iniciadaEn?.toIso8601String(),
+    "produccion": produccion,
+    "bolsas": bolsas,
+    "nvporc": nvporc,
+    "visc": visc,
   };
 
   Map<String, dynamic> toMapCyP() => {
@@ -257,6 +286,13 @@ class Orden {
     "totalkgs": totalkgs,
     "mermaKgs": mermaKgs,
     "mermaPorcentual": mermaPorcentual,
+    // Campos adicionales para producción química
+    "numBatches": numBatches,
+    "iniciadaEn": iniciadaEn?.toIso8601String(),
+    "produccion": produccion,
+    "bolsas": bolsas,
+    "nvporc": nvporc,
+    "visc": visc,
   };
 
   String getStringFecha(DateTime? fecha) {
@@ -323,6 +359,13 @@ class Orden {
     totalkgs: null,
     mermaKgs: null,
     mermaPorcentual: null,
+    // Campos adicionales
+    numBatches: null,
+    iniciadaEn: null,
+    produccion: null,
+    bolsas: null,
+    nvporc: null,
+    visc: null,
   );
 }
 
