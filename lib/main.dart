@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: appTheme.getTheme(),
       debugShowCheckedModeBanner: false,
-      title: 'App Tecnicos SEDEL',
+      title: 'Resysol',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

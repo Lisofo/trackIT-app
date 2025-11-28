@@ -77,6 +77,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   final List<TextEditingController> _controlControllers = [];
   final List<TextEditingController> _instruccionController = [];
   List<bool> lineasIncluidasEnPorcentaje = [];
+  List<bool> lineasConError = [];
+  bool _mostrarErrores = false; // Nueva variable para controlar cuando mostrar errores
 
   final TextEditingController _tamborCompletoController = TextEditingController();
   final TextEditingController _picoController = TextEditingController();
@@ -233,6 +235,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     _controlControllers.clear();
     _instruccionController.clear();
     lineasIncluidasEnPorcentaje.clear();
+    lineasConError.clear();
 
     for (var linea in productionLines) {
       var cantidadController = TextEditingController(text: linea.cantidad > 0 ? linea.cantidad.toString() : '');
@@ -244,6 +247,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _instruccionController.add(TextEditingController(text: linea.comentario));
       
       lineasIncluidasEnPorcentaje.add(true);
+      lineasConError.add(false);
     }
   }
 
@@ -319,6 +323,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _instruccionController.add(TextEditingController());
       
       lineasIncluidasEnPorcentaje.add(true);
+      lineasConError.add(false);
+      _mostrarErrores = false; // Resetear visualización de errores al agregar nueva línea
     });
   }
 
@@ -373,6 +379,8 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _instruccionController.add(TextEditingController());
       
       lineasIncluidasEnPorcentaje.add(true);
+      lineasConError.add(false);
+      _mostrarErrores = false; // Resetear visualización de errores al agregar nueva línea
     });
   }
 
@@ -417,6 +425,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         _instruccionController.removeAt(index).dispose();
         
         lineasIncluidasEnPorcentaje.removeAt(index);
+        lineasConError.removeAt(index);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -459,22 +468,20 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
   
-  double get _totalPercentageSum {
-    double totalPercentage = 0;
-    if (_ingredientsTotal == 0) return 0.0;
-    
+  double get _visualPercentage {
+    double totalCantidad = _ingredientsTotal; // Sumatoria de todas las cantidades
+    if (totalCantidad == 0) return 0.0;
+
+    double totalFactorizado = 0.0;
     for (int i = 0; i < productionLines.length; i++) {
       if (lineasIncluidasEnPorcentaje.length > i && lineasIncluidasEnPorcentaje[i]) {
         final cantidadLinea = double.tryParse(_cantidadControllers[i].text.replaceAll(',', '.')) ?? 0.0;
-        final porcentaje = (cantidadLinea / _ingredientsTotal) * 100;
-        totalPercentage += porcentaje;
+        final factorLinea = double.tryParse(_factorControllers[i].text.replaceAll(',', '.')) ?? 1.0;
+        totalFactorizado += cantidadLinea * factorLinea;
       }
     }
-    return totalPercentage;
-  }
 
-  double get _visualPercentage {
-    return _totalPercentageSum * 0.695;
+    return (totalFactorizado / totalCantidad) * 100;
   }
 
   Future<void> _cargarTarifas() async {
@@ -751,7 +758,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         backgroundColor: colors.primary,
         title: Text(
           flavor == 'resysol' 
-            ? 'Detalle de Producción'
+            ? 'Detalle de Producción ${widget.datosProduccion!['numero'] ?? ''}'
             : 'Detalle de Piezas ${widget.ordenPrevia?.numeroOrdenTrabajo}',
           style: TextStyle(color: colors.onPrimary),
         ),
@@ -977,6 +984,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       final controlController = _controlControllers.removeAt(oldIndex);
       final instruccionController = _instruccionController.removeAt(oldIndex);
       final checkboxEstado = lineasIncluidasEnPorcentaje.removeAt(oldIndex);
+      final errorEstado = lineasConError.removeAt(oldIndex);
       
       _cantidadControllers.insert(newIndex, cantidadController);
       _loteControllers.insert(newIndex, loteController);
@@ -984,6 +992,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       _controlControllers.insert(newIndex, controlController);
       _instruccionController.insert(newIndex, instruccionController);
       lineasIncluidasEnPorcentaje.insert(newIndex, checkboxEstado);
+      lineasConError.insert(newIndex, errorEstado);
       
       for (int i = 0; i < productionLines.length; i++) {
         productionLines[i].ordinal = i + 1;
@@ -1101,6 +1110,28 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     );
   }
 
+  bool _esLineaVacia(int index, bool isInstruction) {
+    bool vacia;
+    if (isInstruction) {
+      vacia = _instruccionController[index].text.trim().isEmpty;
+    } else {
+      final tieneMaterial = productionLines[index].itemId != 0;
+      final tieneCantidad = _cantidadControllers[index].text.trim().isNotEmpty && 
+                          (double.tryParse(_cantidadControllers[index].text.replaceAll(',', '.')) ?? 0) > 0;
+      vacia = !tieneMaterial || !tieneCantidad;
+    }
+    
+    // Solo actualizar el estado de error si estamos mostrando errores
+    if (_mostrarErrores && lineasConError.length <= index) {
+      lineasConError = List<bool>.filled(productionLines.length, false);
+    }
+    if (_mostrarErrores) {
+      lineasConError[index] = vacia;
+    }
+    
+    return vacia;
+  }
+
   Widget _buildReorderableProductionRow(int index, Linea linea) {
     final isInstruction = linea.piezaId == 0;
     
@@ -1115,6 +1146,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       }
     }
     
+    // Verificar si la línea está vacía (para validación)
+    final bool lineaVacia = _esLineaVacia(index, isInstruction);
+    
     return Container(
       key: Key('productionLine_${linea.lineaId}_$index'),
       decoration: BoxDecoration(
@@ -1124,207 +1158,284 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
             width: index < productionLines.length - 1 ? 1 : 0,
           ),
         ),
+        // Solo aplicar color rojo si hay error y estamos mostrando errores
+        color: (_mostrarErrores && lineaVacia) 
+            ? Colors.red.shade50 
+            : (index % 2 == 0 ? Colors.grey.shade50 : Colors.white),
       ),
       child: Material(
-        color: index % 2 == 0 ? Colors.grey.shade50 : Colors.white,
+        color: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 40,
-                child: Center(
-                  child: ReorderableDragStartListener(
-                    index: index,
-                    child: const Icon(
-                      Icons.drag_handle,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(
-                    (index + 1).toString(),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              
-              SizedBox(
-                width: 50,
-                child: Center(
-                  child: Checkbox(
-                    value: lineasIncluidasEnPorcentaje.length > index 
-                        ? lineasIncluidasEnPorcentaje[index] 
-                        : false,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (lineasIncluidasEnPorcentaje.length > index) {
-                          lineasIncluidasEnPorcentaje[index] = value ?? false;
-                        }
-                      });
-                    },
-                  ),
-                ),
-              ),
-              
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: isInstruction 
-                    ? const SizedBox.shrink()
-                    : Text(
-                        linea.codItem,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                ),
-              ),
-              
-              Expanded(
-                flex: 3,
-                child: isInstruction
-                  ? TextField(
-                      controller: _instruccionController[index],
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                        hintText: 'Ingrese instrucción...',
-                      ),
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    )
-                  : DropdownSearch<Materiales>(
-                      selectedItem: materialSeleccionado,
-                      items: materialesList,
-                      itemAsString: (Materiales material) => material.descripcion,
-                      compareFn: (Materiales item1, Materiales item2) => item1.materialId == item2.materialId,
-                      dropdownBuilder: (context, Materiales? selectedItem) {
-                        return Text(
-                          selectedItem != null ? selectedItem.descripcion : 'Seleccione material',
-                          style: const TextStyle(fontSize: 16),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                      popupProps: PopupProps.menu(
-                        showSearchBox: true,
-                        searchFieldProps: const TextFieldProps(
-                          decoration: InputDecoration(
-                            hintText: 'Buscar por descripción...',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                        itemBuilder: (context, Materiales item, bool isSelected) {
-                          return ListTile(
-                            title: Text(item.descripcion),
-                          );
-                        },
-                        searchDelay: const Duration(milliseconds: 100),
-                      ),
-                      onChanged: (Materiales? selected) {
-                        _onMaterialSelected(selected, index);
-                      },
-                      dropdownButtonProps: const DropdownButtonProps(
-                        padding: EdgeInsets.zero,
-                      ),
-                      dropdownDecoratorProps: const DropDownDecoratorProps(
-                        baseStyle: TextStyle(fontSize: 12),
-                        dropdownSearchDecoration: InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      ),
-                    )
-              ),
-              
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _cantidadControllers[index],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (value) {
-                    setState(() {
-                      
-                    });
-                  },
-                ),
-              ),
-              
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _loteControllers[index],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              
-              Expanded(
-                flex: 1,
-                child: TextField(
-                  controller: _factorControllers[index],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                ),
-              ),
-              
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _controlControllers[index],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8), 
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: Text(
-                    _calcularPorcentajeLinea(index),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Center(
-                  child: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                    onPressed: () => _eliminarLineaResysol(index),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: isInstruction 
+              ? _buildInstructionRow(index, linea, lineaVacia)
+              : _buildMaterialRow(index, linea, materialSeleccionado, lineaVacia),
         ),
       ),
+    );
+  }
+
+  Widget _buildInstructionRow(int index, Linea linea, bool lineaVacia) {
+    return Row(
+      children: [
+        // Drag handle
+        SizedBox(
+          width: 40,
+          child: Center(
+            child: ReorderableDragStartListener(
+              index: index,
+              child: Icon(
+                Icons.drag_handle,
+                color: lineaVacia ? Colors.red : Colors.grey,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        // Número de posición
+        SizedBox(
+          width: 40,
+          child: Center(
+            child: Text(
+              (index + 1).toString(),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: lineaVacia ? Colors.red : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        // Campo de instrucción que ocupa todo el espacio disponible
+        Expanded(
+          child: TextField(
+            controller: _instruccionController[index],
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              hintText: 'Ingrese instrucción...',
+              errorText: (_mostrarErrores && lineaVacia) ? 'La instrucción no puede estar vacía' : null,
+              errorStyle: const TextStyle(fontSize: 12),
+            ),
+            style: const TextStyle(fontStyle: FontStyle.italic),
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        // Botón de eliminar
+        SizedBox(
+          width: 60,
+          child: Center(
+            child: IconButton(
+              icon: Icon(Icons.delete, color: lineaVacia ? Colors.red : Colors.red, size: 20),
+              onPressed: () => _eliminarLineaResysol(index),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMaterialRow(int index, Linea linea, Materiales? materialSeleccionado, bool lineaVacia) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          child: Center(
+            child: ReorderableDragStartListener(
+              index: index,
+              child: Icon(
+                Icons.drag_handle,
+                color: lineaVacia ? Colors.red : Colors.grey,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        Expanded(
+          flex: 1,
+          child: Center(
+            child: Text(
+              (index + 1).toString(),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: lineaVacia ? Colors.red : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        
+        SizedBox(
+          width: 50,
+          child: Center(
+            child: Checkbox(
+              value: lineasIncluidasEnPorcentaje.length > index 
+                  ? lineasIncluidasEnPorcentaje[index] 
+                  : false,
+              onChanged: (bool? value) {
+                setState(() {
+                  if (lineasIncluidasEnPorcentaje.length > index) {
+                    lineasIncluidasEnPorcentaje[index] = value ?? false;
+                  }
+                });
+              },
+            ),
+          ),
+        ),
+        
+        Expanded(
+          flex: 2,
+          child: Center(
+            child: Text(
+              linea.codItem,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: lineaVacia ? Colors.red : Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ),
+        
+        Expanded(
+          flex: 3,
+          child: DropdownSearch<Materiales>(
+            selectedItem: materialSeleccionado,
+            items: materialesList,
+            itemAsString: (Materiales material) => material.descripcion,
+            compareFn: (Materiales item1, Materiales item2) => item1.materialId == item2.materialId,
+            dropdownBuilder: (context, Materiales? selectedItem) {
+              return Text(
+                selectedItem != null ? selectedItem.descripcion : 'Seleccione material',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: lineaVacia ? Colors.red : Colors.black,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: const TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: 'Buscar por descripción...',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+              itemBuilder: (context, Materiales item, bool isSelected) {
+                return ListTile(
+                  title: Text(item.descripcion),
+                );
+              },
+              searchDelay: const Duration(milliseconds: 100),
+            ),
+            onChanged: (Materiales? selected) {
+              _onMaterialSelected(selected, index);
+            },
+            dropdownButtonProps: const DropdownButtonProps(
+              padding: EdgeInsets.zero,
+            ),
+            dropdownDecoratorProps: DropDownDecoratorProps(
+              baseStyle: TextStyle(
+                fontSize: 12,
+                color: lineaVacia ? Colors.red : Colors.black,
+              ),
+              dropdownSearchDecoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                errorText: (_mostrarErrores && lineaVacia && materialSeleccionado == null) ? 'Material requerido' : null,
+                errorStyle: const TextStyle(fontSize: 10),
+              ),
+            ),
+          )
+        ),
+        
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: _cantidadControllers[index],
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              errorText: (_mostrarErrores && lineaVacia) ? 'Cantidad requerida' : null,
+              errorStyle: const TextStyle(fontSize: 10),
+            ),
+            textAlign: TextAlign.center,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (value) {
+              setState(() {});
+            },
+          ),
+        ),
+        
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: _loteControllers[index],
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        
+        Expanded(
+          flex: 1,
+          child: TextField(
+            controller: _factorControllers[index],
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            ),
+            textAlign: TextAlign.center,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (value) {
+              setState(() {});
+            },
+          ),
+        ),
+        
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: _controlControllers[index],
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8), 
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Center(
+            child: Text(
+              _calcularPorcentajeLinea(index),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: lineaVacia ? Colors.red : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 60,
+          child: Center(
+            child: IconButton(
+              icon: Icon(Icons.delete, color: lineaVacia ? Colors.red : Colors.red, size: 20),
+              onPressed: () => _eliminarLineaResysol(index),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1366,6 +1477,37 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       );
       return;
     }
+
+    // Activar la visualización de errores
+    setState(() {
+      _mostrarErrores = true;
+    });
+
+    // Validar líneas vacías antes de guardar
+    bool hayLineasVacias = false;
+    for (int i = 0; i < productionLines.length; i++) {
+      final isInstruction = productionLines[i].piezaId == 0;
+      if (_esLineaVacia(i, isInstruction)) {
+        hayLineasVacias = true;
+        break;
+      }
+    }
+
+    if (hayLineasVacias) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hay líneas incompletas. Complete todos los campos requeridos.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Si no hay errores, proceder con el guardado
+    setState(() {
+      _mostrarErrores = false; // Resetear errores si todo está bien
+    });
 
     showDialog(
       context: context,

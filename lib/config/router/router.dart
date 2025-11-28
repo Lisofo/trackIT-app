@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
 
 final router = GoRouter(
-  initialLocation: '/', 
+  initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (context, state) => const Login()),
     GoRoute(path: '/entradaSalida', builder: (context, state) => const EntradSalida()),
