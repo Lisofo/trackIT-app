@@ -68,6 +68,7 @@ class TablaConsumoExcel {
   List<FilaConsumoExcel> filas = [];
   List<Orden> ordenesColumnas = []; // Órdenes para las columnas dinámicas
   Map<String, double> totalesColumnas = {};
+  Map<String, double> totalesFilas = {}; // Nuevo: totales por fila (material)
   double totalEmbarcar = 18720.0;
   double totalEnvasado = 0.0;
   double mermaProceso = 0.0;
@@ -75,6 +76,7 @@ class TablaConsumoExcel {
 
   void calcularTotales() {
     totalesColumnas = {};
+    totalesFilas = {}; // Inicializar totales por fila
     
     // Inicializar columnas fijas
     for (int i = 1; i <= 4; i++) {
@@ -88,19 +90,27 @@ class TablaConsumoExcel {
     
     totalesColumnas['total'] = 0.0;
 
+    // Calcular totales por fila y por columna
     for (var fila in filas) {
-      // Consumos anteriores
+      double totalFila = 0.0;
+      
+      // Sumar consumos anteriores
       fila.consumosAnteriores.forEach((columna, valor) {
         totalesColumnas[columna] = (totalesColumnas[columna] ?? 0) + valor;
+        totalFila += valor;
       });
       
-      // Consumos por orden
+      // Sumar consumos por orden
       fila.consumosPorOrden.forEach((ordenId, valor) {
         totalesColumnas[ordenId] = (totalesColumnas[ordenId] ?? 0) + valor;
+        totalFila += valor;
       });
       
-      // Total fila
-      totalesColumnas['total'] = (totalesColumnas['total'] ?? 0) + fila.totalFila;
+      // Guardar total de la fila
+      totalesFilas[fila.codigo] = totalFila;
+      
+      // Acumular total general
+      totalesColumnas['total'] = (totalesColumnas['total'] ?? 0) + totalFila;
     }
 
     totalEnvasado = totalesColumnas['total'] ?? 0.0;
