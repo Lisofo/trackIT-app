@@ -823,55 +823,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () {
-                  _mostrarDialogoNuevoCliente(context);
-                },
-                icon: const Icon(Icons.person_add),
-                label: const Text('Agregar Nuevo Cliente'),
-              ),
-            ),
-            if (clienteSeleccionado != null) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(text: clienteSeleccionado!.direccion),
-                decoration: const InputDecoration(
-                  labelText: 'Dirección',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(text: clienteSeleccionado!.telefono1),
-                decoration: const InputDecoration(
-                  labelText: 'Teléfono',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(text: clienteSeleccionado!.email),
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(text: 'RUC: ${clienteSeleccionado!.ruc}'),
-                decoration: const InputDecoration(
-                  labelText: 'Documento',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -1245,6 +1196,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     color: Colors.blueGrey,
                   ),
                 ),
+                const SizedBox(width: 8,),
+                TextButton(
+                  onPressed: () async {
+                    await _mostrarDialogoCopiarOrden();
+                  },
+                  child: const Text('Generar copia')
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -1384,7 +1342,194 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // ELIMINADO: _buildChemicalAdditionalDataCard() fue eliminado por solicitud.
+  // MÉTODO PARA MOSTRAR DIALOGO DE COPIAR ORDEN
+  Future<void> _mostrarDialogoCopiarOrden() async {
+    if (_ordenExistente == null || _ordenExistente!.ordenTrabajoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay una orden válida para copiar')),
+      );
+      return;
+    }
+
+    DateTime fechaSeleccionada = DateTime.now();
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Generar Copia de Orden', textAlign: TextAlign.center),
+              content: SizedBox(
+                height: 150,
+                child: Column(
+                  children: [
+                    Text(
+                      'Se va a generar una copia de la orden ${_ordenExistente!.numeroOrdenTrabajo}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Seleccione la fecha para la nueva orden:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? fecha = await showDatePicker(
+                          context: context,
+                          initialDate: fechaSeleccionada,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (fecha != null) {
+                          setStateDialog(() {
+                            fechaSeleccionada = fecha;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              DateFormat('dd/MM/yyyy').format(fechaSeleccionada),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const Icon(Icons.calendar_today),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop(); // Cerrar el diálogo
+                    await _procesarCopiaOrden(fechaSeleccionada);
+                  },
+                  child: const Text('Generar Copia'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // MÉTODO PARA PROCESAR LA COPIA DE LA ORDEN
+  Future<void> _procesarCopiaOrden(DateTime fecha) async {
+    if (_ordenExistente == null) return;
+
+    // Mostrar el diálogo de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    bool errorOcurrido = false;
+    
+    try {
+      // Formatear la fecha a yyyy-MM-dd
+      String fechaFormateada = DateFormat('yyyy-MM-dd').format(fecha);
+      
+      // Llamar al método copiarOrden con la fecha formateada
+      int nuevaOrdenId = await ordenServices.copiarOrden(
+        context, 
+        _ordenExistente!.ordenTrabajoId!, 
+        fechaFormateada, 
+        token
+      );
+
+      if (nuevaOrdenId > 0 && mounted) {
+        // Obtener la nueva orden completa
+        final Orden nuevaOrden = await ordenServices.getOrdenPorId(context, nuevaOrdenId, token);
+        
+        // Actualizar el estado con la nueva orden
+        setState(() {
+          _ordenExistente = nuevaOrden;
+          ordenExistente = nuevaOrden;
+          _isEditMode = true;
+        });
+
+        // Recargar los datos de la nueva orden
+        if (nuevaOrden.cliente?.clienteId != null) {
+          await _cargarClienteDesdeAPI(nuevaOrden.cliente!.clienteId);
+          
+          if (flavor == 'automotoraargentina' && nuevaOrden.unidad?.unidadId != null) {
+            await _cargarUnidadesYSeleccionar(nuevaOrden.cliente!.clienteId, nuevaOrden.unidad!.unidadId);
+          }
+        }
+        
+        _cargarDatosComunesDesdeOrden();
+        
+        if (flavor == 'resysol') {
+          _cargarDatosResysolDesdeOrden();
+        }
+
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Copia generada exitosamente. Nueva orden: ${nuevaOrden.numeroOrdenTrabajo}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        errorOcurrido = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al generar la copia de la orden'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      errorOcurrido = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      // CERRAR SIEMPRE EL DIALOGO DE CARGA
+      // Solo si el widget sigue montado y podemos cerrar el diálogo
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      // Si hubo un error, también deberíamos mostrar un mensaje adicional
+      if (errorOcurrido && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo completar la copia de la orden'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
   Widget _buildChemicalProductionCard() {
     return Card(

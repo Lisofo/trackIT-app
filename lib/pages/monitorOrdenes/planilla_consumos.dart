@@ -27,11 +27,25 @@ class ConsumosScreenState extends State<ConsumosScreen> {
   TablaConsumoExcel _tablaConsumo = TablaConsumoExcel();
   bool _cargando = false;
   bool _cargandoMateriales = false;
+  
+  // Controladores para los campos editables
+  Map<String, Map<String, TextEditingController>> _controllers = {};
 
   @override
   void initState() {
     super.initState();
     _cargarOrdenes();
+  }
+
+  @override
+  void dispose() {
+    // Limpiar todos los controladores
+    _controllers.forEach((codigo, map) {
+      map.forEach((key, controller) {
+        controller.dispose();
+      });
+    });
+    super.dispose();
   }
 
   Future<void> _cargarOrdenes() async {
@@ -78,10 +92,46 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       // El orden de las columnas dinámicas estará dado por _ordenesSeleccionadas
       _tablaConsumo = _excelService.procesarDatosReales(todasLineas, _ordenesSeleccionadas);
       
+      // Inicializar controllers después de cargar datos
+      _inicializarControllers();
+      
     } catch (e) {
       print('Error cargando materiales: $e');
     } finally {
       setState(() => _cargandoMateriales = false);
+    }
+  }
+
+  void _inicializarControllers() {
+    _controllers.clear();
+    
+    for (var fila in _tablaConsumo.filas) {
+      _controllers[fila.codigo] = {};
+      
+      // Controllers para consumos anteriores
+      for (var i = 1; i <= 4; i++) {
+        final key = 'ant_$i';
+        _controllers[fila.codigo]![key] = TextEditingController(
+          text: fila.consumosAnteriores[key]?.toStringAsFixed(0) ?? '0'
+        );
+      }
+      
+      // Controllers para consumos por orden
+      for (var orden in _ordenesSeleccionadas) {
+        final ordenId = orden.ordenTrabajoId.toString();
+        _controllers[fila.codigo]![ordenId] = TextEditingController(
+          text: fila.consumosPorOrden[ordenId]?.toStringAsFixed(0) ?? '0'
+        );
+      }
+    }
+  }
+
+  void _actualizarValorDesdeController(String codigoMaterial, String columna) {
+    final controller = _controllers[codigoMaterial]?[columna];
+    if (controller != null) {
+      final nuevoValor = double.tryParse(controller.text) ?? 0.0;
+      _tablaConsumo.actualizarValor(codigoMaterial, columna, nuevoValor);
+      setState(() {});
     }
   }
 
@@ -96,6 +146,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
     setState(() {
       _ordenesSeleccionadas.clear();
       _tablaConsumo = TablaConsumoExcel();
+      _controllers.clear();
     });
   }
 
@@ -125,6 +176,58 @@ class ConsumosScreenState extends State<ConsumosScreen> {
     _cargarMateriales(); 
   }
 
+  void _mostrarDialogoEditarAnteriores(FilaConsumoExcel fila) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final controllers = {
+          'ant_1': TextEditingController(text: fila.consumosAnteriores['ant_1']?.toStringAsFixed(0) ?? '0'),
+          'ant_2': TextEditingController(text: fila.consumosAnteriores['ant_2']?.toStringAsFixed(0) ?? '0'),
+          'ant_3': TextEditingController(text: fila.consumosAnteriores['ant_3']?.toStringAsFixed(0) ?? '0'),
+          'ant_4': TextEditingController(text: fila.consumosAnteriores['ant_4']?.toStringAsFixed(0) ?? '0'),
+        };
+
+        return AlertDialog(
+          title: Text('Editar consumos anteriores - ${fila.codigo}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var entry in controllers.entries)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: TextField(
+                    controller: entry.value,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Ant ${entry.key.split('_')[1]}',
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                for (var entry in controllers.entries) {
+                  final nuevoValor = double.tryParse(entry.value.text) ?? 0.0;
+                  _tablaConsumo.actualizarValor(fila.codigo, entry.key, nuevoValor);
+                }
+                setState(() {});
+                Navigator.pop(context);
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,10 +250,24 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       ),
       body: Column(
         children: [
+          // Encabezado fijo
           _buildHeaderExcel(),
-          _buildSelectorOrdenes(),
-          Expanded(child: _buildTablaExcelDinamica()),
-          _buildTotalesYMermas(),
+          // Tabla expandible sin scroll vertical
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Selector de órdenes
+                  _buildSelectorOrdenes(),
+                  // Tabla que se expande verticalmente
+                  _buildTablaExcelDinamicaExpandida(),
+                  
+                  // Totales y mermas (fijo al fondo)
+                  _buildTotalesYMermas(),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -216,30 +333,18 @@ class ConsumosScreenState extends State<ConsumosScreen> {
                 : DropdownSearch<Orden>.multiSelection(
                     items: _ordenes,
                     compareFn: (item1, item2) => item1.ordenTrabajoId == item2.ordenTrabajoId,
-                    // **CORREGIDO:** Usamos _ordenesSeleccionadas como la fuente de verdad.
                     selectedItems: _ordenesSeleccionadas, 
                     onChanged: (List<Orden> nuevasSeleccionadas) {
                       setState(() {
-                        // Lógica más limpia para actualizar _ordenesSeleccionadas manteniendo el orden de las ya existentes
                         final Map<int?, Orden> nuevaMap = {for (var o in nuevasSeleccionadas) o.ordenTrabajoId: o};
-                        
-                        // 1. Mantener las que siguen seleccionadas en el orden actual
                         final List<Orden> mantenidas = _ordenesSeleccionadas.where((o) => nuevaMap.containsKey(o.ordenTrabajoId)).toList();
-                        
-                        // 2. Añadir las nuevas al final
                         final Set<int?> mantenidasIds = mantenidas.map((o) => o.ordenTrabajoId).toSet();
                         final List<Orden> nuevasAniadidas = nuevasSeleccionadas.where((o) => !mantenidasIds.contains(o.ordenTrabajoId)).toList();
-                        
                         _ordenesSeleccionadas = [...mantenidas, ...nuevasAniadidas];
                       });
                       _cargarMateriales();
                     },
-                    // Usamos el builder para mostrar el ReorderableListView
                     dropdownBuilder: (context, selectedItems) {
-                      // **IMPORTANTE:** El selectedItems que recibimos aquí es una copia,
-                      // pero el ReorderableListView manipulará _ordenesSeleccionadas directamente
-                      // y forzará la reconstrucción del DropdownSearch.
-                      
                       if (_ordenesSeleccionadas.isEmpty) {
                         return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8.0),
@@ -251,18 +356,15 @@ class ConsumosScreenState extends State<ConsumosScreen> {
                       }
                       
                       return Container(
-                          height: 60, // Altura fija para la fila de reordenamiento
+                          height: 60,
                           alignment: Alignment.centerLeft,
                           child: ReorderableListView.builder(
                             scrollDirection: Axis.horizontal,
-                            // **USAMOS EL ESTADO**
                             itemCount: _ordenesSeleccionadas.length, 
                             onReorder: _onReorderOrdenes,
                             itemBuilder: (context, index) {
-                              // **USAMOS EL ESTADO**
                               final orden = _ordenesSeleccionadas[index];
                               return Tooltip(
-                                // **CLAVE:** El ValueKey debe ser consistente e inmutable
                                 key: ValueKey(orden.ordenTrabajoId), 
                                 message: 'Arrastra para reordenar columna: ${orden.numeroOrdenTrabajo}',
                                 child: Card(
@@ -311,7 +413,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
     );
   }
 
-  Widget _buildTablaExcelDinamica() {
+  Widget _buildTablaExcelDinamicaExpandida() {
     if (_cargandoMateriales) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -324,33 +426,32 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       margin: const EdgeInsets.all(8),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // 1. Calculamos el ancho mínimo requerido para el scroll horizontal
+          // Calcular el ancho mínimo requerido
           final int numOrdenes = _ordenesSeleccionadas.length;
-          // Ancho estimado: Código(80) + Art(150) + Ant(60) + Ordenes(90 c/u) + Total(70) + Desc(150)
           final double anchoMinimoRequerido = 80 + 150 + 60 + (numOrdenes * 90) + 70 + 150 + 20; 
           
-          // 2. Usamos el ancho de pantalla si es suficiente, sino usamos el mínimo requerido
-          final double anchoAUsar = constraints.maxWidth > anchoMinimoRequerido 
-              ? constraints.maxWidth 
-              : anchoMinimoRequerido;
+          // Calcular la altura necesaria para todas las filas
+          final int totalFilas = _tablaConsumo.filas.length + 1; // +1 para la fila de totales
+          final double alturaTotal = totalFilas * 50 + 60; // 50 por fila de datos, 60 para el encabezado
           
           return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              // ConstrainedBox asegura que si hay espacio de sobra, la tabla se estire al 100%
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                child: SizedBox(
-                  width: anchoAUsar, // Forzamos el ancho calculado
-                  child: DataTable(
-                    columnSpacing: 8,
-                    horizontalMargin: 8,
-                    dataRowHeight: 50,
-                    headingRowHeight: 60,
-                    columns: _buildColumnasDinamicas(),
-                    rows: _buildFilasDinamicas(),
-                  ),
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: constraints.maxWidth,
+                minHeight: alturaTotal,
+              ),
+              child: SizedBox(
+                width: anchoMinimoRequerido > constraints.maxWidth 
+                    ? anchoMinimoRequerido 
+                    : constraints.maxWidth,
+                child: DataTable(
+                  columnSpacing: 8,
+                  horizontalMargin: 8,
+                  dataRowHeight: 50,
+                  headingRowHeight: 60,
+                  columns: _buildColumnasDinamicas(),
+                  rows: _buildFilasDinamicas(),
                 ),
               ),
             ),
@@ -361,7 +462,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
   }
 
   List<DataColumn> _buildColumnasDinamicas() {
-    // Definimos anchos fijos para asegurar el centrado y que calcen con las filas
     const double widthAnt = 60;
     const double widthOrden = 90; 
     const double widthTotal = 70; 
@@ -383,7 +483,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
           ),
         ),
       ),
-      // Columna única de ANTERIORES con ancho fijo (60)
       const DataColumn(
         label: SizedBox( 
           width: widthAnt,
@@ -395,8 +494,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
           ),
         ),
       ),
-      // Columnas dinámicas por orden seleccionada con ancho fijo (90)
-      // El orden de estas columnas sigue el orden de _ordenesSeleccionadas, que es reordenable.
       for (var orden in _ordenesSeleccionadas)
         DataColumn(
           label: SizedBox( 
@@ -425,7 +522,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
             ),
           ),
         ),
-      // Columna TOTAL con ancho fijo (70)
       const DataColumn(
         label: SizedBox( 
           width: widthTotal,
@@ -437,11 +533,10 @@ class ConsumosScreenState extends State<ConsumosScreen> {
           ),
         ),
       ),
-      // Columna ARTÍCULO (Descripción S en la fila)
       const DataColumn(
         label: Center(
           child: Text(
-            'DESCRIPCIÓN', // Cambiado para mayor claridad
+            'DESCRIPCIÓN',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ),
@@ -454,73 +549,80 @@ class ConsumosScreenState extends State<ConsumosScreen> {
 
     // 1. FILAS DE MATERIALES
     for (var fila in _tablaConsumo.filas) {
-      // Re-calcular total de anteriores (suma de las 4 columnas "ant")
       double totalAnteriores = (fila.consumosAnteriores['ant_1'] ?? 0.0) +
                               (fila.consumosAnteriores['ant_2'] ?? 0.0) +
                               (fila.consumosAnteriores['ant_3'] ?? 0.0) +
                               (fila.consumosAnteriores['ant_4'] ?? 0.0);
 
       final celdas = <DataCell>[
-        // Código
         DataCell(Align(alignment: Alignment.centerLeft, child: Text(fila.codigo, style: const TextStyle(fontSize: 16)))),
-        // Artículo
         DataCell(Align(alignment: Alignment.centerLeft, child: Tooltip(message: fila.articulo, child: SizedBox(width: 150, child: Text(fila.articulo, style: const TextStyle(fontSize: 16), overflow: TextOverflow.visible))))),
         
-        // --- CELDA ANT (width: 60) ---
+        // Celda ANT clickeable para editar
         DataCell(
           SizedBox(
             width: 60, 
             child: Center(
-              child: Text(totalAnteriores.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+              child: InkWell(
+                onTap: () => _mostrarDialogoEditarAnteriores(fila),
+                child: Text(
+                  totalAnteriores.toStringAsFixed(0), 
+                  style: const TextStyle(fontSize: 16, color: Colors.blue),
+                ),
+              ),
             ),
           ),
         ),
       ];
 
-      double totalFila = totalAnteriores;
 
-      // --- CELDAS ORDENES (width: 90) ---
-      // Se itera sobre _ordenesSeleccionadas para mantener el orden reordenado.
       for (var orden in _ordenesSeleccionadas) {
         final ordenId = orden.ordenTrabajoId.toString();
-        // Usamos el Map de la fila, que contiene todos los consumos, y accedemos por la ID de la OT
-        final cantidad = fila.consumosPorOrden[ordenId] ?? 0.0;
-        totalFila += cantidad;
+        final controller = _controllers[fila.codigo]?[ordenId];
         
         celdas.add(
           DataCell(
             SizedBox(
-              width: 90, // MISMO ANCHO QUE EL HEADER
+              width: 90,
               child: Center(
-                child: Text(cantidad.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                  onChanged: (value) {
+                    // Actualizar valor cuando cambia el texto
+                    _actualizarValorDesdeController(fila.codigo, ordenId);
+                  },
+                ),
               ),
             ),
           ),
         );
       }
 
-      // --- CELDA TOTAL (width: 70) ---
       celdas.add(
         DataCell(
           SizedBox(
             width: 70, 
             child: Center(
-              // Usamos el total calculado al iterar, aunque la fila ya tiene totalFila
-              child: Text(totalFila.toStringAsFixed(0), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+              child: Text(fila.totalFila.toStringAsFixed(0), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
             ),
           ),
         ),
       );
 
-      // Descripción final
       celdas.add(DataCell(Align(alignment: Alignment.centerLeft, child: Tooltip(message: fila.descripcionS, child: SizedBox(width: 150, child: Text(fila.descripcionS, style: const TextStyle(fontSize: 16), overflow: TextOverflow.visible))))));
 
       filas.add(DataRow(cells: celdas));
     }
     
-    // 2. FILA DE TOTALES (Aplicar la misma lógica de anchos y orden)
+    // 2. FILA DE TOTALES
     if (_tablaConsumo.filas.isNotEmpty) {
-      // Re-calcular total de anteriores de la fila de totales
       double totalAntGeneral = (_tablaConsumo.totalesColumnas['ant_1'] ?? 0.0) + 
                               (_tablaConsumo.totalesColumnas['ant_2'] ?? 0.0) + 
                               (_tablaConsumo.totalesColumnas['ant_3'] ?? 0.0) + 
@@ -530,7 +632,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
         const DataCell(Align(alignment: Alignment.centerLeft, child: Text('TOTAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
         const DataCell(SizedBox.shrink()),
         
-        // Total ANTERIORES (width: 60)
         DataCell(
           SizedBox(
             width: 60, 
@@ -546,8 +647,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
 
       double totalGeneral = totalAntGeneral;
 
-      // Totales por orden (width: 90)
-      // Se itera sobre _ordenesSeleccionadas para mantener el orden reordenado.
       for (var orden in _ordenesSeleccionadas) {
         final ordenId = orden.ordenTrabajoId.toString();
         final totalColumna = _tablaConsumo.totalesColumnas[ordenId] ?? 0.0;
@@ -565,7 +664,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
         );
       }
 
-      // Total General (width: 70)
       celdasTotales.add(
         DataCell(
           SizedBox(
@@ -604,7 +702,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
             const SizedBox(height: 16),
             LayoutBuilder(
               builder: (context, constraints) {
-                // Responsivo: en pantallas pequeñas, mostrar en columna
                 if (constraints.maxWidth < 600) {
                   return Column(
                     children: [
@@ -621,7 +718,6 @@ class ConsumosScreenState extends State<ConsumosScreen> {
                   );
                 }
                 
-                // En pantallas más grandes, mostrar en fila
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

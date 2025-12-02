@@ -46,9 +46,9 @@ class FilaConsumoExcel {
   final String codigo;
   final String articulo;
   final String at;
-  final Map<String, double> consumosAnteriores; // Columnas fijas
-  final Map<String, double> consumosPorOrden; // Columnas dinámicas: ordenId -> cantidad
-  final double totalFila;
+  Map<String, double> consumosAnteriores; // Cambiado a mutable
+  Map<String, double> consumosPorOrden; // Cambiado a mutable
+  double totalFila; // Cambiado a mutable
   final String descripcionS;
   final String descripcionT;
 
@@ -66,9 +66,9 @@ class FilaConsumoExcel {
 
 class TablaConsumoExcel {
   List<FilaConsumoExcel> filas = [];
-  List<Orden> ordenesColumnas = []; // Órdenes para las columnas dinámicas
+  List<Orden> ordenesColumnas = [];
   Map<String, double> totalesColumnas = {};
-  Map<String, double> totalesFilas = {}; // Nuevo: totales por fila (material)
+  Map<String, double> totalesFilas = {};
   double totalEmbarcar = 18720.0;
   double totalEnvasado = 0.0;
   double mermaProceso = 0.0;
@@ -76,7 +76,7 @@ class TablaConsumoExcel {
 
   void calcularTotales() {
     totalesColumnas = {};
-    totalesFilas = {}; // Inicializar totales por fila
+    totalesFilas = {};
     
     // Inicializar columnas fijas
     for (int i = 1; i <= 4; i++) {
@@ -106,6 +106,9 @@ class TablaConsumoExcel {
         totalFila += valor;
       });
       
+      // Actualizar el totalFila de la fila
+      fila.totalFila = totalFila;
+      
       // Guardar total de la fila
       totalesFilas[fila.codigo] = totalFila;
       
@@ -116,5 +119,20 @@ class TablaConsumoExcel {
     totalEnvasado = totalesColumnas['total'] ?? 0.0;
     mermaProceso = totalEmbarcar - totalEnvasado;
     porcentajeMerma = totalEnvasado > 0 ? (mermaProceso / totalEnvasado) * 100 : 0.0;
+  }
+
+  // Nuevo método para actualizar un valor específico
+  void actualizarValor(String codigoMaterial, String columna, double nuevoValor) {
+    for (var fila in filas) {
+      if (fila.codigo == codigoMaterial) {
+        if (columna.startsWith('ant_')) {
+          fila.consumosAnteriores[columna] = nuevoValor;
+        } else {
+          fila.consumosPorOrden[columna] = nuevoValor;
+        }
+        break;
+      }
+    }
+    calcularTotales();
   }
 }

@@ -44,6 +44,29 @@ class OrdenServices {
     }
   }
 
+  Future<Orden> getOrdenPorId(BuildContext context, int ordenId, String token) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/$ordenId';
+    
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      
+      statusCode = 1;
+      return Orden.fromJson(resp.data);
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      rethrow; // Importante: relanzar la excepción para que se maneje en el llamador
+    }
+  }
+
   Future postOrden(BuildContext context, String token, Orden orden) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/';
@@ -491,6 +514,31 @@ class OrdenServices {
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future<int> copiarOrden(BuildContext context, int ordenId, String fecha, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/$ordenId/copiarOrdenTrabajo';
+    var data = {
+      "fechaOrdenTrabajo": fecha
+    };
+    try {
+      var header = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: header,
+        ),
+        data: data
+      );
+      statusCode = 1;
+      return resp.data['nuevaOrdenTrabajoId'];
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      return 0;
     }
   }
 }
