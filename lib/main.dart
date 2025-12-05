@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart'; // Añade este import
+
 import 'package:app_tec_sedel/config/config.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,10 +20,19 @@ List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    cameras = await availableCameras();
-  } on CameraException catch (e) {
-    print('Error al cargar cámaras: $e');
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    try {
+      cameras = await availableCameras();
+    } on CameraException catch (e) {
+      print('Error al cargar cámaras: $e');
+    }
+  } else {
+    cameras = [];
+    if (kIsWeb) {
+      print("Cámara deshabilitada en web.");
+    } else {
+      print("Cámara deshabilitada en esta plataforma.");
+    }
   }
 
   SystemChrome.setPreferredOrientations(
@@ -32,10 +45,15 @@ Future<void> main() async {
 
   await _requestLocationPermission();
 
-  runApp(ChangeNotifierProvider(
-    create: (_) => OrdenProvider(),
-    child: const MyApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => OrdenProvider(),),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..setFlavor(flavor),),
+      ],
+      child: const MyApp(),
+    )
+  );
 }
 
 Future<void> _requestLocationPermission() async {
@@ -55,7 +73,7 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: appTheme.getTheme(),
       debugShowCheckedModeBanner: false,
-      title: 'App Tecnicos SEDEL',
+      title: 'Resysol',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
