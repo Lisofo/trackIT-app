@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:app_tec_sedel/main.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/material.dart';
@@ -283,7 +284,11 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                           if (isAdmin) {
                             router.push('/monitorOrdenes');
                           } else {
-                            router.push('/ordenInterna');
+                            if (flavor == 'parabrisasejido') {
+                              router.push('/ordenInternaVertical');
+                            } else {
+                              router.push('/ordenInternaHorizontalw');
+                            }
                           }
                         },
                         child: Padding(

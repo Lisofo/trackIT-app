@@ -164,7 +164,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
           
           // Para automotora, cargar unidades también
-          if (flavor == 'automotoraargentina' && ordenExistente.unidad?.unidadId != null) {
+          if ((flavor == 'automotoraargentina' || flavor == 'parabrisasejido') && ordenExistente.unidad?.unidadId != null) {
             await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
           }
         }
@@ -318,7 +318,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
     if (resultado != null && resultado.clienteId != 0) {
       // Para automotora, cargar unidades también
-      if (flavor == 'automotoraargentina') {
+      if (flavor == 'automotoraargentina' || flavor == 'parabrisasejido') {
         List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
           context, 
           resultado.clienteId, 

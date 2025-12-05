@@ -55,6 +55,7 @@ class Orden {
   late int? clienteId;
   late bool? alerta;
   late int? tipoOrdenId;
+  late DateTime? finalizadaEn;
   
   // Nuevos campos del JSON
   late int? condOTId;
@@ -136,6 +137,7 @@ class Orden {
     this.bolsas,
     this.nvporc,
     this.visc,
+    this.finalizadaEn,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -193,6 +195,7 @@ class Orden {
     // Campos adicionales
     numBatches: json["numBatches"] as int?,
     iniciadaEn: json["iniciadaEn"] != null ? DateTime.tryParse(json["iniciadaEn"]) : null,
+    finalizadaEn: json["finalizadaEn"] != null ? DateTime.tryParse(json["finalizadaEn"]) : null,
     produccion: json["produccion"] as int?,
     bolsas: json["bolsas"] as String?,
     nvporc: json["nvporc"] as String?,
@@ -253,6 +256,7 @@ class Orden {
     // Campos adicionales
     "numBatches": numBatches,
     "iniciadaEn": iniciadaEn?.toIso8601String(),
+    "finalizadaEn": finalizadaEn?.toIso8601String(),
     "produccion": produccion,
     "bolsas": bolsas,
     "nvporc": nvporc,
@@ -362,6 +366,7 @@ class Orden {
     // Campos adicionales
     numBatches: null,
     iniciadaEn: null,
+    finalizadaEn: null,
     produccion: null,
     bolsas: null,
     nvporc: null,

@@ -38,10 +38,13 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
   final _ubicacionServices = UbicacionServices();
   final _ordenServices = OrdenServices();
   final _revisionServices = RevisionServices();
+  final menuProvider = MenuProvider();
   int? statusCode;
   final TextEditingController pinController = TextEditingController();
-  bool pedirConfirmacion = true;
+  bool pedirConfirmacion = false;
   bool isObscured = true;
+  late String siguienteEstado = '';
+  final ordenServices = OrdenServices();
   
 
   @override
@@ -52,8 +55,10 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
     token = context.read<AuthProvider>().token;
   }
 
-  void _mostrarDialogoConfirmacion(String accion) {
+  void _mostrarDialogoConfirmacion(String accion) async {
     pinController.text = '';
+    late int accionId = accion == "recibir" ? 21 : 18;
+    siguienteEstado = await ordenServices.siguienteEstadoOrden(context, orden, accionId, token);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -65,7 +70,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('¿Estás seguro que deseas $accion la orden?'),
+                  Text('¿Estás seguro que deseas pasar la OT al estado $siguienteEstado?'),
                   if(pedirConfirmacion)...[
                     const SizedBox(height: 5,),
                     CustomTextFormField(
@@ -106,9 +111,9 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   onPressed: () {
                     setState(() {
                       if (accion == 'iniciar') {
-                        cambiarEstado('EN PROCESO');
+                        cambiarEstado(accionId);
                       } else {
-                        cambiarEstado('FINALIZADA');
+                        cambiarEstado(accionId);
                       }
                     });
                     router.pop(context);
@@ -190,7 +195,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente!.nombre,
+                  orden.cliente?.nombre ?? 'Cliente no disponible',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -201,7 +206,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente!.codCliente,
+                  orden.cliente?.codCliente ?? 'Código no disponible',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -230,7 +235,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   ],
                 ),
                 Text(
-                  orden.cliente!.direccion,
+                  orden.cliente?.direccion ?? 'Dirección no disponible',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -241,7 +246,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  orden.cliente!.telefono1,
+                  orden.cliente?.telefono1 ?? 'Teléfono no disponible',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(
@@ -270,7 +275,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                    Text(orden.tipoOrden!.descripcion.toString(),
+                    Text(orden.tipoOrden?.descripcion?.toString() ?? 'No disponible',
                         style: const TextStyle(fontSize: 16))
                   ],
                 ),
@@ -281,10 +286,17 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   'Servicios: ',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                for (var i = 0; i < orden.servicio!.length; i++) ...[
-                  Text(
-                    orden.servicio![i].descripcion,
-                    style: const TextStyle(fontSize: 16),
+                if (orden.servicio != null && orden.servicio!.isNotEmpty) ...[
+                  for (var i = 0; i < orden.servicio!.length; i++) ...[
+                    Text(
+                      orden.servicio![i].descripcion,
+                      style: const TextStyle(fontSize: 16),
+                    )
+                  ]
+                ] else ...[
+                  const Text(
+                    'No hay servicios asignados',
+                    style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   )
                 ],
                 const SizedBox(
@@ -352,22 +364,22 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
             children: [
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: ((marcaId != 0 && orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('iniciar') : null,
+                onPressed: ((orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('recibir') : null,
                 text: 'Iniciar',
                 tamano: 18,
-                disabled: (!(marcaId != 0 && orden.estado == 'PENDIENTE') || ejecutando),
+                disabled: (!(orden.estado == 'PENDIENTE') || ejecutando),
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
+                onPressed: orden.estado == 'RECIBIDO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
                 text: 'Finalizar',
                 tamano: 18,
-                disabled: !(marcaId != 0 && orden.estado == 'EN PROCESO'),
+                disabled: !(orden.estado == 'EN PROCESO'),
               ),
               IconButton(
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => volverAPendiente(orden) : null,
+                onPressed: orden.estado == 'RECIBIDO' ? () => volverAPendiente(orden) : null,
                 icon: Icon(Icons.backspace,
-                  color: marcaId != 0 && orden.estado == 'EN PROCESO' ? colors.primary : Colors.grey
+                  color: orden.estado == 'RECIBIDO' ? colors.primary : Colors.grey
                 )
               ),
             ],
@@ -379,7 +391,14 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
 
   Widget _listaItems() {
     final colors = Theme.of(context).colorScheme;
+    
+    // Verifica si tipoOrden es nulo antes de usarlo
+    if (orden.tipoOrden?.codTipoOrden == null) {
+      return const Center(child: Text('No se puede cargar el menú'));
+    }
+    
     final String? tipoOrden = orden.tipoOrden!.codTipoOrden;
+    
     return FutureBuilder(
       future: menuProvider.cargarData(context, tipoOrden!, token),
       initialData: const [],
@@ -416,23 +435,26 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
     );
   }
 
-  cambiarEstado(String estado) async {
+  cambiarEstado(int accionId) async {
     if (!ejecutando) {
       ejecutando = true;
       await obtenerUbicacion();
       if (statusCode == 1){
+        // ignore: unused_local_variable
         int ubicacionId = ubicacion.ubicacionId;
+        // ignore: unused_local_variable
         int uId = context.read<AuthProvider>().uId;
         String token = context.read<AuthProvider>().token;
-        await _ordenServices.patchOrden(context, orden, estado, ubicacionId, token);
+        await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, token);
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
         if (statusCode == 1) {
-          if (estado == 'EN PROCESO') {
-            await _revisionServices.postRevision(context, uId, orden, token);
+          if (accionId == 21) {
+            // await _revisionServices.postRevision(context, uId, orden, token);
             statusCode = await _revisionServices.getStatusCode();
             await _revisionServices.resetStatusCode();
             if (statusCode == 1) {
+              orden.estado == siguienteEstado;
               await Carteles.showDialogs(context, 'Estado cambiado correctamente', false, false, false);
             }
           }
@@ -514,9 +536,18 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
     );
   }
 
-   _launchMaps(String coordenadas) async {
+   _launchMaps(String? coordenadas) async {
+    // Verifica si las coordenadas son nulas
+    if (coordenadas == null || coordenadas.isEmpty) {
+      return;
+    }
+    
     // Coordenadas a abrir en el mapa
     var coords = coordenadas.split(',');
+    if (coords.length < 2) {
+      return;
+    }
+    
     String latitude = coords[0]; // Latitud de ejemplo
     String longitude = coords[1]; // Longitud de ejemplo
 

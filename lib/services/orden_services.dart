@@ -541,4 +541,46 @@ class OrdenServices {
       return 0;
     }
   }
+
+  Future getOrdenCampanita(BuildContext context, String desde, String hasta, String estado, int limit, String token) async {
+    bool yaTieneFiltro = false;
+    String link = '${apiLink}api/v1/ordenes';
+    String linkFiltrado = link += '?sort=fechaDesde&limit=$limit';
+    yaTieneFiltro = true;
+    if (desde != '') {
+      linkFiltrado += '&fechaDesde=$desde';
+      yaTieneFiltro = true;
+    }
+    if (hasta != '') {
+      yaTieneFiltro ? linkFiltrado += '&' : linkFiltrado += '?';
+      linkFiltrado += 'fechaHasta=$hasta';
+      yaTieneFiltro = true;
+    }
+    if (estado != '') {
+      yaTieneFiltro ? linkFiltrado += '&' : linkFiltrado += '?';
+      linkFiltrado += 'estado=$estado';
+      yaTieneFiltro = true;
+    }
+
+    print(linkFiltrado);
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      final List<dynamic> ordenList = resp.data;
+      var retorno = ordenList.map((obj) => Orden.fromJson(obj)).toList();
+      print(retorno.length);
+      return retorno;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
 }

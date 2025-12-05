@@ -26,5 +26,5 @@ export 'package:app_tec_sedel/pages/monitor/monitor_materiales.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_tareas.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_tecnico.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_vehiculo.dart';
-export 'package:app_tec_sedel/pages/monitorOrdenes/monitor_ordenes.dart';
+export 'package:app_tec_sedel/pages/monitorOrdenes/crear_editar_orden.dart';
 export 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';
