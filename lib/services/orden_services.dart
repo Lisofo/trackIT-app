@@ -336,13 +336,16 @@ class OrdenServices {
     }
   }
 
-  Future patchOrdenCambioEstado(BuildContext context, Orden orden, int accionId, String token) async {
+  Future patchOrdenCambioEstado(BuildContext context, Orden orden, int accionId, int ubicacionId, String token) async {
     String link = apiLink;
     link += 'api/v1/ordenes/${orden.ordenTrabajoId}';
 
     try {
       var headers = {'Authorization': token};
-      var data = ({"accionId": accionId});
+      var data = ({
+        "accionId": accionId,
+        "ubicacionId": ubicacionId
+      });
       var resp = await _dio.request(
         link,
         options: Options(

@@ -944,7 +944,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     final colors = Theme.of(context).colorScheme;
     final String? tipoOrden = orden.tipoOrden?.codTipoOrden.toString();
     return FutureBuilder(
-      future: menuProvider.cargarData(context, tipoOrden!, token),
+      future: menuProvider.cargarDataDrawer(context, tipoOrden!, token),
       initialData: const [],
       builder: (context, snapshot) {
         if(snapshot.connectionState == ConnectionState.waiting) {
@@ -983,7 +983,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     if (!ejecutando) {
       ejecutando = true;
       String token = context.read<AuthProvider>().token;
-      await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, token);
+      await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacion.ubicacionId, token);
       statusCode = await _ordenServices.getStatusCode();
       await _ordenServices.resetStatusCode();
       if(statusCode == 1){

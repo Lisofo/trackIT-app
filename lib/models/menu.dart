@@ -92,3 +92,42 @@ class Opcion {
     tipoOrden = '';
   }
 }
+
+DrawerMenu drawerMenuFromMap(String str) => DrawerMenu.fromJson(json.decode(str));
+
+class DrawerMenu {
+  late String nombreApp;
+  late List<DrawerOpcion> opciones;
+
+  DrawerMenu({
+    required this.nombreApp,
+    required this.opciones,
+  });
+
+  factory DrawerMenu.fromJson(Map<String, dynamic> json) => DrawerMenu(
+    nombreApp: json["nombreApp"],
+    opciones: List<DrawerOpcion>.from(
+        json["rutas"].map((x) => DrawerOpcion.fromJson(x))),
+  );
+}
+
+class DrawerOpcion {
+  late String ruta;
+  late String icon;
+  late String texto;
+  late String? tipoOrden;
+
+  DrawerOpcion({
+    required this.ruta,
+    required this.icon,
+    required this.texto,
+    this.tipoOrden,
+  });
+
+  factory DrawerOpcion.fromJson(Map<String, dynamic> json) => DrawerOpcion(
+    ruta: json["ruta"] as String? ?? '',
+    icon: json["icon"] as String? ?? '',
+    texto: json["texto"] as String? ?? '',
+    tipoOrden: json["tipoOrden"] as String? ?? '',
+  );
+}

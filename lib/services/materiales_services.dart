@@ -220,13 +220,13 @@ class MaterialesServices {
     
     String link = '${apiUrl}api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/materiales';
     var data = ({
-      "idsPlagas": plagasIds,
+      "idsPlagas": [],
       "comentario": "",
       "cantidad": revisionMaterial.cantidad,
       "idMaterialLote": revisionMaterial.lote?.materialLoteId == 0 ? null : revisionMaterial.lote?.materialLoteId,
       "idMetodoAplicacion": revisionMaterial.metodoAplicacion.metodoAplicacionId,
-      "ubicacion": revisionMaterial.ubicacion,
-      "areaCobertura": revisionMaterial.areaCobertura,
+      "ubicacion": '',
+      "areaCobertura": '',
       "idMaterial": revisionMaterial.material.materialId
     });
 

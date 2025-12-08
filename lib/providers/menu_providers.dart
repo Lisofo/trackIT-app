@@ -6,32 +6,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 class MenuProvider {
-   List<dynamic> opciones = [];
-  List<Ruta> rutas = []; // CAMBIÉ: List<Opcion> por List<Ruta>
+  List<dynamic> opciones = [];
+  List<Ruta> rutas = [];
   MenuProvider();
   List<dynamic> opciones2 = [];
+  List<DrawerOpcion> drawerOpciones = []; // NUEVO: Para drawer
 
-  Future<List<dynamic>> cargarData(BuildContext context, String codTipoOrden, String token) async {
-    final Menu? menu = await MenuServices().getMenu(context, token);
-    if(menu != null){
-      rutas = menu.rutas;
-      // CORRECCIÓN: Buscar en las opciones de cada ruta
-      List<Opcion> opcionesFiltradas = [];
-      
-      for (var ruta in rutas) {
-        for (var opcion in ruta.opciones) {
-          if (opcion.tipoOrden != null && opcion.tipoOrden!.contains(codTipoOrden)) {
-            opcionesFiltradas.add(opcion);
-          }
-        }
-      }
-      
-      return opcionesFiltradas;
-    } else{
+  // Método para cargar datos del drawer (usado en orden_interna_vertical)
+  Future<List<DrawerOpcion>> cargarDataDrawer(BuildContext context, String codTipoOrden, String token) async {
+    final DrawerMenu? drawerMenu = await MenuServices().getDrawer(context, token);
+    if(drawerMenu != null){
+      // Filtrar opciones por tipoOrden si se especifica
+      return drawerMenu.opciones;
+    } else {
       return [];
     }
   }
 
+  // Método original para cargar datos administrativos (mantener para compatibilidad)
   Future<List<dynamic>> cargarDataAdm(BuildContext context, String token) async {
     final menu = await MenuServices().getMenu(context, token);
     if(menu != null){
@@ -44,7 +36,6 @@ class MenuProvider {
 
   Future<List<dynamic>> cargarDataJson() async {
     final resp = await rootBundle.loadString('data/menu_opts.json');
-
     Map dataMap = json.decode(resp);
     opciones2 = dataMap['rutas'];
     return opciones2;

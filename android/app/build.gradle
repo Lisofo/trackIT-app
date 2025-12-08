@@ -102,12 +102,12 @@ android {
         automotoraargentinaQa {
             res.srcDirs = ['src/automotoraargentina/res']
         }
-        // parabrisasejidoProd {
-        //     res.srcDirs = ['src/parabrisasejido/res']
-        // }
-        // parabrisasejidoQa {
-        //     res.srcDirs = ['src/parabrisasejido/res']
-        // }
+        parabrisasejidoProd {
+            res.srcDirs = ['src/parabrisasejido/res']
+        }
+        parabrisasejidoQa {
+            res.srcDirs = ['src/parabrisasejido/res']
+        }
         resysolQa {
             res.srcDirs = ['src/resysol/res']
         }

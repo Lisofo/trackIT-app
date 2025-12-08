@@ -28,8 +28,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
   List<Materiales> materiales = [];
   List<MetodoAplicacion> metodosAplicacion = [];
   late List<Lote> lotes = [];
-  late List<Plaga> plagas = [];
-  late List<Plaga> plagasSeleccionadas = [];
   late List<RevisionMaterial> revisionMaterialesList = [];
   late Materiales selectedMaterial = Materiales.empty();
   late Lote? selectedLote = Lote.empty();
@@ -133,18 +131,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
                   },
                 ),
                 const SizedBox(height: 16,),
-                const Text('* Plagas:'),
-                DropdownSearch<Plaga>.multiSelection(
-                  items: plagas,
-                  popupProps: const PopupPropsMultiSelection.menu(
-                    // showSelectedItems: true,
-                    // disabledItemFn: (String s) => s.startsWith('I'),
-                  ),
-                  onChanged: (value) {
-                    plagasSeleccionadas = (value);
-                  },
-                ),
-                const SizedBox(height: 16),
                 const Text('* Ubicación:'),
                 TextField(
                   onChanged: (value) {
@@ -179,7 +165,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                       tieneLoteId = true;
                     }
                   }
-                  if(cantidad != '' && ubicacion != '' && plagasSeleccionadas.isNotEmpty && (noTieneLotes || tieneLoteId) && (metodosAplicacion.isNotEmpty && selectedMetodo!.metodoAplicacionId != 0)){
+                  if(cantidad != '' && ubicacion != '' && (noTieneLotes || tieneLoteId) && (metodosAplicacion.isNotEmpty && selectedMetodo!.metodoAplicacionId != 0)){
                     late List<int> plagasIds = [];
                     final RevisionMaterial nuevaRevisionMaterial =
                       RevisionMaterial(
@@ -190,14 +176,11 @@ class _MaterialesPageState extends State<MaterialesPage> {
                         comentario: '',
                         ubicacion: ubicacion,//
                         areaCobertura: areaCobertura,
-                        plagas: plagasSeleccionadas,//
+                        plagas: [],//
                         material: material,
                         lote: selectedLote,//
                         metodoAplicacion: selectedMetodo!//
                       );
-                    for (var i = 0; i < plagasSeleccionadas.length; i++) {
-                      plagasIds.add(plagasSeleccionadas[i].plagaId);
-                    }
                     await _materialesServices.postRevisionMaterial(context, orden, plagasIds, nuevaRevisionMaterial, token);
                     statusCodeRevision = await _materialesServices.getStatusCode();
                     await _materialesServices.resetStatusCode();
@@ -290,7 +273,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                     showSearchBox: true, searchDelay: Duration.zero
                   ),
                   onChanged: (newValue) async {
-                    if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                    if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('No puede de ingresar o editar datos.'),
                       ));
@@ -301,17 +284,15 @@ class _MaterialesPageState extends State<MaterialesPage> {
                       estaBuscando = true;
                     });
                     try {
-                      plagas = await PlagaServices().getPlagas(context, token);
                       lotes = await MaterialesServices().getLotes(context, selectedMaterial.materialId, token);
                       metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
                     } catch (e) {
-                      plagas = [];
                       lotes = [];
                       metodosAplicacion = [];
                       estaBuscando = false;
                       setState(() {});
                     }
-                    if(plagas.isNotEmpty && metodosAplicacion.isNotEmpty){
+                    if(metodosAplicacion.isNotEmpty){
                       bool resultado = await _showMaterialDetails(context, selectedMaterial);
                       setState(() {
                         estaBuscando = resultado;
@@ -355,7 +336,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                             key: Key(item.toString()),
                             direction: DismissDirection.endToStart,
                             confirmDismiss: (DismissDirection direction) async {
-                              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                              if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                   content: Text('No puede de ingresar o editar datos.'),
                                 ));
@@ -423,7 +404,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                         ? () async {
                                           estaBuscando = true;
                                           setState(() {});
-                                            if (marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
+                                            if ((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 const SnackBar(
                                                   content: Text('No puede ingresar o editar datos.'),
@@ -433,19 +414,17 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                               return Future.value(false);
                                             }
                                             try {
-                                              plagas = await PlagaServices().getPlagas(context, token);
                                               lotes = await MaterialesServices().getLotes(context, item.material.materialId, token);
                                               metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
                                               estaBuscando = false;
                                               setState(() {});  
                                             } catch (e) {
-                                              plagas = [];
                                               lotes = [];
                                               metodosAplicacion = [];
                                               estaBuscando = false;
                                               setState(() {});
                                             }
-                                            if(plagas.isNotEmpty && lotes.isNotEmpty && metodosAplicacion.isNotEmpty){
+                                            if(lotes.isNotEmpty && metodosAplicacion.isNotEmpty){
                                               bool resultado = await editMaterial(context, item);
                                               setState(() {
                                                 estaBuscando = resultado;
@@ -459,7 +438,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                     ),
                                     IconButton(
                                       onPressed: () async {
-                                        if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                             content: Text('No puede de ingresar o editar datos.'),
                                           ));
@@ -634,7 +613,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
       ubicacionController.text = material.ubicacion;
       areaController.text = material.areaCobertura;
       cantidadController.text = material.cantidad.toString();
-      plagasSeleccionadas = material.plagas;
     } else {
       selectedLote = Lote.empty();
       selectedMetodo = MetodoAplicacion.empty();
@@ -693,20 +671,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
                     });
                   },
                 ),
-                const SizedBox(height: 16,),
-                const Text('* Plagas:'),
-                DropdownSearch<Plaga>.multiSelection(
-                  items: plagas,
-                  selectedItems: material.plagas,
-                  itemAsString: (Plaga p) => p.descripcion,
-                  compareFn: (Plaga p1, Plaga p2) => p1.plagaId == p2.plagaId,
-                  popupProps: const PopupPropsMultiSelection.menu(
-                    showSelectedItems: true,
-                  ),
-                  onChanged: (value) {
-                    plagasSeleccionadas = (value);
-                  },
-                ),
                 const SizedBox(height: 16),
                 const Text('* Ubicación:'),
                 TextFormField(
@@ -741,7 +705,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                       tieneLoteId = true;
                     }
                   }
-                  if(cantidad != '' && ubicacion != '' && plagasSeleccionadas.isNotEmpty && (noTieneLotes || tieneLoteId) && (metodosAplicacion.isNotEmpty && selectedMetodo!.metodoAplicacionId != 0)){
+                  if(cantidad != '' && ubicacion != '' && (noTieneLotes || tieneLoteId) && (metodosAplicacion.isNotEmpty && selectedMetodo!.metodoAplicacionId != 0)){
                     late List<int> plagasIds = [];
                     final RevisionMaterial nuevaRevisionMaterial =
                       RevisionMaterial(
@@ -752,14 +716,11 @@ class _MaterialesPageState extends State<MaterialesPage> {
                         comentario: '',
                         ubicacion: ubicacion,//
                         areaCobertura: areaCobertura,
-                        plagas: plagasSeleccionadas,//
+                        plagas: [],//
                         material: material.material,
                         lote: selectedLote,//
                         metodoAplicacion: selectedMetodo!//
                       );
-                    for (var i = 0; i < plagasSeleccionadas.length; i++) {
-                      plagasIds.add(plagasSeleccionadas[i].plagaId);
-                    }
                     await _materialesServices.putRevisionMaterial(context, orden, plagasIds, nuevaRevisionMaterial, token);
                     statusCodeRevision = await _materialesServices.getStatusCode();
                     await _materialesServices.resetStatusCode();
@@ -770,7 +731,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
                       areaController.text = '';
                       cantidadController.text = '';
                       revisionMaterialesList = await _materialesServices.getRevisionMateriales(context, orden, token);
-                      plagas = [];
                       lotes = [];
                       metodosAplicacion = [];
                     }                   

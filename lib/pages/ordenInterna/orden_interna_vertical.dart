@@ -135,10 +135,10 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
       child: Scaffold(
         backgroundColor: Colors.grey.shade200,
         appBar: AppBar(
+          foregroundColor: colors.onPrimary,
           backgroundColor: colors.primary,
           title: Text(
             'Orden ${orden.ordenTrabajoId}',
-            style: const TextStyle(color: Colors.white),
           ),
           actions: [
             IconButton(
@@ -146,7 +146,6 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                 Navigator.pop(context);
               },
               icon: const Icon(Icons.arrow_back_ios_new),
-              color: Colors.white,
             )
           ],
         ),
@@ -400,7 +399,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
     final String? tipoOrden = orden.tipoOrden!.codTipoOrden;
     
     return FutureBuilder(
-      future: menuProvider.cargarData(context, tipoOrden!, token),
+      future: menuProvider.cargarDataDrawer(context, tipoOrden!, token),
       initialData: const [],
       builder: (context, snapshot) {
         if(snapshot.connectionState == ConnectionState.waiting) {
@@ -410,12 +409,12 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No hay datos disponibles'));
         } else {
-          final List<Opcion> rutas = snapshot.data as List<Opcion>;
+          final List<DrawerOpcion> rutas = snapshot.data as List<DrawerOpcion>;
 
           return ListView.separated(
             itemCount: rutas.length,
             itemBuilder: (context, i) {
-              final Opcion ruta = rutas[i];
+              final ruta = rutas[i];
               return ListTile(
                 title: Text(ruta.texto),
                 leading: getIcon(ruta.icon, context),
@@ -440,12 +439,11 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
       ejecutando = true;
       await obtenerUbicacion();
       if (statusCode == 1){
-        // ignore: unused_local_variable
         int ubicacionId = ubicacion.ubicacionId;
         // ignore: unused_local_variable
         int uId = context.read<AuthProvider>().uId;
         String token = context.read<AuthProvider>().token;
-        await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, token);
+        await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacionId, token);
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
         if (statusCode == 1) {
