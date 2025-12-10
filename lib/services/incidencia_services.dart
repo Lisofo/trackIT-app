@@ -1,6 +1,7 @@
 import 'package:app_tec_sedel/config/config.dart';
 import 'package:app_tec_sedel/models/incidencia.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/revision_incidencia.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -139,7 +140,7 @@ class IncidenciaServices {
     }
   }
 
-  Future postRevisionIncidencia(BuildContext context, Orden orden, Incidencia inc, String token) async {
+  Future postRevisionIncidencia(BuildContext context, Orden orden, RevisionIncidencia inc, String token) async {
     String link = apiUrl;
     link += 'api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/incidencias';
     var data = inc.toMap();
@@ -164,9 +165,9 @@ class IncidenciaServices {
     }
   }
 
-  Future putRevisionIncidencia(BuildContext context, Orden orden, Incidencia inc, String token) async {
+  Future putRevisionIncidencia(BuildContext context, Orden orden, RevisionIncidencia inc, String token) async {
     String link = apiUrl;
-    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/incidencias/${inc.incidenciaId}';
+    link += 'api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/incidencias/${inc.otIncidenciaId}';
     var data = inc.toMap();
     try {
       var headers = {'Authorization': token};
