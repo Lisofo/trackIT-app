@@ -221,10 +221,10 @@ class MaterialesServices {
     String link = '${apiUrl}api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/materiales';
     var data = ({
       "idsPlagas": [],
-      "comentario": "",
+      "comentario": revisionMaterial.comentario,
       "cantidad": revisionMaterial.cantidad,
       "idMaterialLote": revisionMaterial.lote?.materialLoteId == 0 ? null : revisionMaterial.lote?.materialLoteId,
-      "idMetodoAplicacion": revisionMaterial.metodoAplicacion.metodoAplicacionId,
+      "idMetodoAplicacion": revisionMaterial.metodoAplicacion.metodoAplicacionId == 0 ? null : revisionMaterial.metodoAplicacion.metodoAplicacionId,
       "ubicacion": '',
       "areaCobertura": '',
       "idMaterial": revisionMaterial.material.materialId
@@ -257,13 +257,13 @@ class MaterialesServices {
     
     String link = '${apiUrl}api/v1/ordenes/${orden.ordenTrabajoId}/revisiones/${orden.otRevisionId}/materiales/${revisionMaterial.otMaterialId}';
     var data = ({
-      "idsPlagas": plagasIds,
-      "comentario": "",
+      "idsPlagas": [],
+      "comentario": revisionMaterial.comentario,
       "cantidad": revisionMaterial.cantidad,
       "idMaterialLote": revisionMaterial.lote?.materialLoteId == 0 ? null : revisionMaterial.lote?.materialLoteId,
-      "idMetodoAplicacion": revisionMaterial.metodoAplicacion.metodoAplicacionId,
-      "ubicacion": revisionMaterial.ubicacion,
-      "areaCobertura": revisionMaterial.areaCobertura,
+      "idMetodoAplicacion": revisionMaterial.metodoAplicacion.metodoAplicacionId == 0 ? null : revisionMaterial.metodoAplicacion.metodoAplicacionId,
+      "ubicacion": '',
+      "areaCobertura": '',
       "idMaterial": revisionMaterial.material.materialId
     });
 
