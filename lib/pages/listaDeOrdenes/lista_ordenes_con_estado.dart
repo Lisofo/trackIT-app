@@ -39,7 +39,7 @@ class _ListaOrdenesConEstadoState extends State<ListaOrdenesConEstado> {
     if (groupValue == 0) {
       return ordenes.where((orden) => orden.estado == 'PENDIENTE').toList();
     } else if (groupValue == 1) {
-      return ordenes.where((orden) => orden.estado == 'EN PROCESO').toList();
+      return ordenes.where((orden) => (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO')).toList();
     } else if (groupValue == 2) {
       return ordenes.where((orden) => orden.estado == 'FINALIZADA').toList();
     }

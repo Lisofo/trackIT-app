@@ -195,12 +195,11 @@ class _ResumenOrdenState extends State<ResumenOrden> {
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => _mostrarDialogoConfirmacion('finalizar') : null,
+                onPressed: (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO') ? () => _mostrarDialogoConfirmacion('finalizar') : null,
                 text: 'Finalizar',
                 tamano: 18,
                 disabled: !yaCargo,
               ),
-              
             ],
           ),
         ),

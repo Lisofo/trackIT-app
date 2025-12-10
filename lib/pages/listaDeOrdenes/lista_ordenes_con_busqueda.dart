@@ -96,7 +96,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       
       // Obtener la unidad y cliente seleccionados del provider
       Map<String, dynamic> queryParams = {};
-      queryParams['sort'] = 'fechaDesde DESC';
+      queryParams['sort'] = 'fechaDesde';
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
@@ -546,14 +546,15 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             style: TextStyle(color: Colors.white),
           ),
           actions: [
-            IconButton(
-              onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setOrden(Orden.empty());
-                router.push('/monitorOrdenes');
-              },
-              icon: const Icon(Icons.add),
-              tooltip: "Nueva orden",
-            ),
+            if (isAdmin)
+              IconButton(
+                onPressed: () {
+                  Provider.of<OrdenProvider>(context, listen: false).setOrden(Orden.empty());
+                  router.push('/monitorOrdenes');
+                },
+                icon: const Icon(Icons.add),
+                tooltip: "Nueva orden",
+              ),
             IconButton(
               onPressed: () async {
                 logout();

@@ -323,7 +323,7 @@ class _EntradSalidaState extends State<EntradSalida> {
             );
           },
         );
-        ordenesEnProceso = ordenesEnProceso.where((orden) => orden.estado == 'EN PROCESO').toList();
+        ordenesEnProceso = ordenesEnProceso.where((orden) => (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO')).toList();
         if (ordenesEnProceso.isEmpty && confirmacion == true) {
           await obtenerUbicacion();
           if (statusCode == 1){

@@ -36,7 +36,6 @@ class OrdenServices {
       statusCode = 1;
       final List<dynamic> ordenList = resp.data;
       var retorno = ordenList.map((obj) => Orden.fromJson(obj)).toList();
-      print(retorno.length);
       return retorno;
     } catch (e) {
       statusCode = 0;

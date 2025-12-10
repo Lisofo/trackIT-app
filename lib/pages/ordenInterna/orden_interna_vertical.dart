@@ -373,7 +373,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                 onPressed: orden.estado == 'RECIBIDO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
                 text: 'Finalizar',
                 tamano: 18,
-                disabled: !(orden.estado == 'EN PROCESO'),
+                disabled: !((orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO')),
               ),
               IconButton(
                 onPressed: orden.estado == 'RECIBIDO' ? () => volverAPendiente(orden) : null,

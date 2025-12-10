@@ -1,10 +1,15 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:app_tec_sedel/models/incidencia.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
+import 'package:app_tec_sedel/services/incidencia_services.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:dropdown_search/dropdown_search.dart';
+import 'package:provider/provider.dart';
 
 class CameraGalleryScreen extends StatefulWidget {
   const CameraGalleryScreen({super.key});
@@ -21,17 +26,52 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   bool _isTakingPicture = false;
   String? _errorMessage;
   
-  // Nuevas variables para el dropdown y comentario
-  List<String> selectedObservations = [];
+  // Variables para incidencias
+  List<Incidencia> selectedObservations = [];
+  List<Incidencia> observations = [];
+  bool _isLoadingObservations = false;
   final TextEditingController commentController = TextEditingController();
+  final IncidenciaServices _incidenciaServices = IncidenciaServices();
   
-  // Lista de observaciones inventadas
-  final List<String> observations = List.generate(20, (index) => 'Observación ${index + 1}');
+  // Nueva variable para dropdown_search
+  bool isDropdownSearchOpen = false;
 
   @override
   void initState() {
     super.initState();
     _isLoading = false;
+    // Cargar las incidencias al inicializar
+    _loadIncidencias();
+  }
+
+  // Método para cargar incidencias desde el servicio
+  Future<void> _loadIncidencias() async {
+    setState(() {
+      _isLoadingObservations = true;
+    });
+
+    try {
+      final token = context.read<AuthProvider>().token;
+      
+      final incidenciasList = await _incidenciaServices.getIncidencias(context, token);
+      
+      if (_incidenciaServices.statusCode == 1) {
+        setState(() {
+          observations = incidenciasList ?? [];
+          _isLoadingObservations = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingObservations = false;
+          _errorMessage = "Error al cargar las incidencias";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingObservations = false;
+        _errorMessage = "Error al cargar las incidencias: $e";
+      });
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -241,6 +281,13 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       return;
     }
 
+    // Preparar datos de incidencias
+    selectedObservations
+        .map((incidencia) => incidencia.toMap())
+        .toList();
+    
+    final String comentario = commentController.text;
+
     try {
       showDialog(
         context: context,
@@ -249,12 +296,16 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
           return Dialog(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const CircularProgressIndicator(),
-                  const SizedBox(width: 20),
+                  const SizedBox(height: 20),
                   Text("Enviando ${images.length} imágenes..."),
+                  if (selectedObservations.isNotEmpty)
+                    Text("Con ${selectedObservations.length} incidencias"),
+                  if (comentario.isNotEmpty)
+                    Text("Con comentario: ${comentario.length > 30 ? '${comentario.substring(0, 30)}...' : comentario}"),
                 ],
               ),
             ),
@@ -263,13 +314,24 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       );
 
       // Simular envío a API (reemplaza con tu lógica real)
+      // Aquí puedes enviar: images, incidenciasData, y comentario
       await Future.delayed(const Duration(seconds: 2));
       
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${images.length} imágenes enviadas exitosamente'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${images.length} imágenes enviadas exitosamente'),
+              if (selectedObservations.isNotEmpty)
+                Text('${selectedObservations.length} incidencias asociadas'),
+              if (comentario.isNotEmpty)
+                const Text('Comentario incluido'),
+            ],
+          ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
@@ -280,7 +342,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al enviar imágenes: $e'),
+          content: Text('Error al enviar datos: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -405,71 +467,203 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Observaciones',
+              'Incidencias',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            InputDecorator(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  hint: const Text('Selecciona observaciones'),
-                  value: null,
-                  items: observations.map((String observation) {
-                    return DropdownMenuItem<String>(
-                      value: observation,
-                      child: StatefulBuilder(
-                        builder: (BuildContext context, StateSetter setState) {
-                          return CheckboxListTile(
-                            title: Text(observation),
-                            value: selectedObservations.contains(observation),
-                            onChanged: (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  selectedObservations.add(observation);
-                                } else {
-                                  selectedObservations.remove(observation);
-                                }
-                              });
-                              setState(() {}); // Actualizar el widget principal
-                            },
-                            controlAffinity: ListTileControlAffinity.leading,
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                          );
-                        },
+            
+            if (_isLoadingObservations)
+              const Center(child: CircularProgressIndicator())
+            else if (observations.isEmpty)
+              const Text(
+                'No hay incidencias disponibles',
+                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              )
+            else
+              // DropdownSearch con selección múltiple usando Incidencia
+              DropdownSearch<Incidencia>.multiSelection(
+                dropdownBuilder: (context, selectedItems) {
+                  return Text(
+                    'Selecciona incidencias',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  );
+                },
+                popupProps: PopupPropsMultiSelection.menu(
+                  isFilterOnline: true,
+                  showSelectedItems: true,
+                  showSearchBox: true,
+                  searchFieldProps: TextFieldProps(
+                    decoration: InputDecoration(
+                      hintText: 'Buscar incidencias...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  menuProps: const MenuProps(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                    ),
+                  ),
+                  // Personalizar el ítem con checkbox
+                  itemBuilder: (context, item, isSelected) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: isSelected,
+                            onChanged: (_) {},
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.descripcion,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isSelected 
+                                      ? Theme.of(context).primaryColor 
+                                      : Colors.black,
+                                    fontWeight: isSelected 
+                                      ? FontWeight.w600 
+                                      : FontWeight.normal,
+                                  ),
+                                ),
+                                if (item.codIncidencia.isNotEmpty)
+                                  Text(
+                                    'Código: ${item.codIncidencia}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
-                  }).toList(),
-                  onChanged: (String? value) {
-                    // El cambio se maneja dentro de cada CheckboxListTile
+                  },
+                  // Animación al abrir/cerrar
+                  containerBuilder: (context, popupWidget) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: isDropdownSearchOpen 
+                        ? MediaQuery.of(context).size.height * 0.5 
+                        : null,
+                      child: popupWidget,
+                    );
                   },
                 ),
+                dropdownDecoratorProps: DropDownDecoratorProps(
+                  dropdownSearchDecoration: InputDecoration(
+                    hintText: 'Selecciona incidencias',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                  ),
+                  baseStyle: const TextStyle(fontSize: 14),
+                ),
+                items: observations,
+                selectedItems: selectedObservations,
+                onChanged: (List<Incidencia>? newValues) {
+                  if (newValues != null) {
+                    setState(() {
+                      selectedObservations = newValues;
+                    });
+                  }
+                },
+                validator: (List<Incidencia>? value) {
+                  if (selectedObservations.isEmpty) {
+                    return 'Por favor selecciona al menos una incidencia';
+                  }
+                  return null;
+                },
+                clearButtonProps: const ClearButtonProps(
+                  isVisible: true,
+                  icon: Icon(Icons.clear, size: 20),
+                  tooltip: 'Borrar seleccion'
+                ),
+                compareFn: (item1, item2) => item1.incidenciaId == item2.incidenciaId,
               ),
-            ),
+            
+            // Mostrar chips con las incidencias seleccionadas
             if (selectedObservations.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
-                runSpacing: 4,
-                children: selectedObservations.map((observation) {
+                runSpacing: 6,
+                children: selectedObservations.map((incidencia) {
                   return Chip(
-                    label: Text(observation),
-                    onDeleted: () {
-                      setState(() {
-                        selectedObservations.remove(observation);
-                      });
-                    },
+                    label: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          incidencia.descripcion,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 8),
                   );
                 }).toList(),
               ),
             ],
+            
+            // Contador de selecciones
+            if (!_isLoadingObservations && observations.isNotEmpty)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${selectedObservations.length}/${observations.length} seleccionadas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+            
+            // Botón para recargar incidencias
+            if (_errorMessage != null)
+              Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _loadIncidencias,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reintentar'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 36),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -505,7 +699,8 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
 
   Widget _buildImageGrid() {
     if (images.isEmpty) {
-      return const Expanded(
+      return const SizedBox(
+        height: 200,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -527,41 +722,41 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       );
     }
 
-    return Expanded(
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-        ),
-        itemCount: images.length,
-        itemBuilder: (context, index) => Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.memory(
-              images[index],
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey,
-                child: const Icon(Icons.error),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemCount: images.length,
+      itemBuilder: (context, index) => Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.memory(
+            images[index],
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey,
+              child: const Icon(Icons.error),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                onPressed: () => _showDeleteConfirmation(index),
               ),
             ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.white, size: 18),
-                  onPressed: () => _showDeleteConfirmation(index),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -598,24 +793,27 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
               ),
           ],
         ),
-        body: Column(
-          children: [
-            _buildObservationsDropdown(),
-            _buildCommentField(),
-            _buildCarouselButton(), // NUEVO BOTÓN AQUÍ
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Galería de Imágenes',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildObservationsDropdown(),
+              _buildCommentField(),
+              _buildCarouselButton(),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Galería de Imágenes',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            _buildImageGrid(),
-          ],
+              _buildImageGrid(),
+              const SizedBox(height: 100), // Espacio extra para el FAB
+            ],
+          ),
         ),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,

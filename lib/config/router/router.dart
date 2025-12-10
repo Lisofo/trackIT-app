@@ -1,8 +1,3 @@
-import 'package:app_tec_sedel/pages/camera/camera_screen.dart';
-import 'package:app_tec_sedel/pages/dashboard/dashboard.dart';
-import 'package:app_tec_sedel/pages/monitor/mapa.dart';
-import 'package:app_tec_sedel/pages/monitor/monitor_diario.dart';
-import 'package:app_tec_sedel/pages/monitorOrdenes/planilla_consumos.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
@@ -55,6 +50,7 @@ final router = GoRouter(
     GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),),
     GoRoute(path: '/planillaConsumos', builder: (context, state) => const ConsumosScreen(),),
     GoRoute(path: '/ordenesMonitoreo', builder: (context, state) => const Monitoreo(),),
+    GoRoute(path: '/incidencias', builder: (context, state) => const IncidenciaScreen(),),
   ],
   errorBuilder: (context, state) => const ErrorPage(),
 );
