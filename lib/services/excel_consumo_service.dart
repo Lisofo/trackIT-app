@@ -35,7 +35,12 @@ class ExcelConsumoService {
       // Usar datos reales de las líneas
       final consumosAnteriores = _calcularConsumosAnteriores(lineasMaterial);
       final consumosPorOrden = _calcularConsumosPorOrden(lineasMaterial, ordenesSeleccionadas);
-      final totalFila = lineasMaterial.fold(0.0, (sum, linea) => sum + linea.cantidad);
+      
+      // Calcular totales
+      double sumaAnteriores = consumosAnteriores.values.fold(0.0, (sum, valor) => sum + valor);
+      double sumaOrdenes = consumosPorOrden.values.fold(0.0, (sum, valor) => sum + valor);
+      double totalFila = sumaAnteriores + sumaOrdenes;
+      double consumoCalculado = sumaOrdenes - sumaAnteriores;
       
       final fila = FilaConsumoExcel(
         codigo: primeraLinea.codItem,
@@ -44,6 +49,7 @@ class ExcelConsumoService {
         consumosAnteriores: consumosAnteriores,
         consumosPorOrden: consumosPorOrden,
         totalFila: totalFila,
+        consumoCalculado: consumoCalculado, // Nuevo campo
         descripcionS: primeraLinea.descripcion,
         descripcionT: primeraLinea.lote,
       );
@@ -68,8 +74,7 @@ class ExcelConsumoService {
   }
 
   Map<String, double> _calcularConsumosAnteriores(List<Linea> lineasMaterial) {
-    // Columnas fijas de consumos anteriores
-    // Podemos usar algún campo específico o dejar en cero por ahora
+    // Columnas fijas de consumos anteriores (4 columnas)
     return {
       'ant_1': 0.0,
       'ant_2': 0.0, 
@@ -93,7 +98,7 @@ class ExcelConsumoService {
     for (var linea in lineasMaterial) {
       final ordenId = linea.ordenTrabajoId.toString();
       if (consumos.containsKey(ordenId)) {
-        consumos[ordenId] = consumos[ordenId]! + linea.cantidad;
+        consumos[ordenId] = consumos[ordenId]! + linea.control;
       }
     }
     
