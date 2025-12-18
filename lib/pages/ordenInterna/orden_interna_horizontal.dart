@@ -3,6 +3,7 @@ import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/menu.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/control_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
@@ -85,7 +86,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     super.initState();
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     tabBarController = TabController(length: 4, vsync: this);
     tabBarController.addListener(handleTabSelection);
     tabBarController2.addListener(handleTabSelection2);
@@ -131,10 +132,10 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
     setState(() {});
     tareas = await TareasServices().getMO(context, orden, token);
     materiales = await MaterialesServices().getRepuestos(context, orden, token);
-    notasController.text = orden.comentarioCliente;
-    instruccionesController.text = orden.comentarioTrabajo;
+    notasController.text = orden.comentarioCliente.toString();
+    instruccionesController.text = orden.comentarioTrabajo.toString();
     kmController.text = orden.km.toString();
-    controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId, token);
+    controles = await OrdenServices().getControles2(context, orden.ordenTrabajoId!, token);
     controles.sort((a, b) => a.pregunta.compareTo(b.pregunta));
     for(var i = 0; i < controles.length; i++){
       models.add(controles[i].grupo);
@@ -344,7 +345,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
                                           ),
                                           const SizedBox(width: 5,),
                                           Text(
-                                            '${orden.cliente.codCliente} - ${orden.cliente.nombre} Telefono: ${orden.cliente.telefono1}',
+                                            '${orden.cliente?.codCliente} - ${orden.cliente?.nombre} Telefono: ${orden.cliente?.telefono1}',
                                             style: const TextStyle(fontSize: 16),
                                           ),
                                         ],
@@ -941,9 +942,9 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
 
   Widget _listaItems() {
     final colors = Theme.of(context).colorScheme;
-    final String tipoOrden = orden.tipoOrden.codTipoOrden;
+    final String? tipoOrden = orden.tipoOrden?.codTipoOrden.toString();
     return FutureBuilder(
-      future: menuProvider.cargarData(context, tipoOrden, token),
+      future: menuProvider.cargarDataDrawer(context, tipoOrden!, token),
       initialData: const [],
       builder: (context, snapshot) {
         if(snapshot.connectionState == ConnectionState.waiting) {
@@ -953,12 +954,12 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No hay datos disponibles'));
         } else {
-          final List<Ruta> rutas = snapshot.data as List<Ruta>;
+          final List<Opcion> rutas = snapshot.data as List<Opcion>;
 
           return ListView.separated(
             itemCount: rutas.length,
             itemBuilder: (context, i) {
-              final Ruta ruta = rutas[i];
+              final Opcion ruta = rutas[i];
               return ListTile(
                 title: Text(ruta.texto),
                 leading: getIcon(ruta.icon, context),
@@ -981,8 +982,8 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
   cambiarEstado(int accionId) async {
     if (!ejecutando) {
       ejecutando = true;
-      String token = context.read<OrdenProvider>().token;
-      await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, token);
+      String token = context.read<AuthProvider>().token;
+      await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacion.ubicacionId, token);
       statusCode = await _ordenServices.getStatusCode();
       await _ordenServices.resetStatusCode();
       if(statusCode == 1){
@@ -996,11 +997,11 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
 
   obtenerUbicacion() async {
     await getLocation();
-    int uId = context.read<OrdenProvider>().uId;
+    int uId = context.read<AuthProvider>().uId;
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
-    String token = context.read<OrdenProvider>().token;
+    String token = context.read<AuthProvider>().token;
     await _ubicacionServices.postUbicacion(context, ubicacion, token);
     statusCode = await _ubicacionServices.getStatusCode();
     await _ubicacionServices.resetStatusCode();
@@ -1267,7 +1268,7 @@ class _OrdenInternaHorizontalState extends State<OrdenInternaHorizontal> with Ti
             ),
             TextButton(
               onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                Provider.of<AuthProvider>(context, listen: false).setToken('');
                 router.go('/');
               },
               child: const Text(
@@ -1310,7 +1311,7 @@ class ChildrenColumn1 extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             Text(
-              context.watch<OrdenProvider>().orden.estado,
+              context.watch<OrdenProvider>().orden.estado.toString(),
               style: const TextStyle(fontSize: 14,),
             ),
           ],

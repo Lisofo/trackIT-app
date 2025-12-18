@@ -2,6 +2,7 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/marca.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/unidades_services.dart';
@@ -32,7 +33,7 @@ class MonitorVehiculosState extends State<MonitorVehiculos> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     _cargarMarcas(); // Cargar marcas al iniciar la pantalla
     // Removemos la carga automática de unidades
   }

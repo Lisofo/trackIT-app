@@ -1,5 +1,5 @@
 import 'package:app_tec_sedel/models/orden.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart';
@@ -39,7 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _isLoading = true;
     });
 
-    final token = context.read<OrdenProvider>().token;
+    final token = context.read<AuthProvider>().token;
 
     // Ajustar las fechas para el día seleccionado (desde las 00:00 hasta las 23:59)
     DateTime startDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 0, 0, 0);
@@ -49,7 +49,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final result = await _ordenServices.getOrden(
       context,
-      context.read<OrdenProvider>().tecnicoId.toString(), // tecnicoId - puedes ajustar esto según tu necesidad
+      context.read<AuthProvider>().tecnicoId.toString(), // tecnicoId - puedes ajustar esto según tu necesidad
       token,
       queryParams: {
         'fechaDesde': DateFormat('yyyy-MM-dd').format(startDate),

@@ -99,6 +99,15 @@ class _DialogoTecnicoState extends State<DialogoTecnico> {
         fechaVtoCarneSalud: _fechaVtoCarne,
         deshabilitado: false,
         cargo: Cargo(cargoId: 1, codCargo: 'TEC', descripcion: 'Técnico'),
+        firmaPath: '',
+        avatarMd5: '',
+        avatarPath:
+        '',
+        cargoId:
+        0,
+        firmaMd5:
+        '',
+        verDiaSiguiente: false
       );
 
       Tecnico? tecnicoGuardado;

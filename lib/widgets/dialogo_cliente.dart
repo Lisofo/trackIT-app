@@ -1,10 +1,10 @@
 // dialogo_cliente.dart
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/models/tecnico.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:provider/provider.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
 
 class DialogoCliente extends StatefulWidget {
   final ClientServices clientServices;
@@ -223,7 +223,7 @@ class _DialogoClienteState extends State<DialogoCliente> {
         vendedorId: 0,
         departamentoId: _departamentoSeleccionado?.departamentoId ?? 0,
         tipoClienteId: 1,
-        tecnicoId: context.read<OrdenProvider>().tecnicoId,
+        tecnicoId: context.read<AuthProvider>().tecnicoId,
       );
 
       Cliente? clienteGuardado;

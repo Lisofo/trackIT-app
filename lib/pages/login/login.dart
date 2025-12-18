@@ -57,6 +57,8 @@ class _LoginState extends State<Login> {
         return 'images/banner.jpg';
       case 'automotoraargentina':
         return 'images/automotoraLogo.jpg';
+      case 'resysol':
+        return 'images/resysol_logo.jpg';
       default:
         return 'images/lopezMotorsLogo.jpg'; // fallback
     }
@@ -67,7 +69,7 @@ class _LoginState extends State<Login> {
     final colors = Theme.of(context).colorScheme;
     return SafeArea(
       child: Scaffold(
-      backgroundColor: colors.secondary,
+      backgroundColor: colors.primary,
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

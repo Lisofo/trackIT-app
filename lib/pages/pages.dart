@@ -1,3 +1,5 @@
+export 'package:app_tec_sedel/config/router/error_page.dart';
+
 export 'package:app_tec_sedel/pages/login/login.dart';
 export 'package:app_tec_sedel/pages/entrada/entrada_salida.dart';
 export 'package:app_tec_sedel/pages/listaDeOrdenes/lista_ordenes_con_estado.dart';
@@ -24,5 +26,11 @@ export 'package:app_tec_sedel/pages/monitor/monitor_materiales.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_tareas.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_tecnico.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_vehiculo.dart';
-export 'package:app_tec_sedel/pages/monitorOrdenes/monitor_ordenes.dart';
+export 'package:app_tec_sedel/pages/monitorOrdenes/crear_editar_orden.dart';
 export 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';
+export 'package:app_tec_sedel/pages/camera/camera_screen.dart';
+export 'package:app_tec_sedel/pages/dashboard/dashboard.dart';
+export 'package:app_tec_sedel/pages/monitor/mapa.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_diario.dart';
+export 'package:app_tec_sedel/pages/monitor/monitor_incidencias.dart';
+export 'package:app_tec_sedel/pages/monitorOrdenes/planilla_consumos.dart';

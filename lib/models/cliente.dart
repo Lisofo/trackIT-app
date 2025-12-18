@@ -100,7 +100,7 @@ class Cliente {
         "ruc": ruc,
         "estado": estado,
         "coordenadas": coordenadas,
-        "tecnicoId": 2,
+        "tecnicoId": 1,
         "departamentoId": departamentoId,
         "tipoClienteId": tipoClienteId,
         "notas": notas,

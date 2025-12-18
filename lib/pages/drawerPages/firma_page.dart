@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 
 import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:signature/signature.dart';
@@ -58,7 +59,7 @@ class _FirmaState extends State<Firma> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;
@@ -207,7 +208,7 @@ class _FirmaState extends State<Firma> {
                       child: CustomButton(
                         onPressed: !guardandoFirma ? () async {
                           guardandoFirma = true;
-                          if((marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
+                          if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(clienteNoDisponible ? 'Cliente no disponible' : 'No puede de ingresar o editar datos.'),
                             ));
@@ -263,7 +264,7 @@ class _FirmaState extends State<Firma> {
                           activeColor: colors.primary,
                           value: filtro,
                           onChanged: (value) async {
-                            if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                            if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                 content: Text('No puede de ingresar o editar datos.'),
                               ));
@@ -309,7 +310,7 @@ class _FirmaState extends State<Firma> {
                       key: Key(item.toString()),
                       direction: DismissDirection.endToStart,
                       confirmDismiss: (DismissDirection direction) async {
-                        if((marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
+                        if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text('No puede de ingresar o editar datos.'),
                           ));
@@ -361,7 +362,7 @@ class _FirmaState extends State<Firma> {
                                 icon: const Icon(Icons.edit),
                                 onPressed: !estoyEditando ? () async {
                                   estoyEditando = true;
-                                  if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('No puede de ingresar o editar datos.'),
                                     ));
@@ -379,7 +380,7 @@ class _FirmaState extends State<Firma> {
                                 icon: const Icon(Icons.delete),
                                 onPressed: !estoyBorrando ? () async {
                                   estoyBorrando = true;
-                                  if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('No puede de ingresar o editar datos.'),
                                     ));
@@ -441,8 +442,8 @@ class _FirmaState extends State<Firma> {
 
     final ClienteFirma nuevaFirma = ClienteFirma(
       otFirmaId: 0,
-      ordenTrabajoId: orden.ordenTrabajoId,
-      otRevisionId: orden.otRevisionId,
+      ordenTrabajoId: orden.ordenTrabajoId!,
+      otRevisionId: orden.otRevisionId!,
       nombre: nameController.text,
       area: areaController.text,
       firmaPath: '',

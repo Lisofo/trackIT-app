@@ -1,5 +1,6 @@
 import 'package:app_tec_sedel/models/control_orden.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/orden_control_services.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ class _ValidacionPageState extends State<ValidacionPage> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       controles = await OrdenControlServices().getControlOrden(context, orden, token);

@@ -16,125 +16,190 @@ List<Orden> ordenFromMap(String str) => List<Orden>.from(json.decode(str).map((x
 String ordenToMap(List<Orden> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 class Orden {
-  late int ordenTrabajoId;
-  late String numeroOrdenTrabajo;
-  late String descripcion;
+  late int? ordenTrabajoId;
+  late String? numeroOrdenTrabajo;
+  late String? descripcion;
   late DateTime? fechaOrdenTrabajo;
   late DateTime? fechaVencimiento;
   late DateTime? fechaEntrega;
   late DateTime? fechaDesde;
   late DateTime? fechaHasta;
-  late String ruc;
-  late int monedaId;
-  late String codMoneda;
-  late String descMoneda;
-  late String signo;
-  late double totalOrdenTrabajo;
-  late String comentarioCliente;
-  late String comentarios;
-  late String comentarioTrabajo;
+  late String? ruc;
+  late int? monedaId;
+  late String? codMoneda;
+  late String? descMoneda;
+  late String? signo;
+  late double? totalOrdenTrabajo;
+  late String? comentarioCliente;
+  late String? comentarios;
+  late String? comentarioTrabajo;
   late int? presupuestoIdPlantilla;
   late int? numeroPresupuesto;
   late String? descripcionPresupuesto;
   late int? totalPresupuesto;
-  late bool plantilla;
-  late int unidadId;
+  late bool? plantilla;
+  late int? unidadId;
   late String? matricula;
   late int? km;
   late bool? regHs;
-  late String instrucciones;
-  late String estado;
-  late TipoOrden tipoOrden;
-  late Cliente cliente;
-  late Tecnico tecnico;
-  late Unidad unidad;
-  late List<ServicioOrdenes> servicio;
-  late int otRevisionId;
-  late int planoId;
+  late String? instrucciones;
+  late String? estado;
+  late TipoOrden? tipoOrden;
+  late Cliente? cliente;
+  late Tecnico? tecnico;
+  late Unidad? unidad;
+  late List<ServicioOrdenes>? servicio;
+  late int? otRevisionId;
+  late int? planoId;
   late int? tecnicoId;
   late int? clienteId;
-  late bool alerta;
+  late bool? alerta;
+  late int? tipoOrdenId;
+  late DateTime? finalizadaEn;
+  
+  // Nuevos campos del JSON
+  late int? condOTId;
+  late bool? credito;
+  late int? alertaUsuId;
+  late String? producto;
+  late int? pedido;
+  late int? envase;
+  late int? totalTambores;
+  late int? batches;
+  late double? totalkgs;
+  late double? mermaKgs;
+  late double? mermaPorcentual;
+
+  // Campos adicionales del JSON
+  late int? numBatches;
+  late DateTime? iniciadaEn;
+  late int? produccion;
+  late String? bolsas;
+  late String? nvporc;
+  late String? visc;
 
   Orden({
-    required this.ordenTrabajoId,
-    required this.numeroOrdenTrabajo,
-    required this.descripcion,
-    required this.fechaOrdenTrabajo,
-    required this.fechaVencimiento,
-    required this.fechaEntrega,
-    required this.fechaDesde,
-    required this.fechaHasta,
-    required this.ruc,
-    required this.monedaId,
-    required this.codMoneda,
-    required this.descMoneda,
-    required this.signo,
-    required this.totalOrdenTrabajo,
-    required this.comentarioCliente,
-    required this.comentarios,
-    required this.comentarioTrabajo,
-    required this.estado,
-    required this.presupuestoIdPlantilla,
-    required this.numeroPresupuesto,
-    required this.descripcionPresupuesto,
-    required this.totalPresupuesto,
-    required this.plantilla,
-    required this.unidadId,
-    required this.matricula,
-    required this.km,
-    required this.regHs,
-    required this.instrucciones,
-    required this.tipoOrden,
-    required this.cliente,
-    required this.tecnico,
-    required this.servicio,
-    required this.otRevisionId,
-    required this.planoId,
-    required this.alerta,
-    required this.unidad,
+    this.ordenTrabajoId,
+    this.numeroOrdenTrabajo,
+    this.descripcion,
+    this.fechaOrdenTrabajo,
+    this.fechaVencimiento,
+    this.fechaEntrega,
+    this.fechaDesde,
+    this.fechaHasta,
+    this.ruc,
+    this.monedaId,
+    this.codMoneda,
+    this.descMoneda,
+    this.signo,
+    this.totalOrdenTrabajo,
+    this.comentarioCliente,
+    this.comentarios,
+    this.comentarioTrabajo,
+    this.estado,
+    this.presupuestoIdPlantilla,
+    this.numeroPresupuesto,
+    this.descripcionPresupuesto,
+    this.totalPresupuesto,
+    this.plantilla,
+    this.unidadId,
+    this.matricula,
+    this.km,
+    this.regHs,
+    this.instrucciones,
+    this.tipoOrden,
+    this.cliente,
+    this.tecnico,
+    this.unidad,
+    this.servicio,
+    this.otRevisionId,
+    this.planoId,
+    this.alerta,
+    this.tipoOrdenId,
     this.tecnicoId,
     this.clienteId,
+    // Nuevos campos
+    this.condOTId,
+    this.credito,
+    this.alertaUsuId,
+    this.producto,
+    this.pedido,
+    this.envase,
+    this.totalTambores,
+    this.batches,
+    this.totalkgs,
+    this.mermaKgs,
+    this.mermaPorcentual,
+    // Campos adicionales
+    this.numBatches,
+    this.iniciadaEn,
+    this.produccion,
+    this.bolsas,
+    this.nvporc,
+    this.visc,
+    this.finalizadaEn,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
-    ordenTrabajoId: json["ordenTrabajoId"] as int? ?? 0,
-    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as String? ?? "",
-    descripcion: json["descripcion"] as String? ?? '',
-    fechaOrdenTrabajo: json["fechaOrdenTrabajo"] != null ? DateTime.parse(json["fechaOrdenTrabajo"]) : null,
-    fechaVencimiento: json["fechaVencimiento"] != null ?  DateTime.parse(json["fechaVencimiento"]) : null,
-    fechaEntrega: json["fechaEntrega"] == null ? null : DateTime.parse(json["fechaEntrega"]),
-    fechaDesde: json["fechaDesde"] != null ? DateTime.parse(json["fechaDesde"]) : null,
-    fechaHasta: json["fechaDesde"] != null ? DateTime.parse(json["fechaHasta"]) : null,
-    ruc: json["ruc"] as String? ?? '',
-    monedaId: json["monedaId"] as int? ?? 0,
-    codMoneda: json["codMoneda"] as String? ?? '',
-    descMoneda: json["descMoneda"] as String? ?? '',
-    signo: json["signo"] as String? ?? '',
-    totalOrdenTrabajo: json["totalOrdenTrabajo"]?.toDouble(),
-    comentarioCliente: json["comentarioCliente"] as String? ?? '',
-    comentarioTrabajo: json["comentarioTrabajo"] as String? ?? '',
-    estado: json["estado"] as String? ?? '',
-    presupuestoIdPlantilla: json["presupuestoIdPlantilla"] as int? ?? 0,
-    numeroPresupuesto: json["numeroPresupuesto"] as int? ?? 0,
-    descripcionPresupuesto: json["descripcionPresupuesto"] as String? ?? '',
-    totalPresupuesto: json["totalPresupuesto"] as int? ?? 0,
-    plantilla: json["plantilla"],
-    unidadId: json["unidadId"] as int? ?? 0,
-    matricula: json["matricula"] as String? ?? '',
-    km: json["km"] as int? ?? 0,
-    regHs: json["regHs"],
-    instrucciones: json["instrucciones"] as String? ?? '',
-    comentarios: json["comentarios"] as String? ?? '',
-    tipoOrden: json["tipoOrden"] == null ? TipoOrden.empty() : TipoOrden.fromJson(json["tipoOrden"]),
-    cliente: json["cliente"] == null ? Cliente.empty() : Cliente.fromJson(json["cliente"]),
-    tecnico: json["tecnico"] == null ? Tecnico.empty() : Tecnico.fromJson(json["tecnico"]),
-    unidad: json["unidad"] == null ? Unidad.empty() : Unidad.fromJson(json["unidad"]),
-    servicio: [],//List<ServicioOrdenes>.from(json["servicios"].map((x) => ServicioOrdenes.fromJson(x))),
-    otRevisionId: json["otRevisionId"] as int? ?? 0,
-    planoId: json["planoId"] as int? ?? 0,
-    alerta: json["alerta"] == null ? false : json["alerta"] as bool,
-    tecnicoId: json["tecnicoId"] as int? ?? 0,
-    clienteId: json["clienteId"] as int? ?? 0,
+    ordenTrabajoId: json["ordenTrabajoId"] as int?,
+    numeroOrdenTrabajo: json["numeroOrdenTrabajo"] as String?,
+    descripcion: json["descripcion"] as String?,
+    fechaOrdenTrabajo: json["fechaOrdenTrabajo"] != null ? DateTime.tryParse(json["fechaOrdenTrabajo"]) : null,
+    fechaVencimiento: json["fechaVencimiento"] != null ? DateTime.tryParse(json["fechaVencimiento"]) : null,
+    fechaEntrega: json["fechaEntrega"] != null ? DateTime.tryParse(json["fechaEntrega"]) : null,
+    fechaDesde: json["fechaDesde"] != null ? DateTime.tryParse(json["fechaDesde"]) : null,
+    fechaHasta: json["fechaHasta"] != null ? DateTime.tryParse(json["fechaHasta"]) : null,
+    ruc: json["ruc"] as String?,
+    monedaId: json["monedaId"] as int?,
+    codMoneda: json["codMoneda"] as String?,
+    descMoneda: json["descMoneda"] as String?,
+    signo: json["signo"] as String?,
+    totalOrdenTrabajo: (json["totalOrdenTrabajo"] as num?)?.toDouble(),
+    comentarioCliente: json["comentarioCliente"] as String?,
+    comentarios: json["comentarios"] as String?,
+    comentarioTrabajo: json["comentarioTrabajo"] as String?,
+    estado: json["estado"] as String?,
+    presupuestoIdPlantilla: json["presupuestoIdPlantilla"] as int?,
+    numeroPresupuesto: json["numeroPresupuesto"] as int?,
+    descripcionPresupuesto: json["descripcionPresupuesto"] as String?,
+    totalPresupuesto: json["totalPresupuesto"] as int?,
+    plantilla: json["plantilla"] as bool?,
+    unidadId: json["unidadId"] as int?,
+    matricula: json["matricula"] as String?,
+    km: json["km"] as int?,
+    regHs: json["regHs"] as bool?,
+    instrucciones: json["instrucciones"] as String?,
+    tipoOrden: json["tipoOrden"] == null ? null : TipoOrden.fromJson(json["tipoOrden"]),
+    cliente: json["cliente"] == null ? null : Cliente.fromJson(json["cliente"]),
+    tecnico: json["tecnico"] == null ? null : Tecnico.fromJson(json["tecnico"]),
+    unidad: json["unidad"] == null ? null : Unidad.fromJson(json["unidad"]),
+    servicio: null, // Mantenemos null por ahora
+    otRevisionId: json["otRevisionId"] as int?,
+    planoId: json["planoId"] as int?,
+    alerta: json["alerta"] as bool?,
+    tecnicoId: json["tecnicoId"] as int?,
+    clienteId: json["clienteId"] as int?,
+    tipoOrdenId: json['tipoOrdenId'] as int?,
+    // Nuevos campos
+    condOTId: json["condOTId"] as int?,
+    credito: json["credito"] as bool?,
+    alertaUsuId: json["alertaUsuId"] as int?,
+    producto: json["producto"] as String?,
+    pedido: json["pedido"] as int?,
+    envase: json["envase"] as int?,
+    totalTambores: json["totalTambores"] as int?,
+    batches: json["batches"] as int?,
+    totalkgs: (json["totalkgs"] as num?)?.toDouble(),
+    mermaKgs: (json["mermaKgs"] as num?)?.toDouble(),
+    mermaPorcentual: (json["mermaPorcentual"] as num?)?.toDouble(),
+    // Campos adicionales
+    numBatches: json["numBatches"] as int?,
+    iniciadaEn: json["iniciadaEn"] != null ? DateTime.tryParse(json["iniciadaEn"]) : null,
+    finalizadaEn: json["finalizadaEn"] != null ? DateTime.tryParse(json["finalizadaEn"]) : null,
+    produccion: json["produccion"] as int?,
+    bolsas: json["bolsas"] as String?,
+    nvporc: json["nvporc"] as String?,
+    visc: json["visc"] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -166,105 +231,164 @@ class Orden {
     "km": km,
     "regHs": regHs,
     "instrucciones": instrucciones,
-    "tipoOrden": tipoOrden.toMap(),
-    "cliente": cliente.toMap(),
-    "tecnico": tecnico.toMap(),
-    "unidad": unidad.toJson(),
+    "tipoOrden": tipoOrden?.toMap(),
+    "cliente": cliente?.toMap(),
+    "tecnico": tecnico?.toMap(),
+    "unidad": unidad?.toJson(),
     "otRevisionId": otRevisionId,
     "planoId": planoId,
     "alerta": alerta,
     "tecnicoId": tecnicoId,
     "clienteId": clienteId,
+    "tipoOrdenId": tipoOrdenId,
+    // Nuevos campos
+    "condOTId": condOTId,
+    "credito": credito,
+    "alertaUsuId": alertaUsuId,
+    "producto": producto,
+    "pedido": pedido,
+    "envase": envase,
+    "totalTambores": totalTambores,
+    "batches": batches,
+    "totalkgs": totalkgs,
+    "mermaKgs": mermaKgs,
+    "mermaPorcentual": mermaPorcentual,
+    // Campos adicionales
+    "numBatches": numBatches,
+    "iniciadaEn": iniciadaEn?.toIso8601String(),
+    "finalizadaEn": finalizadaEn?.toIso8601String(),
+    "produccion": produccion,
+    "bolsas": bolsas,
+    "nvporc": nvporc,
+    "visc": visc,
   };
 
   Map<String, dynamic> toMapCyP() => {
-    "tipoOrdenId": 5,
-    "clienteId": cliente.clienteId,
+    "tipoOrdenId": tipoOrdenId,
+    "clienteId": cliente?.clienteId,
     "tecnicoId": tecnicoId,
-    "unidadId": unidad.unidadId,
+    "unidadId": unidad?.unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
     "fechaOrdenTrabajo": getStringFecha(fechaOrdenTrabajo),
     "fechaDesde": getStringFechaConHoraMinSec(fechaDesde),
     "fechaHasta": getStringFechaConHoraMinSec(fechaHasta),
-    "monedaId": 1,
+    "monedaId": monedaId ?? 1,
     "totalOrdenTrabajo": totalOrdenTrabajo,
     "comentarioCliente": comentarioCliente,
     "comentarios": comentarios,
     "comentarioTrabajo": comentarioTrabajo,
     "km": km,
     "instrucciones": instrucciones,
-    "plantilla": false,
+    "plantilla": plantilla ?? false,
+    // Campos específicos para producción química
+    "producto": producto,
+    "pedido": pedido,
+    "envase": envase,
+    "totalTambores": totalTambores,
+    "batches": batches,
+    "totalkgs": totalkgs,
+    "mermaKgs": mermaKgs,
+    "mermaPorcentual": mermaPorcentual,
+    // Campos adicionales para producción química
+    "numBatches": numBatches,
+    "iniciadaEn": iniciadaEn?.toIso8601String(),
+    "produccion": produccion,
+    "bolsas": bolsas,
+    "nvporc": nvporc,
+    "visc": visc,
   };
 
-  String getStringFecha (DateTime? fecha) {
+  String getStringFecha(DateTime? fecha) {
     if (fecha == null) return '';
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     return formatter.format(fecha);
   }
 
-  String getStringFechaConHoraMinSec (DateTime? fecha) {
+  String getStringFechaConHoraMinSec(DateTime? fecha) {
     if (fecha == null) return '';
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(fecha);
   }
 
-  Orden.empty() {
-    ordenTrabajoId = 0;
-    numeroOrdenTrabajo = '';
-    descripcion = '';
-    fechaOrdenTrabajo = null;
-    fechaVencimiento = null;
-    fechaEntrega = null;
-    fechaDesde = null;
-    fechaHasta = null;
-    ruc = '';
-    monedaId = 0;
-    codMoneda = '';
-    descMoneda = ''; 
-    signo = '';
-    totalOrdenTrabajo = 0.0;
-    comentarioCliente = '';
-    comentarios = '';
-    comentarioTrabajo = '';
-    estado = '';
-    presupuestoIdPlantilla = null;
-    numeroPresupuesto = null;
-    descripcionPresupuesto = null;
-    totalPresupuesto = null;
-    plantilla = false;
-    unidadId = 0;
-    matricula = '';
-    km = 0;
-    regHs = false;
-    instrucciones = '';
-    estado = '';
-    tipoOrden = TipoOrden.empty();
-    cliente = Cliente.empty();
-    tecnico = Tecnico.empty();
-    unidad = Unidad.empty();
-    servicio = [];
-    otRevisionId = 0;
-    planoId = 0;
-    alerta = false;
-  }
+  factory Orden.empty() => Orden(
+    ordenTrabajoId: null,
+    numeroOrdenTrabajo: null,
+    descripcion: null,
+    fechaOrdenTrabajo: null,
+    fechaVencimiento: null,
+    fechaEntrega: null,
+    fechaDesde: null,
+    fechaHasta: null,
+    ruc: null,
+    monedaId: null,
+    codMoneda: null,
+    descMoneda: null,
+    signo: null,
+    totalOrdenTrabajo: null,
+    comentarioCliente: null,
+    comentarios: null,
+    comentarioTrabajo: null,
+    estado: null,
+    presupuestoIdPlantilla: null,
+    numeroPresupuesto: null,
+    descripcionPresupuesto: null,
+    totalPresupuesto: null,
+    plantilla: null,
+    unidadId: null,
+    matricula: null,
+    km: null,
+    regHs: null,
+    instrucciones: null,
+    tipoOrden: null,
+    cliente: null,
+    tecnico: null,
+    unidad: null,
+    servicio: null,
+    otRevisionId: null,
+    planoId: null,
+    alerta: null,
+    tipoOrdenId: null,
+    tecnicoId: null,
+    clienteId: null,
+    // Nuevos campos
+    condOTId: null,
+    credito: null,
+    alertaUsuId: null,
+    producto: null,
+    pedido: null,
+    envase: null,
+    totalTambores: null,
+    batches: null,
+    totalkgs: null,
+    mermaKgs: null,
+    mermaPorcentual: null,
+    // Campos adicionales
+    numBatches: null,
+    iniciadaEn: null,
+    finalizadaEn: null,
+    produccion: null,
+    bolsas: null,
+    nvporc: null,
+    visc: null,
+  );
 }
 
 class TipoOrden {
-  late int tipoOrdenId;
-  late String codTipoOrden;
-  late String descripcion;
+  final int? tipoOrdenId;
+  final String? codTipoOrden;
+  final String? descripcion;
 
   TipoOrden({
-    required this.tipoOrdenId,
-    required this.codTipoOrden,
-    required this.descripcion,
+    this.tipoOrdenId,
+    this.codTipoOrden,
+    this.descripcion,
   });
 
   factory TipoOrden.fromJson(Map<String, dynamic> json) => TipoOrden(
-    tipoOrdenId: json["tipoOrdenId"] as int? ?? 0,
-    codTipoOrden: json["codTipoOrden"] as String? ?? '',
-    descripcion: json["descripcion"] as String? ?? '',
+    tipoOrdenId: json["tipoOrdenId"] as int?,
+    codTipoOrden: json["codTipoOrden"] as String?,
+    descripcion: json["descripcion"] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -273,9 +397,9 @@ class TipoOrden {
     "descripcion": descripcion,
   };
 
-  TipoOrden.empty() {
-    tipoOrdenId = 0;
-    codTipoOrden = '';
-    descripcion = '';
-  }
+  factory TipoOrden.empty() => TipoOrden(
+    tipoOrdenId: null,
+    codTipoOrden: null,
+    descripcion: null,
+  );
 }

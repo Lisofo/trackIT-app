@@ -6,6 +6,7 @@ import 'package:app_tec_sedel/models/material.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/plaga.dart';
 import 'package:app_tec_sedel/models/revision_materiales.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/materiales_diagnostico_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
@@ -56,7 +57,7 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;
@@ -132,8 +133,8 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                 final RevisionMaterial nuevaRevisionMaterial =
                   RevisionMaterial(
                     otMaterialId: 0,
-                    ordenTrabajoId: orden.ordenTrabajoId,
-                    otRevisionId: orden.otRevisionId,
+                    ordenTrabajoId: orden.ordenTrabajoId!,
+                    otRevisionId: orden.otRevisionId!,
                     cantidad: esNumerico(cantidad) ? double.parse(cantidad) : double.parse("0.0"),
                     comentario: comentarioController.text,
                     ubicacion: '',
@@ -594,8 +595,8 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                 final RevisionMaterial nuevaRevisionMaterial =
                   RevisionMaterial(
                     otMaterialId: material.otMaterialId,
-                    ordenTrabajoId: orden.ordenTrabajoId,
-                    otRevisionId: orden.otRevisionId,
+                    ordenTrabajoId: orden.ordenTrabajoId!,
+                    otRevisionId: orden.otRevisionId!,
                     cantidad: esNumerico(cantidad) ? double.parse(cantidad) : double.parse("0.0"),
                     comentario: comentario,
                     ubicacion: '',

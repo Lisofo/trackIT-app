@@ -42,6 +42,9 @@ class Linea {
   late double? repSinIva;
   late String pieza;
   late String accion;
+  late String lote;
+  late double? factor;
+  late double control;
 
   Linea({
     required this.lineaId,
@@ -77,6 +80,9 @@ class Linea {
     required this.accion,
     required this.piezaId,
     required this.pieza,
+    required this.factor,
+    required this.control,
+    required this.lote
   });
 
   factory Linea.fromJson(Map<String, dynamic> json) => Linea(
@@ -113,6 +119,9 @@ class Linea {
     piezaId: json["piezaId"] as int? ?? 0,
     pieza: json["pieza"] as String? ?? '',
     accion: json["accion"] as String? ?? '',
+    factor: (json["factor"] as num?)?.toDouble() ?? 0.0,
+    control: (json["control"] as num?)?.toDouble() ?? 0.0,
+    lote: json['lote'] as String? ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -159,6 +168,9 @@ class Linea {
     "repSinIva": repSinIva,
     'accion': accion,
     'pieza': pieza,
+    'lote': lote,
+    'control': control,
+    'factor': factor,
   };
 
   Linea.empty(){
@@ -207,4 +219,82 @@ class Linea {
     return "$horasStr:$minutosStr";
   }
 
+  // Método para crear una copia profunda
+  Linea copyWith({
+    int? lineaId,
+    int? ordenTrabajoId,
+    int? itemId,
+    String? codItem,
+    String? descripcion,
+    String? macroFamilia,
+    String? familia,
+    String? grupoInventario,
+    int? ordinal,
+    double? cantidad,
+    double? costoUnitario,
+    int? descuento1,
+    int? descuento2,
+    int? descuento3,
+    double? precioVenta,
+    String? comentario,
+    int? ivaId,
+    String? iva,
+    int? valor,
+    String? codGruInv,
+    int? gruInvId,
+    int? avance,
+    String? mo,
+    double? chapaHs,
+    double? chapaMonto,
+    double? pinturaMonto,
+    double? mecanicaHs,
+    double? mecanicaMonto,
+    double? repSinIva,
+    int? accionId,
+    int? piezaId,
+    String? pieza,
+    String? accion,
+    double? factor,
+    double? control,
+    String? lote,
+  }) {
+    return Linea(
+      lineaId: lineaId ?? this.lineaId,
+      ordenTrabajoId: ordenTrabajoId ?? this.ordenTrabajoId,
+      itemId: itemId ?? this.itemId,
+      codItem: codItem ?? this.codItem,
+      descripcion: descripcion ?? this.descripcion,
+      macroFamilia: macroFamilia ?? this.macroFamilia,
+      familia: familia ?? this.familia,
+      grupoInventario: grupoInventario ?? this.grupoInventario,
+      ordinal: ordinal ?? this.ordinal,
+      cantidad: cantidad ?? this.cantidad,
+      costoUnitario: costoUnitario ?? this.costoUnitario,
+      descuento1: descuento1 ?? this.descuento1,
+      descuento2: descuento2 ?? this.descuento2,
+      descuento3: descuento3 ?? this.descuento3,
+      precioVenta: precioVenta ?? this.precioVenta,
+      comentario: comentario ?? this.comentario,
+      ivaId: ivaId ?? this.ivaId,
+      iva: iva ?? this.iva,
+      valor: valor ?? this.valor,
+      codGruInv: codGruInv ?? this.codGruInv,
+      gruInvId: gruInvId ?? this.gruInvId,
+      avance: avance ?? this.avance,
+      mo: mo ?? this.mo,
+      chapaHs: chapaHs ?? this.chapaHs,
+      chapaMonto: chapaMonto ?? this.chapaMonto,
+      pinturaMonto: pinturaMonto ?? this.pinturaMonto,
+      mecanicaHs: mecanicaHs ?? this.mecanicaHs,
+      mecanicaMonto: mecanicaMonto ?? this.mecanicaMonto,
+      repSinIva: repSinIva ?? this.repSinIva,
+      accionId: accionId ?? this.accionId,
+      piezaId: piezaId ?? this.piezaId,
+      pieza: pieza ?? this.pieza,
+      accion: accion ?? this.accion,
+      factor: factor ?? this.factor,
+      control: control ?? this.control,
+      lote: lote ?? this.lote,
+    );
+  }
 }

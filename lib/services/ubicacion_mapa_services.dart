@@ -40,8 +40,9 @@ class UbicacionesMapaServices {
     statusCode = null;
   }
 
-  Future getUbicaciones(BuildContext context, int tecnicoId, String fechaDesde, String fechaHasta, String token) async {
-    String link = apiLink += 'ubicaciones?tecnicoId=$tecnicoId&fechaDesde=$fechaDesde&fechaHasta=$fechaHasta';
+  Future getUbicaciones(BuildContext context, String token, {Map<String, dynamic>? queryParams}) async {
+    String link = apiLink += 'ubicaciones';
+    
     print(link);
     try {
       var headers = {'Authorization': token};
@@ -51,6 +52,7 @@ class UbicacionesMapaServices {
           method: 'GET',
           headers: headers,
         ),
+        queryParameters: queryParams
       );
 
       statusCode = 1;

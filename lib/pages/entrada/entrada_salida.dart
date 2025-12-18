@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/menu_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
@@ -20,7 +21,6 @@ import 'package:app_tec_sedel/services/marcas_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-const String flavorEntrada = String.fromEnvironment('FLAVOR');
 class EntradSalida extends StatefulWidget {
   const EntradSalida({super.key});
 
@@ -45,6 +45,7 @@ class _EntradSalidaState extends State<EntradSalida> {
   late UltimaTarea? ultimaTarea = context.watch<OrdenProvider>().ultimaTarea;
   bool parabrisas = true;
   final TextEditingController ultimaTareaController = TextEditingController();
+  late String flavor = flavor = context.read<AuthProvider>().flavor;
 
   @override
   void initState() {
@@ -63,9 +64,9 @@ class _EntradSalidaState extends State<EntradSalida> {
     return true;
   }
   cargarDatos() async {
-    nombreUsuario = context.read<OrdenProvider>().nombreUsuario;
-    tecnicoId = context.read<OrdenProvider>().tecnicoId;
-    token = context.read<OrdenProvider>().token;
+    nombreUsuario = context.read<AuthProvider>().nombreUsuario;
+    tecnicoId = context.read<AuthProvider>().tecnicoId;
+    token = context.read<AuthProvider>().token;
     ultimaTarea = await ordenServices.ultimaTarea(context, token);
     Provider.of<OrdenProvider>(context, listen: false).setUltimaTarea(ultimaTarea!);
     // await obtenerObjeto();
@@ -73,13 +74,15 @@ class _EntradSalidaState extends State<EntradSalida> {
   }
   
   String getLogoPath() {
-    switch (flavorEntrada.toLowerCase()) {
+    switch (flavor.toLowerCase()) {
       case 'lopezmotors':
         return 'images/lopezMotorsLogo.jpg';
       case 'parabrisasejido':
         return 'images/banner.jpg';
       case 'automotoraargentina':
         return 'images/automotoraLogo.jpg';
+      case 'resysol':
+        return 'images/resysol_logo.jpg';
       default:
         return 'images/lopezMotorsLogo.jpg'; // fallback
     }
@@ -249,7 +252,7 @@ class _EntradSalidaState extends State<EntradSalida> {
 
   obtenerUbicacion() async {
     await getLocation();
-    int uId = context.read<OrdenProvider>().uId;
+    int uId = context.read<AuthProvider>().uId;
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
@@ -320,7 +323,7 @@ class _EntradSalidaState extends State<EntradSalida> {
             );
           },
         );
-        ordenesEnProceso = ordenesEnProceso.where((orden) => orden.estado == 'EN PROCESO').toList();
+        ordenesEnProceso = ordenesEnProceso.where((orden) => (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO')).toList();
         if (ordenesEnProceso.isEmpty && confirmacion == true) {
           await obtenerUbicacion();
           if (statusCode == 1){
@@ -476,7 +479,7 @@ class _EntradSalidaState extends State<EntradSalida> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                Provider.of<AuthProvider>(context, listen: false).setToken('');
                 router.go('/');
               },
               child: const Text(

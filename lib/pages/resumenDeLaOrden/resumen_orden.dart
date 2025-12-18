@@ -7,6 +7,7 @@ import 'package:app_tec_sedel/models/revision_plaga.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
 import 'package:app_tec_sedel/models/revision_tarea.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
@@ -59,14 +60,14 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   cargarDatos() async {
     orden = context.read<OrdenProvider>().orden;
     marcaId = context.read<OrdenProvider>().marcaId;
-    token = context.read<OrdenProvider>().token;
-    if(orden.tipoOrden.codTipoOrden == 'N'){
+    token = context.read<AuthProvider>().token;
+    if(orden.tipoOrden?.codTipoOrden == 'N'){
       ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
       faltanCompletarPtos = ptosInspeccion.any((pto)=> pto.otPuntoInspeccionId == 0);
       tareas = await RevisionServices().getRevisionTareas(context, orden, token);
       materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
       plagas = await RevisionServices().getRevisionPlagas(context, orden, token);
-    } else if(orden.tipoOrden.codTipoOrden == 'N' || orden.tipoOrden.codTipoOrden == 'D') {
+    } else if(orden.tipoOrden?.codTipoOrden == 'N' || orden.tipoOrden?.codTipoOrden == 'D') {
       materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
       plagas = await RevisionServices().getRevisionPlagas(context, orden, token);
     }
@@ -112,7 +113,7 @@ class _ResumenOrdenState extends State<ResumenOrden> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                if(orden.tipoOrden.codTipoOrden == 'N')...[
+                if(orden.tipoOrden?.codTipoOrden == 'N')...[
                   if(resumenPtoInspeccion)...[
                     const ContainerTituloPIRevision(titulo: 'Puntos de inspección'),
                     const SizedBox(height: 10,),
@@ -134,7 +135,7 @@ class _ResumenOrdenState extends State<ResumenOrden> {
                     ),
                   )
                 ],
-                if(orden.tipoOrden.codTipoOrden == 'N' || orden.tipoOrden.codTipoOrden == 'D')...[
+                if(orden.tipoOrden?.codTipoOrden == 'N' || orden.tipoOrden?.codTipoOrden == 'D')...[
                   if(resumenPlagas)...[
                     const ContainerTituloPIRevision(titulo: 'Plagas'),
                     const SizedBox(height: 10,),
@@ -194,12 +195,11 @@ class _ResumenOrdenState extends State<ResumenOrden> {
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: marcaId != 0 && orden.estado == 'EN PROCESO' ? () => _mostrarDialogoConfirmacion('finalizar') : null,
+                onPressed: (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO') ? () => _mostrarDialogoConfirmacion('finalizar') : null,
                 text: 'Finalizar',
                 tamano: 18,
                 disabled: !yaCargo,
               ),
-              
             ],
           ),
         ),
@@ -262,11 +262,11 @@ class _ResumenOrdenState extends State<ResumenOrden> {
 
   obtenerUbicacion() async {
     await getLocation();
-    int uId = context.read<OrdenProvider>().uId;
+    int uId = context.read<AuthProvider>().uId;
     ubicacion.fecha = DateTime.now();
     ubicacion.usuarioId = uId;
     ubicacion.ubicacion = _currentPosition;
-    String token = context.read<OrdenProvider>().token;
+    String token = context.read<AuthProvider>().token;
     await _ubicacionServices.postUbicacion(context, ubicacion, token);
     statusCode = await _ubicacionServices.getStatusCode();
     await _ubicacionServices.resetStatusCode();

@@ -11,22 +11,15 @@ import 'package:app_tec_sedel/models/tipos_ptos_inspeccion.dart';
 class OrdenProvider with ChangeNotifier {
   Orden _orden = Orden.empty();
   String _menu = '';
-  String _token = '';
-  int _uId = 0;
-  String _nombreUsuario = '';
   int _marcaId = 0;
   TipoPtosInspeccion _tipoPtosInspeccion = TipoPtosInspeccion.empty();
   List<RevisionPtoInspeccion> _ptosInspeccion = [];
   RevisionPtoInspeccion _revisionPtoInspeccion = RevisionPtoInspeccion.empty();
   String _modo = '';
-  int _tecnicoId = 0;
   List<Orden> ordenesEnProceso = [];
   UltimaTarea _ultimaTarea = UltimaTarea.empty();
   Orden get orden => _orden;
   String get menu => _menu;
-  String get token => _token;
-  int get uId => _uId;
-  String get nombreUsuario => _nombreUsuario;
   int get marcaId => _marcaId;
   bool _pendientes = false;
   TipoPtosInspeccion get tipoPtosInspeccion => _tipoPtosInspeccion;
@@ -37,7 +30,6 @@ class OrdenProvider with ChangeNotifier {
   List<RevisionPtoInspeccion> get _ptosInspeccionCompleta => listaPuntos;
   RevisionPtoInspeccion get revisionPtoInspeccion => _revisionPtoInspeccion;
   String get modo => _modo;
-  int get tecnicoId => _tecnicoId;
   UltimaTarea get ultimaTarea => _ultimaTarea;
   bool _admOrdenes = false;
   bool get admOrdenes => _admOrdenes;
@@ -90,26 +82,6 @@ class OrdenProvider with ChangeNotifier {
 
   void setPage(String codPages) {
     _menu = codPages;
-    notifyListeners();
-  }
-
-  void setToken(String tok) {
-    _token = tok;
-    notifyListeners();
-  }
-
-  void setUsuarioId(int id) {
-    _uId = id;
-    notifyListeners();
-  }
-
-  void setTecnicoId(int tecId) {
-    _tecnicoId = tecId;
-    notifyListeners();
-  }
-
-  void setNombreUsuario(String userName) {
-    _nombreUsuario = userName;
     notifyListeners();
   }
 

@@ -2,6 +2,7 @@
 
 import 'package:app_tec_sedel/models/observacion.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
@@ -53,7 +54,7 @@ class _ObservacionesPageState extends State<ObservacionesPage> {
 
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;
@@ -171,7 +172,7 @@ class _ObservacionesPageState extends State<ObservacionesPage> {
                     alignment: Alignment.center,
                     child: CustomButton(
                       onPressed: () async {
-                        if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('No puede de ingresar o editar datos.'),
                         ));

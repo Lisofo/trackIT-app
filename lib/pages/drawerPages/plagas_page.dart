@@ -5,6 +5,7 @@ import 'package:app_tec_sedel/models/gradoInfestacion.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/plaga.dart';
 import 'package:app_tec_sedel/models/revision_plaga.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/plagas_services.dart';
 import 'package:app_tec_sedel/services/revision_services.dart';
@@ -70,7 +71,7 @@ class _PlagasPageState extends State<PlagasPage> {
     super.dispose();
   }
    cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     try {
       plagas = await _plagaServices.getPlagas(context, token);
       orden = context.read<OrdenProvider>().orden;
@@ -362,8 +363,8 @@ class _PlagasPageState extends State<PlagasPage> {
   Future<void> posteoRevisionPlaga(BuildContext context) async {
     var nuevaPlaga = RevisionPlaga(
       otPlagaId: 0,
-      ordenTrabajoId: orden.ordenTrabajoId,
-      otRevisionId: orden.otRevisionId,
+      ordenTrabajoId: orden.ordenTrabajoId!,
+      otRevisionId: orden.otRevisionId!,
       comentario: '',
       plagaId: selectedPlaga.plagaId,
       codPlaga: selectedPlaga.codPlaga,

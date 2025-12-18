@@ -3,7 +3,7 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
 import 'package:app_tec_sedel/models/ubicacion_mapa.dart';
-import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/tecnico_services.dart';
 import 'package:app_tec_sedel/services/ubicacion_mapa_services.dart';
@@ -65,7 +65,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
   }
 
   cargarDatos() async {
-    token = context.read<OrdenProvider>().token;
+    token = context.read<AuthProvider>().token;
     _animationController = AnimationController(
       vsync: this, 
       duration: const Duration(milliseconds: 500)
@@ -74,7 +74,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> loadTecnicos() async {
-    final token = context.watch<OrdenProvider>().token;
+    final token = context.watch<AuthProvider>().token;
     final loadedTecnicos = await TecnicoServices().getAllTecnicos(context, token);
     setState(() {
       tecnicos = loadedTecnicos;
@@ -276,11 +276,16 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        String fechaDesde = DateFormat('yyyy-MM-dd', 'es').format(selectedDate);
-                        DateTime manana = DateTime(selectedDate.year, selectedDate.month, selectedDate.day + 1);
-                        String fechaHasta = DateFormat('yyyy-MM-dd', 'es').format(manana);
-                        ubicaciones = await UbicacionesMapaServices().getUbicaciones(
-                          context, selectedTecnico!.tecnicoId, fechaDesde, fechaHasta, token);
+                        // MODIFICADO: Usar el mismo día con rango completo de horas
+                        String fechaDesde = "${DateFormat('yyyy-MM-dd', 'es').format(selectedDate)} 00:00:00";
+                        String fechaHasta = "${DateFormat('yyyy-MM-dd', 'es').format(selectedDate)} 23:59:59";
+                        Map<String, dynamic> queryParams = {};
+                        if (selectedTecnico != null) {
+                          queryParams['tecnicoId'] = selectedTecnico?.tecnicoId;
+                        }
+                        queryParams['fechaDesde'] = fechaDesde;
+                        queryParams['fechaHasta'] = fechaHasta;
+                        ubicaciones = await UbicacionesMapaServices().getUbicaciones(context, token, queryParams: queryParams);
                         await cargarUbicacion();
                         await cargarMarkers();
                         setState(() {});
@@ -327,6 +332,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
       
       setState(() {
         clienteSeleccionado = resultado;
+        clienteFiltro = resultado.clienteId;
       });
     }
   }
@@ -434,20 +440,6 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                               },
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () async {
-                              String fechaDesde = DateFormat('yyyy-MM-dd', 'es').format(selectedDate);
-                              DateTime manana = DateTime(selectedDate.year, selectedDate.month, selectedDate.day + 1);
-                              String fechaHasta = DateFormat('yyyy-MM-dd', 'es').format(manana);
-                              ubicaciones = await UbicacionesMapaServices().getUbicaciones(
-                                context, selectedTecnico!.tecnicoId, fechaDesde, fechaHasta, token);
-                              await cargarUbicacion();
-                              await cargarMarkers();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.search),
-                          ),
                         ],
                       ),
                     ),
@@ -500,11 +492,15 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
                           onPressed: () async {
-                            String fechaDesde = DateFormat('yyyy-MM-dd', 'es').format(selectedDate);
-                            DateTime manana = DateTime(selectedDate.year, selectedDate.month, selectedDate.day + 1);
-                            String fechaHasta = DateFormat('yyyy-MM-dd', 'es').format(manana);
-                            ubicaciones = await UbicacionesMapaServices().getUbicaciones(
-                              context, selectedTecnico!.tecnicoId, fechaDesde, fechaHasta, token);
+                            String fechaDesde = "${DateFormat('yyyy-MM-dd', 'es').format(selectedDate)} 00:00:00";
+                            String fechaHasta = "${DateFormat('yyyy-MM-dd', 'es').format(selectedDate)} 23:59:59";
+                            Map<String, dynamic> queryParams = {};
+                            if (selectedTecnico != null) {
+                              queryParams['tecnicoId'] = selectedTecnico?.tecnicoId;
+                            }
+                            queryParams['fechaDesde'] = fechaDesde;
+                            queryParams['fechaHasta'] = fechaHasta;
+                            ubicaciones = await UbicacionesMapaServices().getUbicaciones(context, token, queryParams: queryParams);
                             await cargarUbicacion();
                             await cargarMarkers();
                             setState(() {});

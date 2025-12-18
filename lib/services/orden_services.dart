@@ -36,11 +36,33 @@ class OrdenServices {
       statusCode = 1;
       final List<dynamic> ordenList = resp.data;
       var retorno = ordenList.map((obj) => Orden.fromJson(obj)).toList();
-      print(retorno.length);
       return retorno;
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future<Orden> getOrdenPorId(BuildContext context, int ordenId, String token) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/$ordenId';
+    
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      
+      statusCode = 1;
+      return Orden.fromJson(resp.data);
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      rethrow; // Importante: relanzar la excepción para que se maneje en el llamador
     }
   }
 
@@ -313,13 +335,16 @@ class OrdenServices {
     }
   }
 
-  Future patchOrdenCambioEstado(BuildContext context, Orden orden, int accionId, String token) async {
+  Future patchOrdenCambioEstado(BuildContext context, Orden orden, int accionId, int ubicacionId, String token) async {
     String link = apiLink;
     link += 'api/v1/ordenes/${orden.ordenTrabajoId}';
 
     try {
       var headers = {'Authorization': token};
-      var data = ({"accionId": accionId});
+      var data = ({
+        "accionId": accionId,
+        "ubicacionId": ubicacionId
+      });
       var resp = await _dio.request(
         link,
         options: Options(
@@ -488,6 +513,73 @@ class OrdenServices {
         Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
       return;
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+    }
+  }
+
+  Future<int> copiarOrden(BuildContext context, int ordenId, String fecha, String token) async {
+    String link = apiLink;
+    link += 'api/v1/ordenes/$ordenId/copiarOrdenTrabajo';
+    var data = {
+      "fechaOrdenTrabajo": fecha
+    };
+    try {
+      var header = {'Authorization': token};
+      var resp = await _dio.request(
+        link,
+        options: Options(
+          method: 'POST',
+          headers: header,
+        ),
+        data: data
+      );
+      statusCode = 1;
+      return resp.data['nuevaOrdenTrabajoId'];
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      return 0;
+    }
+  }
+
+  Future getOrdenCampanita(BuildContext context, String desde, String hasta, String estado, int limit, String token) async {
+    bool yaTieneFiltro = false;
+    String link = '${apiLink}api/v1/ordenes';
+    String linkFiltrado = link += '?sort=fechaDesde&limit=$limit';
+    yaTieneFiltro = true;
+    if (desde != '') {
+      linkFiltrado += '&fechaDesde=$desde';
+      yaTieneFiltro = true;
+    }
+    if (hasta != '') {
+      yaTieneFiltro ? linkFiltrado += '&' : linkFiltrado += '?';
+      linkFiltrado += 'fechaHasta=$hasta';
+      yaTieneFiltro = true;
+    }
+    if (estado != '') {
+      yaTieneFiltro ? linkFiltrado += '&' : linkFiltrado += '?';
+      linkFiltrado += 'estado=$estado';
+      yaTieneFiltro = true;
+    }
+
+    print(linkFiltrado);
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+
+      statusCode = 1;
+      final List<dynamic> ordenList = resp.data;
+      var retorno = ordenList.map((obj) => Orden.fromJson(obj)).toList();
+      print(retorno.length);
+      return retorno;
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);

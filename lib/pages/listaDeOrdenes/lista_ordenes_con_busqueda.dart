@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:app_tec_sedel/main.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,9 +26,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   int groupValue = 0;
   List trabajodres = [];
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
-  bool isMobile = false;
-  bool isAdmin = false;
   bool datosCargados = false;
+  bool isAdmin = false;
 
   // Variables para los filtros
   bool _isFilterExpanded = false;
@@ -39,8 +40,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   @override
   void initState() {
     super.initState();
-    token = context.read<OrdenProvider>().token;
-    tecnicoId = context.read<OrdenProvider>().tecnicoId;
+    token = context.read<AuthProvider>().token;
+    tecnicoId = context.read<AuthProvider>().tecnicoId;
     
     // Verificar si hay una unidad seleccionada (viene desde MonitorVehiculos)
     final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
@@ -53,7 +54,22 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         cargarDatos();
       });
     }
-    // Si no hay unidad o cliente seleccionado, no cargar automáticamente
+  }
+
+  // Método para determinar el tipo de dispositivo
+  bool _esMovil(BuildContext context) {
+    final shortestSide = MediaQuery.of(context).size.shortestSide;
+    return shortestSide < 600;
+  }
+
+  bool _esTablet(BuildContext context) {
+    final shortestSide = MediaQuery.of(context).size.shortestSide;
+    return shortestSide >= 600 && shortestSide < 1200;
+  }
+
+  bool _esEscritorio(BuildContext context) {
+    final shortestSide = MediaQuery.of(context).size.shortestSide;
+    return shortestSide >= 1200;
   }
 
   // 2. Método para manejar la actualización de datos
@@ -80,7 +96,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       
       // Obtener la unidad y cliente seleccionados del provider
       Map<String, dynamic> queryParams = {};
-      queryParams['sort'] = 'fechaDesde DESC';
+      queryParams['sort'] = 'fechaDesde';
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
@@ -120,8 +136,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       }
       
       Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
-      var shortestSide = MediaQuery.of(context).size.shortestSide;
-      isMobile = shortestSide < 600;
       setState(() {});
     } catch (e) {
       ordenes = [];
@@ -150,8 +164,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
 
   void _filtrarYRecargarOrdenes() async {
     try {
-      token = context.read<OrdenProvider>().token;
-      tecnicoId = context.read<OrdenProvider>().tecnicoId;
+      token = context.read<AuthProvider>().token;
+      tecnicoId = context.read<AuthProvider>().tecnicoId;
       
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
@@ -217,6 +231,308 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     });
   }
 
+  // Widget para construir el encabezado de la orden según el dispositivo
+  Widget _buildOrdenHeader(BuildContext context, Orden orden) {
+    final esMovil = _esMovil(context);
+    final esTablet = _esTablet(context);
+    // ignore: unused_local_variable
+    final esEscritorio = _esEscritorio(context);
+    
+    if (esMovil) {
+      return _buildMovilHeader(orden, context);
+    } else if (esTablet) {
+      return _buildTabletHeader(orden, context);
+    } else {
+      return _buildEscritorioHeader(orden, context);
+    }
+  }
+
+  Widget _buildMovilHeader(Orden orden, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    orden.numeroOrdenTrabajo.toString(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    orden.fechaOrdenTrabajo != null
+                      ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(orden.fechaOrdenTrabajo!)
+                      : 'Fecha no disponible',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (orden.alerta != null && orden.alerta == true)
+              const Icon(Icons.flag, color: Colors.red, size: 20),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (orden.descripcion != null && orden.descripcion!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              orden.descripcion.toString(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (orden.matricula != null && orden.matricula!.isNotEmpty)
+              Text(
+                orden.matricula!,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            Text(
+              orden.estado ?? "",
+              style: TextStyle(
+                color: _getEstadoColor(orden.estado),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabletHeader(Orden orden, BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                orden.numeroOrdenTrabajo.toString(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                orden.fechaOrdenTrabajo != null
+                  ? DateFormat('dd/MM/yyyy HH:mm', 'es').format(orden.fechaOrdenTrabajo!)
+                  : 'Fecha no disponible',
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              orden.descripcion ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (orden.alerta != null && orden.alerta == true)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: Icon(Icons.flag, color: Colors.red),
+                ),
+              if (orden.matricula != null && orden.matricula!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Text(
+                    orden.matricula!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              Text(
+                orden.estado ?? "",
+                style: TextStyle(
+                  color: _getEstadoColor(orden.estado),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEscritorioHeader(Orden orden, BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            orden.numeroOrdenTrabajo.toString(),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 180,
+          child: Text(
+            orden.fechaOrdenTrabajo != null
+              ? DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo!)
+              : 'Fecha no disponible',
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(orden.descripcion ?? ''),
+        ),
+        const SizedBox(width: 16),
+        Row(
+          children: [
+            if (orden.alerta != null && orden.alerta == true)
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.flag, color: Colors.red),
+              ),
+            if (orden.matricula != null && orden.matricula!.isNotEmpty)
+              SizedBox(
+                width: 100,
+                child: Text(
+                  orden.matricula!,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 120,
+              child: Text(
+                orden.estado ?? "",
+                style: TextStyle(
+                  color: _getEstadoColor(orden.estado),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Widget para construir la información del cliente según el dispositivo
+  Widget _buildClienteInfo(BuildContext context, Orden orden) {
+    final esMovil = _esMovil(context);
+    final esTablet = _esTablet(context);
+    // ignore: unused_local_variable
+    final esEscritorio = _esEscritorio(context);
+    
+    if (esMovil || esTablet) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          Text(
+            '${orden.cliente?.codCliente} - ${orden.cliente?.nombre}',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          if (orden.comentarioCliente != null && orden.comentarioCliente!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                orden.comentarioCliente!,
+                style: TextStyle(color: Colors.grey[700]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (orden.comentarioTrabajo != null && orden.comentarioTrabajo!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                orden.comentarioTrabajo!,
+                style: TextStyle(color: Colors.grey[700]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                '${orden.cliente?.codCliente} - ${orden.cliente?.nombre}',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  orden.comentarioCliente ?? '',
+                  style: TextStyle(color: Colors.grey[700]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                orden.comentarioTrabajo ?? '',
+                style: TextStyle(color: Colors.grey[700]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Color _getEstadoColor(String? estado) {
+    if (estado == null) return Colors.black;
+    
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return Colors.orange;
+      case 'en proceso':
+        return Colors.blue;
+      case 'completado':
+        return Colors.green;
+      case 'cancelado':
+        return Colors.red;
+      default:
+        return Colors.black;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -226,223 +542,131 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: colors.primary,
-          iconTheme: IconThemeData(
-            color: colors.onPrimary
-          ),
+          iconTheme: IconThemeData(color: colors.onPrimary),
           title: const Text(
-            'Ordenes',
+            'Órdenes',
             style: TextStyle(color: Colors.white),
           ),
           actions: [
-            IconButton(
-              onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setOrden(Orden.empty());
-                router.push('/monitorOrdenes');
-              },
-              icon: const Icon(Icons.add),
-              tooltip: "Nueva orden",
-            ),
+            if (isAdmin)
+              IconButton(
+                onPressed: () {
+                  Provider.of<OrdenProvider>(context, listen: false).setOrden(Orden.empty());
+                  router.push('/monitorOrdenes');
+                },
+                icon: const Icon(Icons.add),
+                tooltip: "Nueva orden",
+              ),
             IconButton(
               onPressed: () async {
                 logout();
               }, 
-              icon: const Icon(
-                Icons.logout,
-                size: 34,
-              )
+              icon: const Icon(Icons.logout)
             )
           ],
         ),
         backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            // Widget de Filtros
-            FiltrosOrdenes(
-              onSearch: _aplicarFiltros,
-              onReset: _limpiarFiltros,
-              isFilterExpanded: _isFilterExpanded,
-              onToggleFilter: _toggleFiltros,
-              cantidadDeOrdenes: ordenes.length,
-              token: token,
-            ),
-            
-            Expanded(
-              child: RefreshIndicator(
-                key: _refreshIndicatorKey,
-                onRefresh: _refreshData,
-                child: ListView.builder(
-                  itemCount: ordenes.length,
-                  itemBuilder: (context, i) {
-                    final orden = ordenes[i];
-                    return Card(
-                      child: InkWell(
-                        onTap: () {
-                          Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
-                          context.read<OrdenProvider>().setOrden(orden);
-                          if (isAdmin) {
-                            router.push('/monitorOrdenes');
-                          } else {
-                            router.push('/ordenInterna');
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if(isMobile)...[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                // Widget de Filtros
+                FiltrosOrdenes(
+                  onSearch: _aplicarFiltros,
+                  onReset: _limpiarFiltros,
+                  isFilterExpanded: _isFilterExpanded,
+                  onToggleFilter: _toggleFiltros,
+                  cantidadDeOrdenes: ordenes.length,
+                  token: token,
+                ),
+                
+                Expanded(
+                  child: RefreshIndicator(
+                    key: _refreshIndicatorKey,
+                    onRefresh: _refreshData,
+                    child: ordenes.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: constraints.maxWidth < 600 ? 8.0 : 16.0,
+                              vertical: 8.0,
+                            ),
+                            itemCount: ordenes.length,
+                            itemBuilder: (context, i) {
+                              final orden = ordenes[i];
+                              return Card(
+                                margin: EdgeInsets.symmetric(
+                                  horizontal: constraints.maxWidth < 600 ? 4.0 : 8.0,
+                                  vertical: 6.0,
+                                ),
+                                elevation: 2,
+                                child: InkWell(
+                                  onTap: () {
+                                    Provider.of<OrdenProvider>(context, listen: false).clearListaPto();
+                                    context.read<OrdenProvider>().setOrden(orden);
+                                    if (isAdmin) {
+                                      router.push('/monitorOrdenes');
+                                    } else {
+                                      if (flavor == 'parabrisasejido') {
+                                        router.push('/ordenInternaVertical');
+                                      } else {
+                                        router.push('/ordenInternaHorizontalw');
+                                      }
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(
+                                      constraints.maxWidth < 600 ? 12.0 : 16.0,
+                                    ),
+                                    child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          orden.numeroOrdenTrabajo.toString(),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
-                                        Text(
-                                          orden.fechaOrdenTrabajo != null
-                                            ? DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo!)
-                                            : 'Fecha no disponible',
-                                        ),
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
-                                        SizedBox(
-                                          width: MediaQuery.of(context).size.width * 0.7,
-                                          child: Text(orden.descripcion)
-                                        ),
+                                        _buildOrdenHeader(context, orden),
+                                        _buildClienteInfo(context, orden),
                                       ],
                                     ),
-                                    const Spacer(),
-                                    Column(
-                                      children: [
-                                        if (MediaQuery.of(context).size.width < 1000)... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
-                                          ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                          Text(orden.estado)
-                                        ]
-                                        else ... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
-                                          ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                        ]
-                                      ],
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ]else...[
-                                Row(
-                                  children: [
-                                    Column(
-                                      children: [
-                                        Text(
-                                          orden.numeroOrdenTrabajo.toString(),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 20,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    Text(
-                                      orden.fechaOrdenTrabajo != null
-                                        ? DateFormat('dd/MM/yyyy HH:mm:ss', 'es').format(orden.fechaOrdenTrabajo!)
-                                        : 'Fecha no disponible',
-                                    ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    Text(orden.descripcion),
-                                    const Spacer(),
-                                    Column(
-                                      children: [
-                                        if (MediaQuery.of(context).size.width < 1000)... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
-                                          ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                          Text(orden.estado)
-                                        ]
-                                        else ... [
-                                          if(orden.alerta)
-                                          const Icon(
-                                            Icons.flag,
-                                            color:Colors.red
-                                          ),
-                                          Text(
-                                            orden.matricula.toString(), style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
-
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              if (MediaQuery.of(context).size.width < 1000)... [
-                                Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',),
-                                Text(orden.comentarioCliente),
-                                Text(orden.comentarioTrabajo),
-                              ]else ... [
-                                Row(
-                                  children: [
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width *0.2,
-                                      child: Text('${orden.cliente.codCliente} - ${orden.cliente.nombre}',)
-                                      ),
-                                    const VerticalDivider(),
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width *0.3,
-                                      child: Text(orden.comentarioCliente)
-                                    ),
-                                    const VerticalDivider(),
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width *0.3,
-                                      child: Text(orden.comentarioTrabajo)
-                                    ),
-                                    const Spacer(),
-                                    Text(orden.estado)
-                                  ],
-                                ),
-                              ],
-                            ],
+                              );
+                            },
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.assignment,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No hay órdenes disponibles',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Intenta ajustar los filtros o crear una nueva orden',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -463,7 +687,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Cerrar sesión'),
-          content: const Text('Esta seguro de querer cerrar sesión?'),
+          content: const Text('¿Está seguro de querer cerrar sesión?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -473,7 +697,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<OrdenProvider>(context, listen: false).setToken('');
+                Provider.of<AuthProvider>(context, listen: false).setToken('');
                 router.go('/');
               },
               child: const Text(
