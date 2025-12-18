@@ -1,21 +1,28 @@
 // services/excel_consumo_service.dart
 import 'package:app_tec_sedel/models/linea.dart';
+import 'package:app_tec_sedel/models/lote.dart';
 import 'package:app_tec_sedel/models/material_consumo.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 
 class ExcelConsumoService {
   
-  TablaConsumoExcel procesarDatosReales(List<Linea> lineas, List<Orden> ordenesSeleccionadas) {
+  TablaConsumoExcel procesarDatosReales(
+    List<Linea> lineas, 
+    List<Orden> ordenesSeleccionadas,
+    List<LineaLote> lineasLote, // NUEVO PARÁMETRO
+  ) {
     final tabla = TablaConsumoExcel();
     tabla.ordenesColumnas = ordenesSeleccionadas;
     
-    // Filtrar líneas que son materiales (itemId == piezaId)
     final lineasMateriales = lineas.where((linea) => 
       linea.itemId == linea.piezaId && linea.itemId != 0
     ).toList();
 
-    // Agrupar por material y procesar datos reales
-    tabla.filas = _crearFilasConDatosReales(lineasMateriales, ordenesSeleccionadas);
+    tabla.filas = _crearFilasConDatosReales(
+      lineasMateriales, 
+      ordenesSeleccionadas,
+      lineasLote, // Pasar líneas de lote
+    );
     tabla.calcularTotales();
     
     return tabla;
@@ -23,7 +30,8 @@ class ExcelConsumoService {
 
   List<FilaConsumoExcel> _crearFilasConDatosReales(
     List<Linea> lineasMateriales, 
-    List<Orden> ordenesSeleccionadas
+    List<Orden> ordenesSeleccionadas,
+    List<LineaLote> lineasLote,
   ) {
     final List<FilaConsumoExcel> filas = [];
     final materialesAgrupados = _agruparMateriales(lineasMateriales);
@@ -32,11 +40,16 @@ class ExcelConsumoService {
       final lineasMaterial = entry.value;
       final primeraLinea = lineasMaterial.first;
       
-      // Usar datos reales de las líneas
-      final consumosAnteriores = _calcularConsumosAnteriores(lineasMaterial);
-      final consumosPorOrden = _calcularConsumosPorOrden(lineasMaterial, ordenesSeleccionadas);
+      final consumosAnteriores = _calcularConsumosAnteriores(
+        lineasMaterial, 
+        lineasLote
+      );
       
-      // Calcular totales
+      final consumosPorOrden = _calcularConsumosPorOrden(
+        lineasMaterial, 
+        ordenesSeleccionadas
+      );
+      
       double sumaAnteriores = consumosAnteriores.values.fold(0.0, (sum, valor) => sum + valor);
       double sumaOrdenes = consumosPorOrden.values.fold(0.0, (sum, valor) => sum + valor);
       double totalFila = sumaAnteriores + sumaOrdenes;
@@ -49,9 +62,10 @@ class ExcelConsumoService {
         consumosAnteriores: consumosAnteriores,
         consumosPorOrden: consumosPorOrden,
         totalFila: totalFila,
-        consumoCalculado: consumoCalculado, // Nuevo campo
+        consumoCalculado: consumoCalculado,
         descripcionS: primeraLinea.descripcion,
         descripcionT: primeraLinea.lote,
+        itemId: primeraLinea.itemId, // Pasar itemId
       );
       
       filas.add(fila);
@@ -73,14 +87,34 @@ class ExcelConsumoService {
     return agrupados;
   }
 
-  Map<String, double> _calcularConsumosAnteriores(List<Linea> lineasMaterial) {
-    // Columnas fijas de consumos anteriores (4 columnas)
-    return {
+  Map<String, double> _calcularConsumosAnteriores(
+    List<Linea> lineasMaterial,
+    List<LineaLote> lineasLote,
+  ) {
+    final consumos = <String, double>{
       'ant_1': 0.0,
-      'ant_2': 0.0, 
+      'ant_2': 0.0,
       'ant_3': 0.0,
       'ant_4': 0.0,
     };
+    
+    if (lineasMaterial.isEmpty) return consumos;
+    
+    final itemId = lineasMaterial.first.itemId;
+    
+    final lineasLoteItem = lineasLote.where((linea) => linea.itemId == itemId);
+    
+    for (var lineaLote in lineasLoteItem) {
+      // USAR REFERENCIA PARA MAPEAR A LA COLUMNA CORRECTA
+      if (lineaLote.referencia != null && consumos.containsKey(lineaLote.referencia)) {
+        final valor = lineaLote.control ?? '0';
+        consumos[lineaLote.referencia!] = valor.toString().isNotEmpty 
+          ? double.parse(valor.toString()) 
+          : 0.0;
+      }
+    }
+    
+    return consumos;
   }
 
   Map<String, double> _calcularConsumosPorOrden(
@@ -89,12 +123,10 @@ class ExcelConsumoService {
   ) {
     final consumos = <String, double>{};
     
-    // Inicializar todas las órdenes en 0
     for (var orden in ordenesSeleccionadas) {
       consumos[orden.ordenTrabajoId.toString()] = 0.0;
     }
     
-    // Sumar las cantidades por orden
     for (var linea in lineasMaterial) {
       final ordenId = linea.ordenTrabajoId.toString();
       if (consumos.containsKey(ordenId)) {

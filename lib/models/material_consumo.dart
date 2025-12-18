@@ -46,12 +46,13 @@ class FilaConsumoExcel {
   final String codigo;
   final String articulo;
   final String at;
-  Map<String, double> consumosAnteriores; // Cambiado a mutable
-  Map<String, double> consumosPorOrden; // Cambiado a mutable
-  double totalFila; // Cambiado a mutable
-  double consumoCalculado; // Nuevo campo: sum(ordenes) - sum(anteriores)
+  Map<String, double> consumosAnteriores;
+  Map<String, double> consumosPorOrden;
+  double totalFila;
+  double consumoCalculado;
   final String descripcionS;
   final String descripcionT;
+  final int itemId; // NUEVO CAMPO
 
   FilaConsumoExcel({
     required this.codigo,
@@ -60,9 +61,10 @@ class FilaConsumoExcel {
     required this.consumosAnteriores,
     required this.consumosPorOrden,
     required this.totalFila,
-    required this.consumoCalculado, // Nuevo campo
+    required this.consumoCalculado,
     required this.descripcionS,
     required this.descripcionT,
+    required this.itemId, // NUEVO PARÁMETRO
   });
 }
 
@@ -71,12 +73,12 @@ class TablaConsumoExcel {
   List<Orden> ordenesColumnas = [];
   Map<String, double> totalesColumnas = {};
   Map<String, double> totalesFilas = {};
-  Map<String, double> totalesConsumo = {}; // Nuevo: totales por fila para consumo
+  Map<String, double> totalesConsumo = {};
   double totalEmbarcar = 18720.0;
   double totalEnvasado = 0.0;
   double mermaProceso = 0.0;
   double porcentajeMerma = 0.0;
-  double totalConsumoGeneral = 0.0; // Nuevo: total de la columna consumo
+  double totalConsumoGeneral = 0.0;
 
   void calcularTotales() {
     totalesColumnas = {};
@@ -84,53 +86,42 @@ class TablaConsumoExcel {
     totalesConsumo = {};
     totalConsumoGeneral = 0.0;
     
-    // Inicializar columnas fijas (4 columnas de anteriores)
     for (int i = 1; i <= 4; i++) {
       totalesColumnas['ant_$i'] = 0.0;
     }
     
-    // Inicializar columnas dinámicas por orden
     for (var orden in ordenesColumnas) {
       totalesColumnas[orden.ordenTrabajoId.toString()] = 0.0;
     }
     
     totalesColumnas['total'] = 0.0;
-    totalesColumnas['consumo'] = 0.0; // Nueva columna
+    totalesColumnas['consumo'] = 0.0;
 
-    // Calcular totales por fila y por columna
     for (var fila in filas) {
       double totalFila = 0.0;
       double sumaAnteriores = 0.0;
       double sumaOrdenes = 0.0;
       
-      // Sumar consumos anteriores (4 columnas)
       fila.consumosAnteriores.forEach((columna, valor) {
         totalesColumnas[columna] = (totalesColumnas[columna] ?? 0) + valor;
         totalFila += valor;
         sumaAnteriores += valor;
       });
       
-      // Sumar consumos por orden
       fila.consumosPorOrden.forEach((ordenId, valor) {
         totalesColumnas[ordenId] = (totalesColumnas[ordenId] ?? 0) + valor;
         totalFila += valor;
         sumaOrdenes += valor;
       });
       
-      // Calcular consumo: suma de órdenes - suma de anteriores
       double consumoFila = sumaOrdenes - sumaAnteriores;
       fila.consumoCalculado = consumoFila;
       totalesColumnas['consumo'] = (totalesColumnas['consumo'] ?? 0) + consumoFila;
       totalesConsumo[fila.codigo] = consumoFila;
       totalConsumoGeneral += consumoFila;
       
-      // Actualizar el totalFila de la fila
       fila.totalFila = totalFila;
-      
-      // Guardar total de la fila
       totalesFilas[fila.codigo] = totalFila;
-      
-      // Acumular total general
       totalesColumnas['total'] = (totalesColumnas['total'] ?? 0) + totalFila;
     }
 
@@ -139,7 +130,6 @@ class TablaConsumoExcel {
     porcentajeMerma = totalEnvasado > 0 ? (mermaProceso / totalEnvasado) * 100 : 0.0;
   }
 
-  // Nuevo método para actualizar un valor específico
   void actualizarValor(String codigoMaterial, String columna, double nuevoValor) {
     for (var fila in filas) {
       if (fila.codigo == codigoMaterial) {
@@ -154,7 +144,6 @@ class TablaConsumoExcel {
     calcularTotales();
   }
 
-  // Método para obtener un valor específico
   double? obtenerValor(String codigoMaterial, String columna) {
     for (var fila in filas) {
       if (fila.codigo == codigoMaterial) {
@@ -168,7 +157,6 @@ class TablaConsumoExcel {
     return null;
   }
 
-  // Método para obtener el consumo calculado de una fila
   double obtenerConsumoFila(String codigoMaterial) {
     for (var fila in filas) {
       if (fila.codigo == codigoMaterial) {
@@ -176,5 +164,74 @@ class TablaConsumoExcel {
       }
     }
     return 0.0;
+  }
+
+  // NUEVO MÉTODO: Obtener itemId de una fila
+  int? obtenerItemIdFila(String codigoMaterial) {
+    for (var fila in filas) {
+      if (fila.codigo == codigoMaterial) {
+        return fila.itemId;
+      }
+    }
+    return null;
+  }
+
+  // NUEVO MÉTODO: Obtener fila completa
+  FilaConsumoExcel? obtenerFila(String codigoMaterial) {
+    for (var fila in filas) {
+      if (fila.codigo == codigoMaterial) {
+        return fila;
+      }
+    }
+    return null;
+  }
+
+  // NUEVO MÉTODO: Calcular porcentajes de distribución
+  Map<String, Map<String, double>> calcularPorcentajes() {
+    final porcentajes = <String, Map<String, double>>{};
+    
+    // Calcular totales por columna primero
+    final totalesPorColumna = <String, double>{};
+    
+    // Sumar ANT1-4
+    for (int i = 1; i <= 4; i++) {
+      final columna = 'ant_$i';
+      totalesPorColumna[columna] = filas.fold(
+        0.0, 
+        (sum, fila) => sum + (fila.consumosAnteriores[columna] ?? 0.0)
+      );
+    }
+    
+    // Sumar órdenes
+    for (var fila in filas) {
+      for (var ordenId in fila.consumosPorOrden.keys) {
+        totalesPorColumna[ordenId] = (totalesPorColumna[ordenId] ?? 0.0) + 
+                                   (fila.consumosPorOrden[ordenId] ?? 0.0);
+      }
+    }
+    
+    // Calcular porcentaje para cada fila y columna
+    for (var fila in filas) {
+      porcentajes[fila.codigo] = {};
+      
+      // Porcentajes para ANT1-4
+      for (int i = 1; i <= 4; i++) {
+        final columna = 'ant_$i';
+        final valor = fila.consumosAnteriores[columna] ?? 0.0;
+        final totalColumna = totalesPorColumna[columna] ?? 1.0; // Evitar división por 0
+        final porcentaje = totalColumna > 0 ? (valor / totalColumna) * 100 : 0.0;
+        porcentajes[fila.codigo]![columna] = porcentaje;
+      }
+      
+      // Porcentajes para órdenes
+      for (var ordenId in fila.consumosPorOrden.keys) {
+        final valor = fila.consumosPorOrden[ordenId] ?? 0.0;
+        final totalColumna = totalesPorColumna[ordenId] ?? 1.0;
+        final porcentaje = totalColumna > 0 ? (valor / totalColumna) * 100 : 0.0;
+        porcentajes[fila.codigo]![ordenId] = porcentaje;
+      }
+    }
+    
+    return porcentajes;
   }
 }

@@ -235,6 +235,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   Widget _buildOrdenHeader(BuildContext context, Orden orden) {
     final esMovil = _esMovil(context);
     final esTablet = _esTablet(context);
+    // ignore: unused_local_variable
     final esEscritorio = _esEscritorio(context);
     
     if (esMovil) {
@@ -442,6 +443,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   Widget _buildClienteInfo(BuildContext context, Orden orden) {
     final esMovil = _esMovil(context);
     final esTablet = _esTablet(context);
+    // ignore: unused_local_variable
     final esEscritorio = _esEscritorio(context);
     
     if (esMovil || esTablet) {

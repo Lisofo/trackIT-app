@@ -1,3 +1,5 @@
+import 'package:app_tec_sedel/models/lote.dart';
+import 'package:app_tec_sedel/pages/monitorOrdenes/busqueda_lotes_screen.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
@@ -48,7 +50,18 @@ final router = GoRouter(
     GoRoute(path: '/Dashboard', builder: (context, state) => const DashboardPage(),),
     GoRoute(path: '/mapa', builder: (context, state) => const MapaPage(),),
     GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),),
-    GoRoute(path: '/planillaConsumos', builder: (context, state) => const ConsumosScreen(),),
+    
+    GoRoute(
+      path: '/planilla',
+      builder: (context, state) {
+        final lote = state.extra as Lote?;
+        return ConsumosScreen(loteSeleccionado: lote);
+      },
+    ),
+    
+    // Nueva ruta para la búsqueda de lotes
+    GoRoute(path: '/planillaConsumos', builder: (context, state) => const BusquedaLotesScreen()),
+    
     GoRoute(path: '/ordenesMonitoreo', builder: (context, state) => const Monitoreo(),),
     GoRoute(path: '/incidencias', builder: (context, state) => const IncidenciaScreen(),),
   ],
