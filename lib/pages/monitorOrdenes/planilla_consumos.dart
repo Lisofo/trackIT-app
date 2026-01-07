@@ -1,6 +1,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'dart:async';
+
 import 'package:app_tec_sedel/models/linea.dart';
 import 'package:app_tec_sedel/models/material_consumo.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
@@ -128,8 +129,9 @@ class ConsumosScreenState extends State<ConsumosScreen> {
     
     if (widget.loteSeleccionado != null) {
       // CARGAR EL LOTE COMPLETO CON TODOS SUS ATRIBUTOS
-      _cargarLoteCompleto().then((_) {
-        _ordenesSeleccionadas = _convertirOrdenesTrabajoAOrden(widget.loteSeleccionado!.ordenes ?? []);
+      _cargarLoteCompleto().then((_) async {
+        // Convertir órdenes de trabajo a órdenes completas
+        _ordenesSeleccionadas = await _convertirOrdenesTrabajoAOrden(widget.loteSeleccionado!.ordenes ?? []);
         return _cargarLineasLote();
       }).then((_) {
         _cargarMateriales();
@@ -221,15 +223,54 @@ class ConsumosScreenState extends State<ConsumosScreen> {
     _picoTotal2Controller.addListener(_marcarCambiosLote);
   }
 
-  List<Orden> _convertirOrdenesTrabajoAOrden(List<OrdenTrabajo> ordenesTrabajo) {
-    return ordenesTrabajo.map((ot) {
-      return Orden(
-        ordenTrabajoId: ot.ordenTrabajoId,
-        numeroOrdenTrabajo: ot.numeroOrdenTrabajo,
-        descripcion: ot.descripcion,
-        fechaOrdenTrabajo: DateTime.now(),
-      );
-    }).toList();
+  Future<List<Orden>> _convertirOrdenesTrabajoAOrden(List<OrdenTrabajo> ordenesTrabajo) async {
+    if (ordenesTrabajo.isEmpty) return [];
+    
+    try {
+      final authProvider = context.read<AuthProvider>();
+      String token = authProvider.token;
+      String tecnicoId = authProvider.tecnicoId.toString();
+      
+      // Obtener todas las órdenes disponibles
+      List<Orden> todasLasOrdenes = await _ordenServices.getOrden(context, tecnicoId, token);
+      
+      // Filtrar las órdenes que coinciden por numeroOrdenTrabajo
+      List<Orden> ordenesFiltradas = [];
+      
+      for (var ordenTrabajo in ordenesTrabajo) {
+        // Buscar la orden completa que coincide
+        Orden? ordenCompleta = todasLasOrdenes.firstWhere(
+          (orden) => orden.numeroOrdenTrabajo == ordenTrabajo.numeroOrdenTrabajo,
+          orElse: () => Orden(), // Retorna una orden vacía si no encuentra
+        );
+        
+        // Si se encontró una orden completa, agregarla
+        if (ordenCompleta.ordenTrabajoId != null) {
+          ordenesFiltradas.add(ordenCompleta);
+        } else {
+          // Si no se encontró, crear una orden básica con los datos disponibles
+          ordenesFiltradas.add(Orden(
+            ordenTrabajoId: ordenTrabajo.ordenTrabajoId,
+            numeroOrdenTrabajo: ordenTrabajo.numeroOrdenTrabajo,
+            descripcion: ordenTrabajo.descripcion,
+            fechaOrdenTrabajo: DateTime.now(),
+          ));
+        }
+      }
+      
+      return ordenesFiltradas;
+    } catch (e) {
+      print('Error convirtiendo órdenes de trabajo: $e');
+      // En caso de error, retornar órdenes básicas
+      return ordenesTrabajo.map((ot) {
+        return Orden(
+          ordenTrabajoId: ot.ordenTrabajoId,
+          numeroOrdenTrabajo: ot.numeroOrdenTrabajo,
+          descripcion: ot.descripcion,
+          fechaOrdenTrabajo: DateTime.now(),
+        );
+      }).toList();
+    }
   }
 
   Future<void> _cargarLineasLote() async {
@@ -312,6 +353,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       String tecnicoId = authProvider.tecnicoId.toString();
       
       _ordenes = await _ordenServices.getOrden(context, tecnicoId, token);
+      print('Órdenes cargadas: ${_ordenes.length}');
     } catch (e) {
       print('Error cargando órdenes: $e');
     } finally {
@@ -1009,7 +1051,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
 
     return Column(
       children: [        
-        // Tabla de porcentajes
+        // Tabla de porcentajes (código existente)
         Card(
           margin: const EdgeInsets.all(8),
           child: Padding(
@@ -1034,7 +1076,9 @@ class ConsumosScreenState extends State<ConsumosScreen> {
                     
                     final int totalFilas = _tablaConsumo.filas.length + 
                         (_multiplicadorFila25 > 0 ? 1 : 0) + 
-                        (_multiplicadorFila26 > 0 ? 1 : 0);
+                        (_multiplicadorFila26 > 0 ? 1 : 0) +
+                        2; // +2 para las nuevas filas ccVisc y ccNvporc
+                    
                     final double alturaTotal = totalFilas * 50 + 60;
                     
                     return SingleChildScrollView(
@@ -1150,7 +1194,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
   ) {
     final List<DataRow> filas = [];
 
-    // Filas de materiales
+    // Filas de materiales (código existente)
     for (var fila in _tablaConsumo.filas) {
       final codigo = fila.codigo;
       final porcentajesFila = porcentajes[codigo] ?? {};
@@ -1220,7 +1264,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       filas.add(DataRow(cells: celdas));
     }
     
-    // Fila 25
+    // Fila 25 (código existente)
     if (_multiplicadorFila25 > 0) {
       final celdasFila25 = <DataCell>[
         const DataCell(SizedBox.shrink()), // Sin checkbox
@@ -1285,7 +1329,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       ));
     }
     
-    // Fila 26
+    // Fila 26 (código existente)
     if (_multiplicadorFila26 > 0) {
       final celdasFila26 = <DataCell>[
         const DataCell(SizedBox.shrink()), // Sin checkbox
@@ -1349,6 +1393,150 @@ class ConsumosScreenState extends State<ConsumosScreen> {
         ),
       ));
     }
+    
+    // ============================================
+    // NUEVAS FILAS: ccVisc y ccNvporc por orden
+    // ============================================
+    
+    // Fila para ccVisc
+    final celdasCcVisc = <DataCell>[
+      const DataCell(SizedBox.shrink()), // Sin checkbox
+      DataCell(
+        Container(
+          padding: const EdgeInsets.all(4),
+          color: Colors.purple[50],
+          child: const Text(
+            '',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple,
+            ),
+          ),
+        ),
+      ),
+      const DataCell(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Viscosidad Control Calidad',
+            style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          ),
+        ),
+      ),
+      
+      // Para ANT1-4 (no aplica)
+      for (int i = 1; i <= 4; i++)
+        DataCell(
+          SizedBox(
+            width: 70,
+            child: Center(
+              child: Text(
+                '-',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+      // Para cada orden - mostrar el valor de ccVisc
+      for (var orden in _ordenesSeleccionadas)
+        DataCell(
+          SizedBox(
+            width: 100,
+            child: Center(
+              child: Text(
+                orden.ccVisc ?? '-',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple,
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
+
+    filas.add(DataRow(
+      cells: celdasCcVisc,
+      color: MaterialStateProperty.resolveWith<Color?>(
+        (states) => Colors.purple[50]
+      ),
+    ));
+    
+    // Fila para ccNvporc
+    final celdasCcNvporc = <DataCell>[
+      const DataCell(SizedBox.shrink()), // Sin checkbox
+      DataCell(
+        Container(
+          padding: const EdgeInsets.all(4),
+          color: Colors.orange[50],
+          child: const Text(
+            '',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+        ),
+      ),
+      const DataCell(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'NV% Control Calidad',
+            style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          ),
+        ),
+      ),
+      
+      // Para ANT1-4 (no aplica)
+      for (int i = 1; i <= 4; i++)
+        DataCell(
+          SizedBox(
+            width: 70,
+            child: Center(
+              child: Text(
+                '-',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+      // Para cada orden - mostrar el valor de ccNvporc
+      for (var orden in _ordenesSeleccionadas)
+        DataCell(
+          SizedBox(
+            width: 100,
+            child: Center(
+              child: Text(
+                orden.ccNvporc ?? '-',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
+
+    filas.add(DataRow(
+      cells: celdasCcNvporc,
+      color: MaterialStateProperty.resolveWith<Color?>(
+        (states) => Colors.orange[50]
+      ),
+    ));
     
     return filas;
   }
@@ -1453,8 +1641,7 @@ class ConsumosScreenState extends State<ConsumosScreen> {
       _hayCambiosSinGuardar = false;
       cambiosPendientesLote.clear();
       cambiosPendientesOrden.clear();
-      _debounceTimer?.cancel();
-      materialesSeleccionados.clear();
+      materialesSeleccionados.clear(); // Limpiar selección
       _controllerMulti25.text = '0';
       _controllerMulti26.text = '0';
       _multiplicadorFila25 = 0.0;
@@ -2994,8 +3181,7 @@ body: Stack(
             ),
             const SizedBox(height: 8),
             Text(
-              'Total Envasado: ${totalEnvasadoCalculado.toStringAsFixed(0)} kg | '
-              'Total Materiales: ${sumaTotalMateriales.toStringAsFixed(0)} kg',
+              'Total Envasado: ${totalEnvasadoCalculado.toStringAsFixed(0)} kg | '              'Total Materiales: ${sumaTotalMateriales.toStringAsFixed(0)} kg',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 16),

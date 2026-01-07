@@ -86,6 +86,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   final TextEditingController _mermaKgController = TextEditingController();
   final TextEditingController _mermaPorcentajeController = TextEditingController();
   final TextEditingController _observacionesEnvasadoController = TextEditingController();
+  
+  // Nuevos controladores para ccVisc y ccNvporc
+  final TextEditingController _ccViscController = TextEditingController();
+  final TextEditingController _ccNvporcController = TextEditingController();
 
   double get _totalChapa {
     double total = 0;
@@ -139,6 +143,12 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
   void initState() {
     super.initState();
     final flavor = context.read<AuthProvider>().flavor;
+    
+    // Inicializar los nuevos campos con valores existentes de la orden
+    if (widget.ordenPrevia != null) {
+      _ccViscController.text = widget.ordenPrevia!.ccVisc ?? '';
+      _ccNvporcController.text = widget.ordenPrevia!.ccNvporc ?? '';
+    }
     
     if (flavor == 'automotoraargentina') {
       _cargarTareasYMateriales();
@@ -547,6 +557,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
 
   void _actualizarOrdenConLineas() {    
     widget.ordenPrevia!.totalOrdenTrabajo = _totalGeneral;
+    // Asignar valores de los nuevos campos ccVisc y ccNvporc
+    widget.ordenPrevia!.ccVisc = _ccViscController.text.isNotEmpty ? _ccViscController.text : null;
+    widget.ordenPrevia!.ccNvporc = _ccNvporcController.text.isNotEmpty ? _ccNvporcController.text : null;
   }
 
   Future<void> _editarOrden() async {
@@ -823,6 +836,50 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               ),
             ),
           ),
+          
+          // NUEVO: Card para los campos ccVisc y ccNvporc
+          const SizedBox(height: 20),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'CONTROL DE CALIDAD',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _ccViscController,
+                          decoration: const InputDecoration(
+                            labelText: 'Viscosidad Control (cc)',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _ccNvporcController,
+                          decoration: const InputDecoration(
+                            labelText: 'N.V % Control (cc)',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
           const SizedBox(height: 20),
 
           _buildChemicalProductionCard(),
@@ -1589,6 +1646,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       final token = context.read<AuthProvider>().token;
       final ordenServices = OrdenServices();
 
+      // Asignar valores de los nuevos campos ccVisc y ccNvporc
+      widget.ordenPrevia!.ccVisc = _ccViscController.text.isNotEmpty ? _ccViscController.text : null;
+      widget.ordenPrevia!.ccNvporc = _ccNvporcController.text.isNotEmpty ? _ccNvporcController.text : null;
+      
       widget.ordenPrevia!.totalkgs = double.tryParse(_totalKgController.text.replaceAll(',', '.'));
       widget.ordenPrevia!.mermaKgs = double.tryParse(_mermaKgController.text.replaceAll(',', '.'));
       
@@ -1814,6 +1875,51 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           _buildTotalItem('Chapa:', formatCurrency.format(_costoRealChapa)),
                           _buildTotalItem('Pintura:', formatCurrency.format(_costoRealPintura)),
                           _buildTotalItem('Mecánica:', formatCurrency.format(_costoRealMecanica)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              
+              // NUEVO: Sección para ccVisc y ccNvporc
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Control de Calidad',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _ccViscController,
+                              decoration: const InputDecoration(
+                                labelText: 'Viscosidad Control (cc)',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _ccNvporcController,
+                              decoration: const InputDecoration(
+                                labelText: 'N.V % Control (cc)',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -2686,6 +2792,10 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
     _mermaKgController.dispose();
     _mermaPorcentajeController.dispose();
     _observacionesEnvasadoController.dispose();
+    
+    // Dispose de los nuevos controladores
+    _ccViscController.dispose();
+    _ccNvporcController.dispose();
     
     super.dispose();
   }

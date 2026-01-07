@@ -77,6 +77,8 @@ class Orden {
   late String? bolsas;
   late String? nvporc;
   late String? visc;
+  late String? ccVisc;     // ← NUEVO CAMPO
+  late String? ccNvporc;   // ← NUEVO CAMPO
 
   Orden({
     this.ordenTrabajoId,
@@ -138,6 +140,8 @@ class Orden {
     this.nvporc,
     this.visc,
     this.finalizadaEn,
+    this.ccVisc,     // ← NUEVO
+    this.ccNvporc,   // ← NUEVO
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -200,6 +204,8 @@ class Orden {
     bolsas: json["bolsas"] as String?,
     nvporc: json["nvporc"] as String?,
     visc: json["visc"] as String?,
+    ccVisc: json["ccVisc"] as String?,     // ← NUEVO
+    ccNvporc: json["ccNvporc"] as String?, // ← NUEVO
   );
 
   Map<String, dynamic> toMap() => {
@@ -261,6 +267,8 @@ class Orden {
     "bolsas": bolsas,
     "nvporc": nvporc,
     "visc": visc,
+    "ccVisc": ccVisc,     // ← NUEVO
+    "ccNvporc": ccNvporc, // ← NUEVO
   };
 
   Map<String, dynamic> toMapCyP() => {
@@ -297,6 +305,8 @@ class Orden {
     "bolsas": bolsas,
     "nvporc": nvporc,
     "visc": visc,
+    "ccVisc": ccVisc,     // ← NUEVO
+    "ccNvporc": ccNvporc, // ← NUEVO
   };
 
   String getStringFecha(DateTime? fecha) {
@@ -371,6 +381,8 @@ class Orden {
     bolsas: null,
     nvporc: null,
     visc: null,
+    ccVisc: null,     // ← NUEVO
+    ccNvporc: null,   // ← NUEVO
   );
 }
 
