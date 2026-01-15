@@ -243,6 +243,7 @@ class LineaLote {
   int? control;
   String? lote;
   String? referencia;
+  String? agrupador;
 
   LineaLote({
     this.lineaId,
@@ -256,7 +257,8 @@ class LineaLote {
     this.piezaId,
     this.control,
     this.lote,
-    this.referencia
+    this.referencia,
+    this.agrupador,
   });
 
   factory LineaLote.empty() {
@@ -273,6 +275,7 @@ class LineaLote {
       control: null,
       lote: null,
       referencia: null,
+      agrupador: '',
     );
   }
 
@@ -289,7 +292,8 @@ class LineaLote {
       piezaId: json['piezaId'],
       control: json['control'],
       lote: json['lote'],
-      referencia: json['referencia']
+      referencia: json['referencia'],
+      agrupador: json['agrupador'],
     );
   }
 
@@ -307,6 +311,7 @@ class LineaLote {
       'control': control,
       'lote': lote,
       'referencia': referencia,
+      'agrupador': agrupador
     };
   }
 
@@ -322,7 +327,8 @@ class LineaLote {
     int? piezaId,
     int? control,
     String? lote,
-    String? referencia
+    String? referencia,
+    String? agrupador,
   }) {
     return LineaLote(
       lineaId: lineaId ?? this.lineaId,
@@ -337,6 +343,7 @@ class LineaLote {
       control: control ?? this.control,
       lote: lote ?? this.lote,
       referencia: referencia ?? this.referencia,
+      agrupador: agrupador ?? this.agrupador,
     );
   }
 

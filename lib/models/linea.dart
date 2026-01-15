@@ -45,6 +45,7 @@ class Linea {
   late String lote;
   late double? factor;
   late double control;
+  late String? agrupador;
 
   Linea({
     required this.lineaId,
@@ -82,7 +83,8 @@ class Linea {
     required this.pieza,
     required this.factor,
     required this.control,
-    required this.lote
+    required this.lote,
+    this.agrupador,
   });
 
   factory Linea.fromJson(Map<String, dynamic> json) => Linea(
@@ -122,6 +124,7 @@ class Linea {
     factor: (json["factor"] as num?)?.toDouble() ?? 0.0,
     control: (json["control"] as num?)?.toDouble() ?? 0.0,
     lote: json['lote'] as String? ?? '',
+    agrupador: json['agrupador'] as String? ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -171,6 +174,7 @@ class Linea {
     'lote': lote,
     'control': control,
     'factor': factor,
+    'agrupador': agrupador,
   };
 
   Linea.empty(){
@@ -203,6 +207,7 @@ class Linea {
     mecanicaHs = 0.0;
     mecanicaMonto = 0.0;
     repSinIva = 0.0;
+    agrupador = '';
   }
 
   String getAvanceEnHorasMinutos() {
@@ -257,6 +262,7 @@ class Linea {
     double? factor,
     double? control,
     String? lote,
+    String? agrupador,
   }) {
     return Linea(
       lineaId: lineaId ?? this.lineaId,
@@ -295,6 +301,7 @@ class Linea {
       factor: factor ?? this.factor,
       control: control ?? this.control,
       lote: lote ?? this.lote,
+      agrupador: agrupador ?? this.agrupador,
     );
   }
 }

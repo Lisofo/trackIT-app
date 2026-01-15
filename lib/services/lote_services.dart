@@ -237,6 +237,7 @@ class LoteServices {
         "control": linea.control,
         "lote": linea.lote ?? '',
         "referencia": linea.referencia,
+        "agrupador": linea.agrupador,
       };
 
       print('Datos de línea a crear: $data');
@@ -283,6 +284,7 @@ class LoteServices {
         "control": linea.control,
         "lote": linea.lote ?? '',
         "referencia": linea.referencia,
+        "agrupador": linea.agrupador,
       };
 
       print('Datos de línea a actualizar: $data');
