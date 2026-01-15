@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:app_tec_sedel/models/incidencia.dart';
+import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/revision_incidencia.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
+import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/incidencia_services.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +13,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:provider/provider.dart';
+import 'package:crypto/crypto.dart';
 
 class CameraGalleryScreen extends StatefulWidget {
   const CameraGalleryScreen({super.key});
@@ -19,45 +23,147 @@ class CameraGalleryScreen extends StatefulWidget {
 }
 
 class CameraGalleryScreenState extends State<CameraGalleryScreen> {
-  List<Uint8List> images = [];
+  List<Uint8List> nuevasImagenes = [];
+  List<IncidenciaAdjunto> adjuntosExistentes = [];
+  
   CameraController? _controller;
   late List<CameraDescription> _cameras;
   bool _isLoading = true;
   bool _isTakingPicture = false;
   String? _errorMessage;
   
-  // Variables para incidencias
   List<Incidencia> selectedObservations = [];
   List<Incidencia> observations = [];
   bool _isLoadingObservations = false;
   final TextEditingController commentController = TextEditingController();
   final IncidenciaServices _incidenciaServices = IncidenciaServices();
   
-  // Nueva variable para dropdown_search
+  late Orden orden;
+  late String token;
+  RevisionIncidencia? revisionIncidenciaExistente;
+  bool _cargandoDatos = true;
+  bool _enviandoDatos = false;
+  
   bool isDropdownSearchOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _isLoading = false;
-    // Cargar las incidencias al inicializar
-    _loadIncidencias();
+    _cargarOrdenYToken();
   }
 
-  // Método para cargar incidencias desde el servicio
+  void _cargarOrdenYToken() {
+    final authProvider = context.read<AuthProvider>();
+    final ordenProvider = context.read<OrdenProvider>();
+    
+    setState(() {
+      orden = ordenProvider.orden;
+      token = authProvider.token;
+    });
+    
+    _cargarDatosIniciales();
+  }
+
+  Future<void> _cargarDatosIniciales() async {
+    setState(() {
+      _cargandoDatos = true;
+    });
+
+    try {
+      await _loadIncidencias();
+      await _cargarRevisionIncidenciaExistente();
+      
+      if (revisionIncidenciaExistente != null) {
+        await _cargarAdjuntosExistentes();
+      }
+      
+      setState(() {
+        _cargandoDatos = false;
+      });
+    } catch (e) {
+      setState(() {
+        _cargandoDatos = false;
+        _errorMessage = "Error al cargar datos: $e";
+      });
+    }
+  }
+
+  Future<void> _cargarRevisionIncidenciaExistente() async {
+    try {
+      final revisiones = await _incidenciaServices.getRevisionIncidencia(context, orden, token);
+      
+      if (_incidenciaServices.statusCode == 1 && revisiones != null && revisiones.isNotEmpty) {
+        RevisionIncidencia? revisionEncontrada;
+        
+        for (var revision in revisiones) {
+          if (revision.ordenTrabajoId == orden.ordenTrabajoId && 
+              revision.otRevisionId == orden.otRevisionId) {
+            revisionEncontrada = revision;
+            break;
+          }
+        }
+        
+        if (revisionEncontrada != null) {
+          setState(() {
+            revisionIncidenciaExistente = revisionEncontrada;
+          });
+          
+          _cargarDatosDeRevision();
+          await _cargarAdjuntosExistentes();
+        }
+      }
+    } catch (e) {
+      print("Error al cargar revisión de incidencia: $e");
+    }
+  }
+
+  Future<void> _cargarAdjuntosExistentes() async {
+    if (revisionIncidenciaExistente == null) return;
+    
+    try {
+      final adjuntos = await _incidenciaServices.getAdjuntosPorRevisionIncidencia(
+        context,
+        revisionIncidenciaExistente!,
+        token
+      );
+      
+      if (adjuntos != null) {
+        setState(() {
+          adjuntosExistentes = adjuntos;
+        });
+      }
+    } catch (e) {
+      print("Error al cargar adjuntos: $e");
+    }
+  }
+
+  void _cargarDatosDeRevision() {
+    if (revisionIncidenciaExistente == null) return;
+    
+    commentController.text = revisionIncidenciaExistente!.observacion;
+    
+    if (revisionIncidenciaExistente!.incidenciaIds.isNotEmpty && observations.isNotEmpty) {
+      final incidenciasSeleccionadas = observations.where(
+        (incidencia) => revisionIncidenciaExistente!.incidenciaIds.contains(incidencia.incidenciaId)
+      ).toList();
+      
+      setState(() {
+        selectedObservations = incidenciasSeleccionadas;
+      });
+    }
+  }
+
   Future<void> _loadIncidencias() async {
     setState(() {
       _isLoadingObservations = true;
     });
 
     try {
-      final token = context.read<AuthProvider>().token;
-      
       final incidenciasList = await _incidenciaServices.getIncidencias(context, token);
       
       if (_incidenciaServices.statusCode == 1) {
         setState(() {
-          observations = incidenciasList ?? [];
+          observations = (incidenciasList as List).cast<Incidencia>();
           _isLoadingObservations = false;
         });
       } else {
@@ -70,6 +176,196 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       setState(() {
         _isLoadingObservations = false;
         _errorMessage = "Error al cargar las incidencias: $e";
+      });
+    }
+  }
+
+  String _calcularMD5(Uint8List bytes) {
+    return md5.convert(bytes).toString();
+  }
+
+  Future<File> _guardarImagenTemporal(Uint8List bytes, String extension) async {
+    final tempDir = Directory.systemTemp;
+    final tempFile = File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}$extension');
+    await tempFile.writeAsBytes(bytes);
+    return tempFile;
+  }
+
+  Future<void> _uploadAllImages() async {
+    if (nuevasImagenes.isEmpty && selectedObservations.isEmpty && commentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay datos para enviar'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _enviandoDatos = true;
+    });
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 20),
+                  if (nuevasImagenes.isNotEmpty)
+                    Text("Enviando ${nuevasImagenes.length} imágenes..."),
+                  if (selectedObservations.isNotEmpty)
+                    Text("Con ${selectedObservations.length} incidencias"),
+                  if (commentController.text.isNotEmpty)
+                    const Text("Con comentario"),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      RevisionIncidencia revisionIncidencia;
+      
+      if (revisionIncidenciaExistente == null) {
+        revisionIncidencia = RevisionIncidencia(
+          otIncidenciaId: 0,
+          ordenTrabajoId: orden.ordenTrabajoId ?? 0,
+          otRevisionId: orden.otRevisionId ?? 0,
+          observacion: commentController.text,
+          incidenciaIds: selectedObservations.map((inc) => inc.incidenciaId).toList(),
+        );
+        
+        RevisionIncidencia? nuevaRevision = await _incidenciaServices.postRevisionIncidencia(
+          context, orden, revisionIncidencia, token
+        );
+        
+        if (_incidenciaServices.statusCode == 1 && nuevaRevision != null) {
+          setState(() {
+            revisionIncidenciaExistente = nuevaRevision;
+          });
+          revisionIncidencia = nuevaRevision;
+        } else {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al crear la incidencia'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() { _enviandoDatos = false; });
+          return;
+        }
+      } else {
+        revisionIncidenciaExistente!.observacion = commentController.text;
+        revisionIncidenciaExistente!.incidenciaIds = selectedObservations.map((inc) => inc.incidenciaId).toList();
+        
+        RevisionIncidencia? revisionActualizada = await _incidenciaServices.putRevisionIncidencia(
+          context, orden, revisionIncidenciaExistente!, token
+        );
+        
+        if (_incidenciaServices.statusCode == 1 && revisionActualizada != null) {
+          setState(() {
+            revisionIncidenciaExistente = revisionActualizada;
+          });
+          revisionIncidencia = revisionActualizada;
+        } else {
+          revisionIncidencia = revisionIncidenciaExistente!;
+        }
+      }
+
+      if (_incidenciaServices.statusCode == 1 && revisionIncidencia.otIncidenciaId > 0 && nuevasImagenes.isNotEmpty) {
+        List<String> erroresAdjuntos = [];
+        
+        for (int i = 0; i < nuevasImagenes.length; i++) {
+          final imagen = nuevasImagenes[i];
+          
+          try {
+            final tempFile = await _guardarImagenTemporal(imagen, '.jpg');
+            final md5Hash = _calcularMD5(imagen);
+            
+            final adjunto = await _incidenciaServices.postAdjuntoIncidencia(
+              context,
+              orden,
+              revisionIncidencia.otIncidenciaId,
+              tempFile.path,
+              md5Hash,
+              token
+            );
+            
+            if (adjunto != null) {
+              setState(() {
+                adjuntosExistentes.add(adjunto);
+              });
+            } else {
+              erroresAdjuntos.add("Imagen ${i+1}");
+            }
+            
+            await tempFile.delete();
+          } catch (e) {
+            erroresAdjuntos.add("Imagen ${i+1}: $e");
+          }
+        }
+        
+        setState(() {
+          nuevasImagenes.clear();
+        });
+        
+        if (erroresAdjuntos.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Algunas imágenes no se pudieron subir: ${erroresAdjuntos.join(", ")}'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+
+      Navigator.of(context).pop();
+
+      if (_incidenciaServices.statusCode == 1) {
+        String mensaje = "";
+        if (nuevasImagenes.isNotEmpty) mensaje += "${nuevasImagenes.length} imágenes subidas exitosamente\n";
+        if (selectedObservations.isNotEmpty) mensaje += "${selectedObservations.length} incidencias guardadas\n";
+        if (commentController.text.isNotEmpty) mensaje += "Comentario guardado\n";
+        mensaje += revisionIncidenciaExistente == null ? "Nueva incidencia creada" : "Incidencia actualizada";
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensaje),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al guardar los datos'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+    } catch (e) {
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al enviar datos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _enviandoDatos = false;
       });
     }
   }
@@ -101,7 +397,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
     
     if (!mounted) return;
     
-    // Esperar un frame para asegurar que la cámara esté inicializada
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showModalBottomSheet(
         context: context,
@@ -162,15 +457,13 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       final XFile picture = await _controller!.takePicture();
       final Uint8List imageBytes = await File(picture.path).readAsBytes();
 
-      // Eliminar el archivo temporal de la cámara
       await File(picture.path).delete();
 
       setState(() {
-        images.add(imageBytes);
+        nuevasImagenes.add(imageBytes);
         _isTakingPicture = false;
       });
 
-      // Esperar a que se complete la actualización del estado antes de cerrar
       if (mounted) {
         await Future.delayed(const Duration(milliseconds: 100));
         _safeDisposeCamera();
@@ -208,7 +501,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       if (image != null) {
         final Uint8List imageBytes = await File(image.path).readAsBytes();
         setState(() {
-          images.add(imageBytes);
+          nuevasImagenes.add(imageBytes);
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -266,92 +559,98 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
 
   void _deleteImage(int index) {
     setState(() {
-      images.removeAt(index);
+      nuevasImagenes.removeAt(index);
     });
   }
 
-  Future<void> _uploadAllImages() async {
-    if (images.isEmpty) {
+  void _deleteAdjunto(int index) async {
+    final adjunto = adjuntosExistentes[index];
+    final incidenciaId = revisionIncidenciaExistente?.otIncidenciaId;
+    
+    if (incidenciaId == null || incidenciaId == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No hay imágenes para enviar'),
-          backgroundColor: Colors.orange,
+          content: Text('No se puede eliminar del servidor: incidencia no encontrada.'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    // Preparar datos de incidencias
-    selectedObservations
-        .map((incidencia) => incidencia.toMap())
-        .toList();
-    
-    final String comentario = commentController.text;
+    // Capturamos el contexto de la pantalla
+    final screenContext = context;
 
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Dialog(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 20),
-                  Text("Enviando ${images.length} imágenes..."),
-                  if (selectedObservations.isNotEmpty)
-                    Text("Con ${selectedObservations.length} incidencias"),
-                  if (comentario.isNotEmpty)
-                    Text("Con comentario: ${comentario.length > 30 ? '${comentario.substring(0, 30)}...' : comentario}"),
-                ],
-              ),
+    showDialog(
+      context: screenContext,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Eliminar adjunto'),
+          content: const Text('¿Estás seguro de que quieres eliminar este adjunto del servidor?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
             ),
-          );
-        },
-      );
-
-      // Simular envío a API (reemplaza con tu lógica real)
-      // Aquí puedes enviar: images, incidenciasData, y comentario
-      await Future.delayed(const Duration(seconds: 2));
-      
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('${images.length} imágenes enviadas exitosamente'),
-              if (selectedObservations.isNotEmpty)
-                Text('${selectedObservations.length} incidencias asociadas'),
-              if (comentario.isNotEmpty)
-                const Text('Comentario incluido'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-
-    } catch (e) {
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al enviar datos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+            TextButton(
+              onPressed: () async {
+                // Cerramos el diálogo de confirmación
+                Navigator.of(dialogContext).pop();
+                
+                // Mostramos progreso usando el contexto de pantalla
+                showDialog(
+                  context: screenContext,
+                  barrierDismissible: false,
+                  builder: (BuildContext loadingContext) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                );
+                
+                final success = await _incidenciaServices.deleteAdjuntoIncidencia(
+                  screenContext,
+                  orden,
+                  incidenciaId,
+                  adjunto.filename,
+                  token,
+                );
+                
+                if (!mounted) return;
+                
+                // Cerramos progreso usando rootNavigator sobre el contexto de pantalla
+                Navigator.of(screenContext, rootNavigator: true).pop();
+                  
+                if (success && _incidenciaServices.statusCode == 1) {
+                  setState(() {
+                    adjuntosExistentes.removeAt(index);
+                  });
+                  ScaffoldMessenger.of(screenContext).showSnackBar(
+                    const SnackBar(
+                      content: Text('Adjunto eliminado exitosamente.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(screenContext).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error al eliminar el adjunto del servidor.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  // Función para abrir el carrusel de imágenes
   void _openImageCarousel() {
-    if (images.isEmpty) {
+    final totalImagenes = nuevasImagenes.length + adjuntosExistentes.length;
+    
+    if (totalImagenes == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No hay imágenes para mostrar'),
@@ -361,10 +660,53 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       return;
     }
 
+    List<CarouselImageItem> items = [];
+    
+    for (var imagen in nuevasImagenes) {
+      items.add(CarouselImageItem(imagenBytes: imagen, isLocal: true));
+    }
+    
+    for (var adjunto in adjuntosExistentes) {
+      items.add(CarouselImageItem(
+        imageUrl: adjunto.filepath, 
+        isLocal: false,
+        adjunto: adjunto,
+      ));
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ImageCarouselScreen(
-          images: images,
+          items: items,
+          onDeleteLocalImage: (index) {
+            if (index < nuevasImagenes.length) {
+              setState(() {
+                nuevasImagenes.removeAt(index);
+              });
+            }
+          },
+          onDeleteRemoteImage: (adjunto) async {
+            final incidenciaId = revisionIncidenciaExistente?.otIncidenciaId;
+            if (incidenciaId == null || incidenciaId == 0) {
+              return false;
+            }
+            
+            final success = await _incidenciaServices.deleteAdjuntoIncidencia(
+              context,
+              orden,
+              incidenciaId,
+              adjunto.filename,
+              token,
+            );
+            
+            if (success && _incidenciaServices.statusCode == 1) {
+              setState(() {
+                adjuntosExistentes.removeWhere((a) => a.filename == adjunto.filename);
+              });
+              return true;
+            }
+            return false;
+          },
         ),
       ),
     );
@@ -480,11 +822,12 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                 style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
               )
             else
-              // DropdownSearch con selección múltiple usando Incidencia
               DropdownSearch<Incidencia>.multiSelection(
                 dropdownBuilder: (context, selectedItems) {
                   return Text(
-                    'Selecciona incidencias',
+                    selectedItems.isEmpty
+                        ? 'Selecciona incidencias'
+                        : '${selectedItems.length} incidencia(s) seleccionada(s)',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -510,20 +853,11 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(8)),
                     ),
                   ),
-                  // Personalizar el ítem con checkbox
                   itemBuilder: (context, item, isSelected) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
-                          Checkbox(
-                            value: isSelected,
-                            onChanged: (_) {},
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,16 +889,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                       ),
                     );
                   },
-                  // Animación al abrir/cerrar
-                  containerBuilder: (context, popupWidget) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: isDropdownSearchOpen 
-                        ? MediaQuery.of(context).size.height * 0.5 
-                        : null,
-                      child: popupWidget,
-                    );
-                  },
                 ),
                 dropdownDecoratorProps: DropDownDecoratorProps(
                   dropdownSearchDecoration: InputDecoration(
@@ -589,12 +913,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                     });
                   }
                 },
-                validator: (List<Incidencia>? value) {
-                  if (selectedObservations.isEmpty) {
-                    return 'Por favor selecciona al menos una incidencia';
-                  }
-                  return null;
-                },
                 clearButtonProps: const ClearButtonProps(
                   isVisible: true,
                   icon: Icon(Icons.clear, size: 20),
@@ -603,7 +921,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                 compareFn: (item1, item2) => item1.incidenciaId == item2.incidenciaId,
               ),
             
-            // Mostrar chips con las incidencias seleccionadas
             if (selectedObservations.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -627,7 +944,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
               ),
             ],
             
-            // Contador de selecciones
             if (!_isLoadingObservations && observations.isNotEmpty)
               Align(
                 alignment: Alignment.centerRight,
@@ -644,7 +960,6 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                 ),
               ),
             
-            // Botón para recargar incidencias
             if (_errorMessage != null)
               Column(
                 children: [
@@ -697,8 +1012,144 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
     );
   }
 
+  Widget _buildAdjuntoExistente(int index) {
+    final adjunto = adjuntosExistentes[index];
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          adjunto.filepath,
+          headers: {'Authorization': token},
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, color: Colors.white, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    adjunto.filename.length > 15 
+                      ? '${adjunto.filename.substring(0, 12)}...' 
+                      : adjunto.filename,
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+              onPressed: () => _deleteAdjunto(index),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 4,
+          left: 4,
+          right: 4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_done, size: 12, color: Colors.white),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    adjunto.filename.length > 15 
+                      ? '${adjunto.filename.substring(0, 12)}...' 
+                      : adjunto.filename,
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNuevaImagen(int index) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.memory(
+          nuevasImagenes[index],
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.grey,
+            child: const Icon(Icons.error),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+              onPressed: () => _showDeleteConfirmation(index),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 4,
+          left: 4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_upload, size: 12, color: Colors.white),
+                SizedBox(width: 2),
+                Text('Nueva', style: TextStyle(fontSize: 10, color: Colors.white)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildImageGrid() {
-    if (images.isEmpty) {
+    final totalImagenes = nuevasImagenes.length + adjuntosExistentes.length;
+    
+    if (totalImagenes == 0) {
       return const SizedBox(
         height: 200,
         child: Center(
@@ -730,45 +1181,29 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
       ),
-      itemCount: images.length,
-      itemBuilder: (context, index) => Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.memory(
-            images[index],
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.grey,
-              child: const Icon(Icons.error),
-            ),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.white, size: 18),
-                onPressed: () => _showDeleteConfirmation(index),
-              ),
-            ),
-          ),
-        ],
-      ),
+      itemCount: totalImagenes,
+      itemBuilder: (context, index) {
+        if (index < nuevasImagenes.length) {
+          return _buildNuevaImagen(index);
+        } else {
+          final adjuntoIndex = index - nuevasImagenes.length;
+          return _buildAdjuntoExistente(adjuntoIndex);
+        }
+      },
     );
   }
 
-  // NUEVO MÉTODO PARA CONSTRUIR EL BOTÓN DEL CARRUSEL
   Widget _buildCarouselButton() {
+    final totalImagenes = nuevasImagenes.length + adjuntosExistentes.length;
+    
+    if (totalImagenes == 0) return const SizedBox();
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton.icon(
         onPressed: _openImageCarousel,
         icon: const Icon(Icons.slideshow),
-        label: const Text('Ver Carrusel de Imágenes'),
+        label: Text('Ver Carrusel ($totalImagenes imágenes)'),
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 50),
         ),
@@ -779,18 +1214,37 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    
+    if (_cargandoDatos) {
+      return Scaffold(
+        appBar: AppBar(
+          foregroundColor: colors.onPrimary,
+          title: const Text('Cámara e Incidencias'),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Cargando datos...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
           foregroundColor: colors.onPrimary,
-          title: const Text('Cámara y Galería'),
+          title: const Text('Cámara e Incidencias'),
           actions: [
-            if (images.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.cloud_upload),
-                onPressed: _uploadAllImages,
-                tooltip: 'Enviar todas las imágenes',
-              ),
+            IconButton(
+              icon: const Icon(Icons.cloud_upload),
+              onPressed: _enviandoDatos ? null : _uploadAllImages,
+              tooltip: 'Enviar datos',
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -799,6 +1253,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
               _buildObservationsDropdown(),
               _buildCommentField(),
               _buildCarouselButton(),
+              
               const SizedBox(height: 8),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -810,8 +1265,39 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                   ),
                 ),
               ),
+              
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Chip(
+                      avatar: CircleAvatar(
+                        backgroundColor: Colors.orange,
+                        child: Text('${nuevasImagenes.length}', style: const TextStyle(fontSize: 12)),
+                      ),
+                      label: const Text('Nuevas'),
+                    ),
+                    Chip(
+                      avatar: CircleAvatar(
+                        backgroundColor: Colors.green,
+                        child: Text('${adjuntosExistentes.length}', style: const TextStyle(fontSize: 12)),
+                      ),
+                      label: const Text('Subidas'),
+                    ),
+                    Chip(
+                      avatar: CircleAvatar(
+                        backgroundColor: Colors.blue,
+                        child: Text('${selectedObservations.length}', style: const TextStyle(fontSize: 12)),
+                      ),
+                      label: const Text('Incidencias'),
+                    ),
+                  ],
+                ),
+              ),
+              
               _buildImageGrid(),
-              const SizedBox(height: 100), // Espacio extra para el FAB
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -839,13 +1325,30 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 }
 
-// NUEVA PANTALLA PARA EL CARRUSEL DE IMÁGENES BASADA EN TU CÓDIGO
+class CarouselImageItem {
+  final Uint8List? imagenBytes;
+  final String? imageUrl;
+  final bool isLocal;
+  final IncidenciaAdjunto? adjunto;
+  
+  CarouselImageItem({
+    this.imagenBytes,
+    this.imageUrl,
+    required this.isLocal,
+    this.adjunto,
+  });
+}
+
 class ImageCarouselScreen extends StatefulWidget {
-  final List<Uint8List> images;
+  final List<CarouselImageItem> items;
+  final Function(int)? onDeleteLocalImage;
+  final Future<bool> Function(IncidenciaAdjunto adjunto)? onDeleteRemoteImage;
 
   const ImageCarouselScreen({
     super.key,
-    required this.images,
+    required this.items,
+    this.onDeleteLocalImage,
+    this.onDeleteRemoteImage,
   });
 
   @override
@@ -877,20 +1380,28 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
   }
 
   void _showDeleteConfirmation(BuildContext context, int index) {
+    // Usamos el contexto pasado por parámetro que es el del builder del FloatingActionButton
+    final screenContext = context;
+    final item = widget.items[index];
+    
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
+      context: screenContext,
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Eliminar imagen'),
-          content: const Text('¿Estás seguro de que quieres eliminar esta imagen?'),
+          content: Text(
+            item.isLocal 
+              ? '¿Estás seguro de que quieres eliminar esta imagen?'
+              : '¿Estás seguro de que quieres eliminar este adjunto del servidor?',
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
                 _deleteImage(index);
               },
               child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -902,33 +1413,127 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
   }
 
   void _deleteImage(int index) {
-    // Actualizar el estado local
-    setState(() {
-      widget.images.removeAt(index);
-    });
+    final item = widget.items[index];
+    final screenContext = context; // Contexto de ImageCarouselScreen
+    
+    if (!item.isLocal && item.adjunto != null && widget.onDeleteRemoteImage != null) {
+      showDialog(
+        context: screenContext,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Eliminar adjunto'),
+            content: const Text('¿Estás seguro de que quieres eliminar este adjunto del servidor?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  
+                  // Mostrar indicador de progreso
+                  showDialog(
+                    context: screenContext,
+                    barrierDismissible: false,
+                    builder: (BuildContext loadingContext) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                  );
+                  
+                  final success = await widget.onDeleteRemoteImage!(item.adjunto!);
+                  
+                  if (!mounted) return;
+                  
+                  // Cerrar indicador usando rootNavigator sobre el contexto de pantalla
+                  Navigator.of(screenContext, rootNavigator: true).pop();
+                    
+                  if (success) {
+                    if (widget.onDeleteLocalImage != null) {
+                      widget.onDeleteLocalImage!(index);
+                    }
+                    
+                    setState(() {
+                      widget.items.removeAt(index);
+                    });
 
-    // Si era la última imagen, regresar a la pantalla anterior
-    if (widget.images.isEmpty) {
-      Navigator.of(context).pop();
-      return;
+                    if (widget.items.isEmpty) {
+                      Navigator.of(screenContext).pop();
+                      return;
+                    }
+
+                    if (index >= widget.items.length) {
+                      currentIndex = widget.items.length - 1;
+                    }
+
+                    if (widget.items.isNotEmpty) {
+                      _pageController.jumpToPage(currentIndex);
+                    }
+
+                    ScaffoldMessenger.of(screenContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Adjunto eliminado exitosamente.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(screenContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error al eliminar el adjunto del servidor.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Borrado local simple
+      if (widget.onDeleteLocalImage != null && item.isLocal) {
+        widget.onDeleteLocalImage!(index);
+      }
+      
+      setState(() {
+        widget.items.removeAt(index);
+      });
+
+      if (widget.items.isEmpty) {
+        Navigator.of(screenContext).pop();
+        return;
+      }
+
+      if (index >= widget.items.length) {
+        currentIndex = widget.items.length - 1;
+      }
+
+      if (widget.items.isNotEmpty) {
+        _pageController.jumpToPage(currentIndex);
+      }
+
+      ScaffoldMessenger.of(screenContext).showSnackBar(
+        SnackBar(
+          content: Text(item.isLocal 
+            ? 'Imagen eliminada' 
+            : 'Adjunto removido localmente'),
+          backgroundColor: item.isLocal ? Colors.orange : Colors.blue,
+        ),
+      );
     }
+  }
 
-    // Ajustar el índice actual si es necesario
-    if (index >= widget.images.length) {
-      currentIndex = widget.images.length - 1;
+  ImageProvider _buildImageProvider(CarouselImageItem item) {
+    if (item.isLocal && item.imagenBytes != null) {
+      return MemoryImage(item.imagenBytes!);
+    } else if (!item.isLocal && item.imageUrl != null) {
+      return NetworkImage(item.imageUrl!);
     }
-
-    // Notificar al PageController
-    if (widget.images.isNotEmpty) {
-      _pageController.jumpToPage(currentIndex);
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Imagen eliminada'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    return const AssetImage('assets/placeholder.png');
   }
 
   @override
@@ -938,7 +1543,7 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Imagen ${currentIndex + 1} de ${widget.images.length}',
+          'Imagen ${currentIndex + 1} de ${widget.items.length}',
           style: TextStyle(
             color: colores.onPrimary,
           ),
@@ -958,19 +1563,20 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (widget.images.isNotEmpty) ...[
+            if (widget.items.isNotEmpty) ...[
               const SizedBox(height: 20),
               Center(
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.98,
                   height: MediaQuery.of(context).size.height * 0.7,
                   child: PhotoViewGallery.builder(
-                    itemCount: widget.images.length,
+                    itemCount: widget.items.length,
                     builder: (context, index) {
                       return PhotoViewGalleryPageOptions(
-                        imageProvider: MemoryImage(widget.images[index]),
+                        imageProvider: _buildImageProvider(widget.items[index]),
                         minScale: PhotoViewComputedScale.contained * 0.8,
                         maxScale: PhotoViewComputedScale.covered * 3.0,
+                        heroAttributes: PhotoViewHeroAttributes(tag: index),
                       );
                     },
                     onPageChanged: (index) {
@@ -989,7 +1595,7 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.images.length, (index) {
+                children: List.generate(widget.items.length, (index) {
                   return GestureDetector(
                     onTap: () {
                       _scrollToIndex(index);
@@ -1001,7 +1607,9 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
                         height: 16.0,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: currentIndex == index ? Colors.blue : Colors.grey,
+                          color: currentIndex == index 
+                            ? (widget.items[index].isLocal ? Colors.orange : Colors.green)
+                            : Colors.grey,
                         ),
                       ),
                     ),
@@ -1009,6 +1617,37 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
                 }),
               ),
               const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: widget.items[currentIndex].isLocal 
+                    ? Colors.orange.withOpacity(0.1) 
+                    : Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.items[currentIndex].isLocal 
+                        ? Icons.cloud_upload 
+                        : Icons.cloud_done,
+                      color: widget.items[currentIndex].isLocal ? Colors.orange : Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.items[currentIndex].isLocal 
+                        ? 'Imagen nueva (no subida)' 
+                        : 'Adjunto en servidor',
+                      style: TextStyle(
+                        color: widget.items[currentIndex].isLocal ? Colors.orange : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ] else ...[
               const Center(
                 child: Column(
@@ -1026,14 +1665,16 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
           ],
         ),
       ),
-      floatingActionButton: widget.images.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: () {
-                _showDeleteConfirmation(context, currentIndex);
-              },
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.delete),
+      floatingActionButton: widget.items.isNotEmpty
+          ? Builder(
+              builder: (buttonContext) => FloatingActionButton(
+                onPressed: () {
+                  _showDeleteConfirmation(buttonContext, currentIndex);
+                },
+                backgroundColor: widget.items[currentIndex].isLocal ? Colors.red : Colors.blue,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.delete),
+              ),
             )
           : null,
     );

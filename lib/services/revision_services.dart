@@ -259,9 +259,7 @@ class RevisionServices {
       statusCode = 1;
       final List<dynamic> revisionTareaList = resp.data;
 
-      return revisionTareaList
-          .map((obj) => RevisionTarea.fromJson(obj))
-          .toList();
+      return revisionTareaList.map((obj) => RevisionTarea.fromJson(obj)).toList();
     } catch (e) {
       statusCode = 0;
       if (e is DioException) {

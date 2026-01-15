@@ -350,10 +350,8 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                 estaBuscando = true;
                               });
                               try {
-                                lotes = await MaterialesServices()
-                                    .getLotes(context, selectedMaterial.materialId, token);
-                                metodosAplicacion = await MaterialesServices()
-                                    .getMetodosAplicacion(context, token);
+                                lotes = await MaterialesServices().getLotes(context, selectedMaterial.materialId, token);
+                                metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
                               } catch (e) {
                                 lotes = [];
                                 metodosAplicacion = [];
@@ -361,8 +359,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                 setState(() {});
                               }
                               if (metodosAplicacion.isNotEmpty) {
-                                bool resultado = await _showMaterialDialog(context,
-                                    materialParaAgregar: selectedMaterial);
+                                bool resultado = await _showMaterialDialog(context, materialParaAgregar: selectedMaterial);
                                 setState(() {
                                   estaBuscando = resultado;
                                 });
@@ -491,32 +488,18 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                                       ? () async {
                                                           estaBuscando = true;
                                                           setState(() {});
-                                                          if ((orden.estado ==
-                                                                  'PENDIENTE' ||
-                                                              orden.estado ==
-                                                                  'FINALIZADA')) {
-                                                            ScaffoldMessenger.of(
-                                                                    context)
-                                                                .showSnackBar(
+                                                          if ((orden.estado =='PENDIENTE' || orden.estado == 'FINALIZADA')) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
                                                               const SnackBar(
-                                                                content: Text(
-                                                                    'No puede ingresar o editar datos.'),
+                                                                content: Text('No puede ingresar o editar datos.'),
                                                               ),
                                                             );
                                                             estaBuscando = false;
                                                             return Future.value(false);
                                                           }
                                                           try {
-                                                            lotes = await MaterialesServices()
-                                                                .getLotes(context,
-                                                                    item.material
-                                                                        .materialId,
-                                                                    token);
-                                                            metodosAplicacion =
-                                                                await MaterialesServices()
-                                                                    .getMetodosAplicacion(
-                                                                        context,
-                                                                        token);
+                                                            lotes = await MaterialesServices().getLotes(context, item.material.materialId, token);
+                                                            metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
                                                             estaBuscando = false;
                                                             setState(() {});
                                                           } catch (e) {
@@ -525,14 +508,8 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                                             estaBuscando = false;
                                                             setState(() {});
                                                           }
-                                                          if (lotes.isNotEmpty &&
-                                                              metodosAplicacion
-                                                                  .isNotEmpty) {
-                                                            bool resultado =
-                                                                await _showMaterialDialog(
-                                                                    context,
-                                                                    materialParaEditar:
-                                                                        item);
+                                                          if (lotes.isNotEmpty && metodosAplicacion.isNotEmpty) {
+                                                            bool resultado = await _showMaterialDialog(context, materialParaEditar: item);
                                                             setState(() {
                                                               estaBuscando = resultado;
                                                             });
@@ -542,27 +519,25 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                                       : null,
                                                   icon: const Icon(Icons.edit)),
                                               IconButton(
-                                                  onPressed: () async {
-                                                    if ((orden.estado ==
-                                                                'PENDIENTE' ||
-                                                            orden.estado ==
-                                                                'FINALIZADA')) {
-                                                      ScaffoldMessenger.of(context)
-                                                          .showSnackBar(
-                                                              const SnackBar(
+                                                onPressed: () async {
+                                                  if ((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
                                                         content: Text(
-                                                            'No puede de ingresar o editar datos.'),
-                                                      ));
-                                                      return Future.value(false);
-                                                    }
-                                                    deleteMaterial(context, i);
-                                                  },
-                                                  icon: const Icon(Icons.delete)),
+                                                          'No puede de ingresar o editar datos.'
+                                                        ),
+                                                      )
+                                                    );
+                                                    return Future.value(false);
+                                                  }
+                                                  deleteMaterial(context, i);
+                                                },
+                                                icon: const Icon(Icons.delete)
+                                              ),
                                             ],
                                           ),
                                           title: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment:CrossAxisAlignment.start,
                                             children: [
                                               Text('Material: ${revisionMaterialesList[i].material.descripcion}'),
                                               Text('Unidad: ${revisionMaterialesList[i].material.unidad}'),
@@ -579,8 +554,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                       ),
                                     );
                                   },
-                                  separatorBuilder:
-                                      (BuildContext context, int index) {
+                                  separatorBuilder: (BuildContext context, int index) {
                                     return const Divider(
                                       thickness: 2,
                                       color: Colors.green,

@@ -11,13 +11,13 @@ class Incidencia {
 
   factory Incidencia.fromJson(Map<String, dynamic> json) =>
     Incidencia(
-      incidenciaId: json["metodoAplicacionId"] as int? ?? 0,
+      incidenciaId: json["incidenciaId"] as int? ?? 0,
       codIncidencia: json["codIncidencia"] as String? ?? '',
       descripcion: json["descripcion"] as String? ?? '',
     );
 
   Map<String, dynamic> toMap() => {
-    "metodoAplicacionId": incidenciaId,
+    "incidenciaId": incidenciaId,
     "codIncidencia": codIncidencia,
     "descripcion": descripcion,
   };
@@ -32,4 +32,13 @@ class Incidencia {
   String toString() {
     return descripcion;
   }
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Incidencia && other.incidenciaId == incidenciaId;
+  }
+
+  @override
+  int get hashCode => incidenciaId.hashCode;
 }
