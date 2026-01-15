@@ -85,22 +85,15 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     'IO': false,
   };
 
-  // =========================================================================
-  // METODO PARA CALCULAR TOTAL TAMBORES (APLICADO)
-  // =========================================================================
   void _calcularTotalTambores() {
-    // Reemplazamos ',' por '.' para asegurar el parseo correcto de decimales
     double pedido = double.tryParse(_pedidoController.text.replaceAll(',', '.')) ?? 0.0;
     double envase = double.tryParse(_envaseController.text.replaceAll(',', '.')) ?? 0.0;
 
     if (envase > 0) {
       double total = pedido / envase;
-      // Si es entero, mostramos entero, si no, con 2 decimales
       String formattedTotal = total % 1 == 0 ? total.toInt().toString() : total.toStringAsFixed(2);
       
-      // Actualizar solo si el valor es diferente para evitar loops infinitos o re-renders innecesarios
       if (_totTambController.text != formattedTotal) {
-        // Usar setState solo para asegurar que el cambio se refleje si la UI necesita ser reconstruida
         setState(() {
           _totTambController.text = formattedTotal;
         });
@@ -114,27 +107,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  void _verificarYActualizarOrdenExistente() {
-    final ordenProvider = context.read<OrdenProvider>();
-    final ordenDelProvider = ordenProvider.orden;
-    
-    // Si hay una orden cargada en el provider con un ID válido
-    if (ordenDelProvider.ordenTrabajoId != null && 
-        ordenDelProvider.ordenTrabajoId != 0 &&
-        ordenDelProvider.ordenTrabajoId != ordenExistente.ordenTrabajoId) {
-      
-      setState(() {
-        ordenExistente = ordenDelProvider;
-        _isEditMode = true;
-        _ordenExistente = ordenDelProvider;
-      });
-      
-      // Cargar los datos de la nueva orden
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _cargarOrdenExistente();
-      });
-    }
-  }
 
   @override
   void initState() {
@@ -142,53 +114,27 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     token = context.read<AuthProvider>().token;
     flavor = context.read<AuthProvider>().flavor;
     
-    // Inicializar controladores de Resysol con valores vacíos
     if (flavor == 'resysol') {
       _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
-      
-      // APLICADO: Listeners para cálculo automático de tambores
       _pedidoController.addListener(_calcularTotalTambores);
       _envaseController.addListener(_calcularTotalTambores);
     }
     
-    // Cargar orden existente después de que el widget esté construido
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarOrdenExistente();
-      _verificarYActualizarOrdenExistente();
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Verificar si hay una orden nueva cargada cuando cambian las dependencias
-    _verificarYActualizarOrdenExistente();
   }
 
   Future<void> _cargarOrdenExistente() async {
     final ordenProvider = context.read<OrdenProvider>();
-    
-    // Priorizar la orden del provider sobre la local si tiene ID válido
-    if (ordenProvider.orden.ordenTrabajoId != null && 
-        ordenProvider.orden.ordenTrabajoId != 0) {
-      ordenExistente = ordenProvider.orden;
-    }
+    ordenExistente = ordenProvider.orden;
 
-    // Verificar si hay una orden cargada desde la lista
     if (ordenExistente.ordenTrabajoId != null && ordenExistente.ordenTrabajoId != 0) {
-      // Si ya está en modo edición con la misma orden, no hacer nada
-      if (_isEditMode && 
-          _ordenExistente != null && 
-          _ordenExistente!.ordenTrabajoId == ordenExistente.ordenTrabajoId) {
-        return;
-      }
-
       setState(() {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
       });
 
-      // Verificar que el widget esté montado antes de mostrar el diálogo
       if (!mounted) return;
       
       showDialog(
@@ -200,23 +146,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       );
 
       try {
-        // Cargar datos según el flavor
         if (ordenExistente.cliente?.clienteId != null) {
           await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
           
-          // Para automotora, cargar unidades también
-          if ((flavor == 'automotoraargentina' || flavor == 'parabrisasejido') && 
-              ordenExistente.unidad?.unidadId != null) {
-            await _cargarUnidadesYSeleccionar(
-              ordenExistente.cliente!.clienteId, 
-              ordenExistente.unidad!.unidadId
-            );
+          if ((flavor == 'automotoraargentina' || flavor == 'parabrisasejido') && ordenExistente.unidad?.unidadId != null) {
+            await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
           }
         }
         
         _cargarDatosComunesDesdeOrden();
         
-        // Cargar datos específicos del flavor
         if (flavor == 'resysol') {
           _cargarDatosResysolDesdeOrden();
         }
@@ -307,7 +246,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     if (_ordenExistente == null) return;
 
     setState(() {
-      // Datos comunes para ambos flavors
       _numOrdenController.text = _ordenExistente!.numeroOrdenTrabajo ?? '';
       _comentClienteController.text = _ordenExistente!.comentarioCliente ?? '';
       _comentTrabajoController.text = _ordenExistente!.comentarioTrabajo ?? '';
@@ -323,16 +261,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     if (_ordenExistente == null) return;
 
     setState(() {
-      // Datos específicos de Resysol
       _numeroController.text = _ordenExistente!.numeroOrdenTrabajo ?? '';
       _productoController.text = _ordenExistente!.producto ?? _ordenExistente!.descripcion ?? '';
       _pedidoController.text = _ordenExistente!.pedido.toString();
       _envaseController.text = _ordenExistente!.envase.toString();
-      // _totTambController.text = _ordenExistente!.totalTambores?.toString() ?? ''; // Se calculará
       _batchesController.text = _ordenExistente!.batches?.toString() ?? '';
       _observacionesController.text = _ordenExistente!.comentarioTrabajo ?? _ordenExistente!.comentarioCliente ?? '';
       
-      // Nuevos campos (Datos Adicionales)
       _numBatchesController.text = _ordenExistente!.numBatches?.toString() ?? '';
       if (_ordenExistente!.iniciadaEn != null) {
         _iniciadaEnController.text = DateFormat('dd/MM/yyyy').format(_ordenExistente!.iniciadaEn!);
@@ -342,13 +277,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       _nvporcController.text = _ordenExistente!.nvporc ?? '';
       _viscController.text = _ordenExistente!.visc ?? '';
       
-      // Si no hay fecha específica, usar la fecha de la orden
       if (_ordenExistente!.fechaOrdenTrabajo != null) {
         _fechaEmisionController.text = DateFormat('dd/MM/yyyy').format(_ordenExistente!.fechaOrdenTrabajo!);
       }
     });
     
-    // APLICADO: Calcular Total Tambores al cargar después de cargar inputs
     _calcularTotalTambores();
   }
 
@@ -362,7 +295,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
 
     if (resultado != null && resultado.clienteId != 0) {
-      // Para automotora, cargar unidades también
       if (flavor == 'automotoraargentina' || flavor == 'parabrisasejido') {
         List<Unidad> unidadesDelCliente = await unidadesServices.getUnidadesDeCliente(
           context, 
@@ -397,14 +329,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
   Orden _crearOrdenEnMemoria() {
     final authProvider = context.read<AuthProvider>();
-    
-    // Para resysol, crear una unidad vacía si no hay seleccionada
     Unidad unidadResysol = unidadSeleccionada ?? Unidad.empty();
-    
-    // Convertir el Total Tambores calculado a int/double para el modelo
     int? totalTamboresInt;
     
-    // Intentar parsear como double primero, si es posible convertir a int
     double? calculatedTotal = double.tryParse(_totTambController.text.replaceAll(',', '.'));
     if (calculatedTotal != null) {
       if (calculatedTotal == calculatedTotal.toInt()) {
@@ -454,16 +381,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       tecnicoId: authProvider.tecnicoId,
       clienteId: clienteSeleccionado?.clienteId ?? 0,
       tipoOrdenId: getTipoOrden(),
-      // Campos específicos para resysol
       producto: _productoController.text,
       pedido: int.tryParse(_pedidoController.text),
       envase: int.tryParse(_envaseController.text),
       totalTambores: totalTamboresInt,
       batches: int.tryParse(_batchesController.text),
-      totalkgs: 0.0, // Se calculará después
-      mermaKgs: 0.0, // Se calculará después
-      mermaPorcentual: 0.0, // Se calculará después
-      // Nuevos campos
+      totalkgs: 0.0,
+      mermaKgs: 0.0,
+      mermaPorcentual: 0.0,
       numBatches: int.tryParse(_numBatchesController.text),
       iniciadaEn: _iniciadaEnController.text.isNotEmpty 
           ? DateFormat('dd/MM/yyyy').parse(_iniciadaEnController.text) 
@@ -500,7 +425,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       'observaciones': _observacionesController.text,
       'fecha': DateTime.now(),
       'cliente': clienteSeleccionado?.toMap(),
-      // Nuevos campos
       'numBatches': _numBatchesController.text,
       'iniciadaEn': _iniciadaEnController.text,
       'produccion': _produccionController.text,
@@ -510,7 +434,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     };
   }
 
-  // MÉTODOS DE IMPRESIÓN PARA RESYSOL
   void _mostrarDialogoOpcionesImpresion() {
     Map<String, bool> opcionesTemp = {
       'DC': false,
@@ -634,8 +557,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     
     String opcionesString = opcionesSeleccionadas.join(', ');
     
-    print('Opciones seleccionadas: $opcionesString');
-    
     try {
       await ordenServices.postimprimirOTAdm(
         context, 
@@ -663,11 +584,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     
     setState(() {});
     while (contador < 15 && informeGeneradoEsS == false && generandoInforme){
-      print(contador);
       if (rptGenId == 0) {
         informeGeneradoEsS = false;
         generandoInforme = false;
-        print('rptGenId es 0, saliendo del bucle');
         break;
       } 
       reporte = await ordenServices.getReporte(context, rptGenId, token);
@@ -691,8 +610,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
     if(informeGeneradoEsS != true && generandoInforme){
       await popUpInformeDemoro();
-      
-      print('informe demoro en generarse');
     }
   }
 
@@ -717,7 +634,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               child: const Text('Si'),
               onPressed: () async {
                 Navigator.of(context).pop();
-                print('dije SI');
                 await generarInformeInfinite();
               },
             ),
@@ -728,9 +644,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   Future<void> generarInformeInfinite() async {
-    
     generandoInforme = true;
-    
     while (informeGeneradoEsS == false && generandoInforme){
       reporte = await ordenServices.getReporte(context, rptGenId, token);
       if(reporte.generado == 'S'){
@@ -747,13 +661,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       }
     }
     setState(() {});
-
   }
 
   Future<void> abrirUrl(String url, String token) async {
     Dio dio = Dio();
     String link = "$url?authorization=$token";
-    print(link);
     try {
       Response response = await dio.get(
         link,
@@ -776,7 +688,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
   Future<void> abrirUrlWeb(String url) async {
     Uri uri = Uri.parse(url);
-    
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -800,7 +711,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         ),
         iconTheme: IconThemeData(color: colors.onPrimary),
         actions: [
-          // Botón de impresión para Resysol cuando hay ordenTrabajoId
           if (flavor == 'resysol' && _ordenExistente?.ordenTrabajoId != null && _ordenExistente!.ordenTrabajoId! > 0)
             IconButton(
               icon: const Icon(Icons.print),
@@ -814,21 +724,17 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // APLICADO: Se elimina la referencia a _buildChemicalAdditionalDataCard()
   Widget _buildResysolUI(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // SELECTOR DE CLIENTE PARA RESYSOL
           _buildClienteCardResysol(),
           const SizedBox(height: 20),
-          _buildChemicalHeaderCard(), // Ahora incluye los Datos Adicionales
-          // const SizedBox(height: 20), // Eliminado por unificación
-          // _buildChemicalAdditionalDataCard(), // ELIMINADO
+          _buildChemicalHeaderCard(), 
           const SizedBox(height: 20),
-          _buildChemicalProductionCard(), // Ahora incluye numBatches y Total Tambores (Calculado)
+          _buildChemicalProductionCard(), 
           const SizedBox(height: 24),
           _buildChemicalActionButtons(),
         ],
@@ -836,7 +742,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // WIDGET PARA SELECTOR DE CLIENTE EN RESYSOL
   Widget _buildClienteCardResysol() {
     return Card(
       elevation: 4,
@@ -1175,14 +1080,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                           ? await ordenServices.actualizarOrden(context, token, ordenCreada)
                           : await ordenServices.postOrden(context, token, ordenCreada);
                       
-                      Navigator.of(context).pop();
+                      if (mounted && Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
                       
                       if (ordenGuardada != null) {
-                        // IMPORTANTE: Guardar la orden en el Provider
+                        // APLICADO: Actualizar el estado local inmediatamente
+                        setState(() {
+                          _isEditMode = true;
+                          ordenExistente = ordenGuardada;
+                          _ordenExistente = ordenGuardada;
+                        });
+
+                        // APLICADO: Actualizar el provider para la siguiente pantalla
                         context.read<OrdenProvider>().setOrden(ordenGuardada);
-                        
-                        // Limpiar la orden temporal después de guardar
-                        context.read<OrdenProvider>().setOrden(Orden.empty());
                         
                         final result = await Navigator.push(
                           context,
@@ -1198,9 +1109,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                         );
 
                         if (result != null && result is Orden) {
-                          // Actualizar con la orden que viene de detalle
-                          context.read<OrdenProvider>().setOrden(result);
-                          
                           setState(() {
                             ordenExistente = result;
                             _isEditMode = true;
@@ -1208,17 +1116,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                           });
                           
                           await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
-                          if (flavor == 'automotoraargentina' || flavor == 'parabrisasejido') {
-                            await _cargarUnidadesYSeleccionar(
-                              result.cliente?.clienteId ?? 0, 
-                              result.unidad?.unidadId ?? 0
-                            );
-                          }
+                          await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
                           _cargarDatosComunesDesdeOrden();
                         }
                       }
                     } catch (e) {
-                      Navigator.of(context).pop();
+                      if (mounted && Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   },
                   child: Text(_isEditMode ? 'Actualizar Orden' : 'Siguiente'),
@@ -1231,7 +1136,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // APLICADO: Se unifican los campos de Datos Adicionales aquí
   Widget _buildChemicalHeaderCard() {
     return Card(
       elevation: 4,
@@ -1263,8 +1167,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ],
             ),
             const Divider(height: 24),
-            
-            // Primera fila - Fecha y Número
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1284,10 +1186,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
-            
             const SizedBox(height: 20),
-            
-            // Segunda fila - Producto y Referencia
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1304,10 +1203,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
-            
             const SizedBox(height: 20),
-            
-            // Tercera fila - Pedido y Envase (Inputs para cálculo de Tambores)
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1328,10 +1224,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
-
-            // APLICADO: Nuevos campos de Datos Adicionales integrados (Inicio)
             const SizedBox(height: 20),
-            const Divider(), // Separador visual
+            const Divider(), 
             const SizedBox(height: 10),
             const Text(
               'Detalle de Producción',
@@ -1342,8 +1236,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ),
             ),
             const SizedBox(height: 10),
-            
-            // Fila 4: Fecha Producción, Producción (Kg), Bolsas
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1370,10 +1262,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-            
-            // Fila 5: N.V % y Visc.
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -1392,14 +1281,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
-             // APLICADO: Nuevos campos de Datos Adicionales integrados (Fin)
           ],
         ),
       ),
     );
   }
 
-  // MÉTODO PARA MOSTRAR DIALOGO DE COPIAR ORDEN
   Future<void> _mostrarDialogoCopiarOrden() async {
     if (_ordenExistente == null || _ordenExistente!.ordenTrabajoId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1477,7 +1364,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    Navigator.of(context).pop(); // Cerrar el diálogo
+                    Navigator.of(context).pop();
                     await _procesarCopiaOrden(fechaSeleccionada);
                   },
                   child: const Text('Generar Copia'),
@@ -1490,11 +1377,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // MÉTODO PARA PROCESAR LA COPIA DE LA ORDEN
   Future<void> _procesarCopiaOrden(DateTime fecha) async {
     if (_ordenExistente == null) return;
 
-    // Mostrar el diálogo de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1506,10 +1391,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     bool errorOcurrido = false;
     
     try {
-      // Formatear la fecha a yyyy-MM-dd
       String fechaFormateada = DateFormat('yyyy-MM-dd').format(fecha);
-      
-      // Llamar al método copiarOrden con la fecha formateada
       int nuevaOrdenId = await ordenServices.copiarOrden(
         context, 
         _ordenExistente!.ordenTrabajoId!, 
@@ -1518,17 +1400,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       );
 
       if (nuevaOrdenId > 0 && mounted) {
-        // Obtener la nueva orden completa
         final Orden nuevaOrden = await ordenServices.getOrdenPorId(context, nuevaOrdenId, token);
         
-        // Actualizar el estado con la nueva orden
         setState(() {
           _ordenExistente = nuevaOrden;
           ordenExistente = nuevaOrden;
           _isEditMode = true;
         });
 
-        // Recargar los datos de la nueva orden
         if (nuevaOrden.cliente?.clienteId != null) {
           await _cargarClienteDesdeAPI(nuevaOrden.cliente!.clienteId);
           
@@ -1543,7 +1422,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _cargarDatosResysolDesdeOrden();
         }
 
-        // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Copia generada exitosamente. Nueva orden: ${nuevaOrden.numeroOrdenTrabajo}'),
@@ -1569,13 +1447,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         ),
       );
     } finally {
-      // CERRAR SIEMPRE EL DIALOGO DE CARGA
-      // Solo si el widget sigue montado y podemos cerrar el diálogo
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       
-      // Si hubo un error, también deberíamos mostrar un mensaje adicional
       if (errorOcurrido && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1612,13 +1487,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ],
             ),
             const Divider(height: 24),
-            
-            // APLICADO: N° Batches, Batches y Total Tambores al mismo nivel
             Wrap(
               spacing: 16,
               runSpacing: 16,
               children: [
-                _buildLabeledTextField( // APLICADO: numBatches movido aquí
+                _buildLabeledTextField(
                   label: 'N° Batches',
                   controller: _numBatchesController,
                   width: 150,
@@ -1635,13 +1508,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   controller: _totTambController,
                   width: 180,
                   keyboardType: TextInputType.number,
-                  readOnly: true, // Es de solo lectura porque se calcula
+                  readOnly: true, 
                 ),
               ],
             ),
-            
             const SizedBox(height: 20),
-            
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1679,16 +1550,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  
-
-  // MÉTODO PARA RESYSOL
   Widget _buildChemicalActionButtons() {
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-            // Botón principal
             ElevatedButton(
               onPressed: _crearOrdenResysol,
               style: ElevatedButton.styleFrom(
@@ -1715,8 +1582,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ],
               ),
             ),
-            
-            // Botón de impresión (solo cuando hay ordenTrabajoId)
             if (_isEditMode && _ordenExistente?.ordenTrabajoId != null && _ordenExistente!.ordenTrabajoId! > 0)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
@@ -1737,7 +1602,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // Widget auxiliar para campos de texto con etiqueta
   Widget _buildLabeledTextField({
     required String label,
     required TextEditingController controller,
@@ -1818,8 +1682,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           duration: const Duration(seconds: 2),
         ),
       );
-    } else {
-      print('Cliente guardado es null o diálogo cerrado sin guardar');
     }
   }
 
@@ -1933,7 +1795,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  // MÉTODO PARA CREAR O ACTUALIZAR ORDEN RESYSOL
   Future<void> _crearOrdenResysol() async {
     if (clienteSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1958,38 +1819,33 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           ? await ordenServices.actualizarOrden(context, token, ordenCreada)
           : await ordenServices.postOrden(context, token, ordenCreada);
       
-      Navigator.of(context).pop();
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       if (ordenGuardada != null) {
-        // IMPORTANTE: Guardar la orden en el Provider
+        // APLICADO: Actualizar el estado local antes de navegar
+        setState(() {
+          _isEditMode = true;
+          ordenExistente = ordenGuardada;
+          _ordenExistente = ordenGuardada;
+        });
+
+        // APLICADO: Actualizar el provider
         context.read<OrdenProvider>().setOrden(ordenGuardada);
-        
-        // Limpiar la orden temporal después de guardar
-        context.read<OrdenProvider>().setOrden(Orden.empty());
-        
-        // Navegar a DetallePiezasScreen con la orden creada/actualizada
+
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => DetallePiezasScreen(
-              // Parámetros para resysol
               datosProduccion: _crearDatosProduccion(),
-              // También pasamos la orden creada/actualizada
               ordenPrevia: ordenGuardada,
             ),
           ),
         );
-
-        // Si estamos editando, actualizar el estado local
-        if (_isEditMode && mounted) {
-          setState(() {
-            ordenExistente = ordenGuardada;
-            _ordenExistente = ordenGuardada;
-          });
-        }
       }
     } catch (e) {
-      if (Navigator.of(context).canPop()) {
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       
@@ -2004,44 +1860,27 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
   @override
   void dispose() {
-    // APLICADO: Remover listeners
     _pedidoController.removeListener(_calcularTotalTambores);
     _envaseController.removeListener(_calcularTotalTambores);
-    
-    // Limpiar la orden del Provider si estamos saliendo de la pantalla
-    if (!_isEditMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.read<OrdenProvider>().setOrden(Orden.empty());
-        }
-      });
-    }
-    
-    // Dispose de los controladores de Resysol
     _numBatchesController.dispose();
     _iniciadaEnController.dispose();
     _produccionController.dispose();
     _bolsasController.dispose();
     _nvporcController.dispose();
     _viscController.dispose();
-    _totTambController.dispose(); // ADDED
-    _fechaEmisionController.dispose(); // ADDED
-    _numeroController.dispose(); // ADDED
-    _productoController.dispose(); // ADDED
-    _refController.dispose(); // ADDED
-    _pedidoController.dispose(); // ADDED
-    _envaseController.dispose(); // ADDED
-    _batchesController.dispose(); // ADDED
-    _observacionesController.dispose(); // ADDED
-    
-    // Dispose de los controladores de Automotora/Sedel
+    _totTambController.dispose(); 
+    _fechaEmisionController.dispose(); 
+    _numeroController.dispose(); 
+    _productoController.dispose(); 
+    _refController.dispose(); 
+    _pedidoController.dispose(); 
+    _envaseController.dispose(); 
+    _batchesController.dispose(); 
+    _observacionesController.dispose(); 
     _numOrdenController.dispose();
     _comentClienteController.dispose();
     _comentTrabajoController.dispose();
     _descripcionController.dispose();
-    
-    // Si tienes otros controladores no listados, agrégalos aquí.
-    
     super.dispose();
   }
 }
