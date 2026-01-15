@@ -96,7 +96,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       
       // Obtener la unidad y cliente seleccionados del provider
       Map<String, dynamic> queryParams = {};
-      queryParams['sort'] = 'fechaDesde';
+      queryParams['sort'] = 'fechaDesde DESC';
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
