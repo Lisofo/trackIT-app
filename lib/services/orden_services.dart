@@ -361,7 +361,7 @@ class OrdenServices {
         Carteles.showErrorDialog(context, 'Hubo un error al momento de cambiar el estado');
       }
 
-      return;
+      return resp.data['otRevisionId'];
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);

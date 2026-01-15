@@ -108,7 +108,7 @@ class TareasServices {
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
-        link += tarea.tareaId.toString(),
+        link,
         options: Options(
           method: 'DELETE', 
           headers: headers

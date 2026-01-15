@@ -1628,6 +1628,9 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         ),
       );
 
+      // IMPORTANTE: Devolver la orden actualizada
+      Navigator.of(context).pop(ordenActualizada);
+
     } catch (e) {
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
@@ -1875,51 +1878,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
                           _buildTotalItem('Chapa:', formatCurrency.format(_costoRealChapa)),
                           _buildTotalItem('Pintura:', formatCurrency.format(_costoRealPintura)),
                           _buildTotalItem('Mecánica:', formatCurrency.format(_costoRealMecanica)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              
-              // NUEVO: Sección para ccVisc y ccNvporc
-              Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Control de Calidad',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _ccViscController,
-                              decoration: const InputDecoration(
-                                labelText: 'Viscosidad Control (cc)',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _ccNvporcController,
-                              decoration: const InputDecoration(
-                                labelText: 'N.V % Control (cc)',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ],

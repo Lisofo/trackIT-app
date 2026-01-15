@@ -114,6 +114,27 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
+  void _verificarYActualizarOrdenExistente() {
+    final ordenProvider = context.read<OrdenProvider>();
+    final ordenDelProvider = ordenProvider.orden;
+    
+    // Si hay una orden cargada en el provider con un ID válido
+    if (ordenDelProvider.ordenTrabajoId != null && 
+        ordenDelProvider.ordenTrabajoId != 0 &&
+        ordenDelProvider.ordenTrabajoId != ordenExistente.ordenTrabajoId) {
+      
+      setState(() {
+        ordenExistente = ordenDelProvider;
+        _isEditMode = true;
+        _ordenExistente = ordenDelProvider;
+      });
+      
+      // Cargar los datos de la nueva orden
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _cargarOrdenExistente();
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -133,15 +154,35 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     // Cargar orden existente después de que el widget esté construido
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarOrdenExistente();
+      _verificarYActualizarOrdenExistente();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Verificar si hay una orden nueva cargada cuando cambian las dependencias
+    _verificarYActualizarOrdenExistente();
   }
 
   Future<void> _cargarOrdenExistente() async {
     final ordenProvider = context.read<OrdenProvider>();
-    ordenExistente = ordenProvider.orden;
+    
+    // Priorizar la orden del provider sobre la local si tiene ID válido
+    if (ordenProvider.orden.ordenTrabajoId != null && 
+        ordenProvider.orden.ordenTrabajoId != 0) {
+      ordenExistente = ordenProvider.orden;
+    }
 
     // Verificar si hay una orden cargada desde la lista
     if (ordenExistente.ordenTrabajoId != null && ordenExistente.ordenTrabajoId != 0) {
+      // Si ya está en modo edición con la misma orden, no hacer nada
+      if (_isEditMode && 
+          _ordenExistente != null && 
+          _ordenExistente!.ordenTrabajoId == ordenExistente.ordenTrabajoId) {
+        return;
+      }
+
       setState(() {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
@@ -164,8 +205,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
           
           // Para automotora, cargar unidades también
-          if ((flavor == 'automotoraargentina' || flavor == 'parabrisasejido') && ordenExistente.unidad?.unidadId != null) {
-            await _cargarUnidadesYSeleccionar(ordenExistente.cliente!.clienteId, ordenExistente.unidad!.unidadId);
+          if ((flavor == 'automotoraargentina' || flavor == 'parabrisasejido') && 
+              ordenExistente.unidad?.unidadId != null) {
+            await _cargarUnidadesYSeleccionar(
+              ordenExistente.cliente!.clienteId, 
+              ordenExistente.unidad!.unidadId
+            );
           }
         }
         
@@ -1133,6 +1178,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                       Navigator.of(context).pop();
                       
                       if (ordenGuardada != null) {
+                        // IMPORTANTE: Guardar la orden en el Provider
+                        context.read<OrdenProvider>().setOrden(ordenGuardada);
+                        
+                        // Limpiar la orden temporal después de guardar
                         context.read<OrdenProvider>().setOrden(Orden.empty());
                         
                         final result = await Navigator.push(
@@ -1149,6 +1198,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                         );
 
                         if (result != null && result is Orden) {
+                          // Actualizar con la orden que viene de detalle
+                          context.read<OrdenProvider>().setOrden(result);
+                          
                           setState(() {
                             ordenExistente = result;
                             _isEditMode = true;
@@ -1156,7 +1208,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                           });
                           
                           await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
-                          await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
+                          if (flavor == 'automotoraargentina' || flavor == 'parabrisasejido') {
+                            await _cargarUnidadesYSeleccionar(
+                              result.cliente?.clienteId ?? 0, 
+                              result.unidad?.unidadId ?? 0
+                            );
+                          }
                           _cargarDatosComunesDesdeOrden();
                         }
                       }
@@ -1904,6 +1961,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       Navigator.of(context).pop();
       
       if (ordenGuardada != null) {
+        // IMPORTANTE: Guardar la orden en el Provider
+        context.read<OrdenProvider>().setOrden(ordenGuardada);
+        
+        // Limpiar la orden temporal después de guardar
+        context.read<OrdenProvider>().setOrden(Orden.empty());
+        
         // Navegar a DetallePiezasScreen con la orden creada/actualizada
         await Navigator.push(
           context,
@@ -1944,6 +2007,15 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     // APLICADO: Remover listeners
     _pedidoController.removeListener(_calcularTotalTambores);
     _envaseController.removeListener(_calcularTotalTambores);
+    
+    // Limpiar la orden del Provider si estamos saliendo de la pantalla
+    if (!_isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<OrdenProvider>().setOrden(Orden.empty());
+        }
+      });
+    }
     
     // Dispose de los controladores de Resysol
     _numBatchesController.dispose();

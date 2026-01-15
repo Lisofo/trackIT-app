@@ -443,7 +443,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
         // ignore: unused_local_variable
         int uId = context.read<AuthProvider>().uId;
         String token = context.read<AuthProvider>().token;
-        await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacionId, token);
+        orden.otRevisionId = await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacionId, token);
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
         if (statusCode == 1) {

@@ -385,7 +385,7 @@ class MonitorTareasState extends State<MonitorTareas> {
             TextButton(
               onPressed: () async {
                 try {
-                  // await tareasServices.deleteTarea(context, tarea, token);
+                  await tareasServices.deleteTarea(context, tarea, token);
                   await _recargarDatos();
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(

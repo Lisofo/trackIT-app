@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, avoid_init_to_null, void_checks, avoid_print
+// ignore_for_file: use_build_context_synchronously, avoid_init_to_null, void_checks, avoid_print, unused_local_variable
 
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/manuales_materiales.dart';
@@ -79,8 +79,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
       materiales = await _materialesServices.getMateriales(context, token);
 
       if (orden.otRevisionId != 0) {
-        revisionMaterialesList =
-            await _materialesServices.getRevisionMateriales(context, orden, token);
+        revisionMaterialesList = await _materialesServices.getRevisionMateriales(context, orden, token);
       }
 
       cargoDatosCorrectamente = materiales.isNotEmpty;
@@ -104,239 +103,218 @@ class _MaterialesPageState extends State<MaterialesPage> {
     final bool esEdicion = materialParaEditar != null;
 
     final RevisionMaterial materialActual = materialParaEditar ??
-        RevisionMaterial(
-          otMaterialId: 0,
-          ordenTrabajoId: orden.ordenTrabajoId!,
-          otRevisionId: orden.otRevisionId!,
-          cantidad: 0.0,
-          comentario: '',
-          ubicacion: '',
-          areaCobertura: '',
-          plagas: [],
-          material: materialParaAgregar ?? Materiales.empty(),
-          lote: Lote.empty(),
-          metodoAplicacion: MetodoAplicacion.empty(),
-        );
+      RevisionMaterial(
+        otMaterialId: 0,
+        ordenTrabajoId: orden.ordenTrabajoId!,
+        otRevisionId: orden.otRevisionId!,
+        cantidad: 0.0,
+        comentario: '',
+        ubicacion: '',
+        areaCobertura: '',
+        plagas: [],
+        material: materialParaAgregar ?? Materiales.empty(),
+        lote: Lote.empty(),
+        metodoAplicacion: MetodoAplicacion.empty(),
+      );
 
     // CONTROLADORES
-    final TextEditingController cantidadController =
-        TextEditingController(text: esEdicion ? materialActual.cantidad.toString() : '');
-    final TextEditingController comentarioController =
-        TextEditingController(text: esEdicion ? materialActual.comentario : '');
+    final TextEditingController cantidadController = TextEditingController(text: esEdicion ? materialActual.cantidad.toString() : '');
+    final TextEditingController comentarioController = TextEditingController(text: esEdicion ? materialActual.comentario : '');
 
     // ESTADO LOCAL DEL DIALOGO (FIX CRÍTICO)
     Lote? selectedLoteLocal = esEdicion ? materialActual.lote : null;
-    MetodoAplicacion? selectedMetodoLocal =
-        esEdicion ? materialActual.metodoAplicacion : null;
+    MetodoAplicacion? selectedMetodoLocal = esEdicion ? materialActual.metodoAplicacion : null;
 
     final bool resultado = await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return SingleChildScrollView(
-              child: AlertDialog(
-                surfaceTintColor: Colors.white,
-                content: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Nombre: ${materialActual.material.descripcion}',
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    Text(
-                      'Unidad: ${materialActual.material.unidad}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        verManual(context, material: materialActual.material);
-                      },
-                      child: const Text(
-                        'Ver Manuales',
-                        style: TextStyle(
-                          fontSize: 16,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('* Cantidad:'),
-                    TextField(
-                      controller: cantidadController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: 'Ingrese la cantidad',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(lotes.isEmpty ? 'Lote:' : '* Lote:'),
-                    DropdownSearch<Lote>(
-                      items: lotes,
-                      selectedItem: selectedLoteLocal,
-                      onChanged: (newValue) {
-                        selectedLoteLocal = newValue;
-                      },
-                      itemAsString: (Lote lote) =>
-                          lote.materialLoteId == 0 ? 'Sin lote' : lote.lote,
-                      dropdownDecoratorProps: const DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          hintText: 'Seleccione un lote',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Método de Aplicación:'), // Ya no es obligatorio
-                    DropdownSearch<MetodoAplicacion>(
-                      items: metodosAplicacion,
-                      selectedItem: selectedMetodoLocal,
-                      onChanged: (newValue) {
-                        selectedMetodoLocal = newValue;
-                      },
-                      itemAsString: (MetodoAplicacion metodo) =>
-                          metodo.descripcion,
-                      dropdownDecoratorProps:
-                          const DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          hintText: 'Seleccione un método (opcional)',
-                        ),
-                      ),
-                      popupProps: const PopupProps.menu(
-                        showSearchBox: true,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Comentario:'),
-                    TextField(
-                      controller: comentarioController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: 'Ingrese un comentario (opcional)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
+      context: context,
+      builder: (BuildContext context) {
+        return SingleChildScrollView(
+          child: AlertDialog(
+            surfaceTintColor: Colors.white,
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Nombre: ${materialActual.material.descripcion}',
+                  style: const TextStyle(fontSize: 20),
                 ),
-                actions: <Widget>[
-                  TextButton(
-                    child: const Text('Cancelar'),
-                    onPressed: () {
-                      Navigator.of(context).pop(false);
-                    },
+                Text(
+                  'Unidad: ${materialActual.material.unidad}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    verManual(context, material: materialActual.material);
+                  },
+                  child: const Text(
+                    'Ver Manuales',
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
-                  TextButton(
-                    child: const Text('Guardar'),
-                    onPressed: () async {
-                      final String cantidad = cantidadController.text;
-                      final String comentario = comentarioController.text;
-
-                      bool validacionExitosa = true;
-                      String mensajeError = '';
-
-                      if (cantidad.isEmpty ||
-                          double.tryParse(cantidad) == null) {
-                        validacionExitosa = false;
-                        mensajeError =
-                            'La cantidad es obligatoria y debe ser un número válido';
-                      } else if (lotes.isNotEmpty &&
-                          (selectedLoteLocal == null ||
-                              selectedLoteLocal!.materialLoteId == 0)) {
-                        validacionExitosa = false;
-                        mensajeError = 'Debe seleccionar un lote';
-                      }
-
-                      if (!validacionExitosa) {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Error'),
-                              content: Text(mensajeError),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(),
-                                  child: const Text('Cerrar'),
-                                )
-                              ],
-                            );
-                          },
-                        );
-                        return;
-                      }
-
-                      final RevisionMaterial revisionMaterialActualizada =
-                          RevisionMaterial(
-                        otMaterialId: materialActual.otMaterialId,
-                        ordenTrabajoId: orden.ordenTrabajoId!,
-                        otRevisionId: orden.otRevisionId!,
-                        cantidad: double.parse(cantidad),
-                        comentario: comentario,
-                        ubicacion: '',
-                        areaCobertura: '',
-                        plagas: [],
-                        material: materialActual.material,
-                        lote: selectedLoteLocal ?? Lote.empty(),
-                        metodoAplicacion:
-                            selectedMetodoLocal ?? MetodoAplicacion.empty(),
-                      );
-
-                      final List<int> plagasIds = [];
-
-                      if (esEdicion) {
-                        await _materialesServices.putRevisionMaterial(
-                          context,
-                          orden,
-                          plagasIds,
-                          revisionMaterialActualizada,
-                          token,
-                        );
-                      } else {
-                        await _materialesServices.postRevisionMaterial(
-                          context,
-                          orden,
-                          plagasIds,
-                          revisionMaterialActualizada,
-                          token,
-                        );
-                      }
-
-                      statusCodeRevision =
-                          await _materialesServices.getStatusCode();
-                      await _materialesServices.resetStatusCode();
-
-                      if (statusCodeRevision == 1) {
-                        if (mounted) {
-                          setState(() {
-                            if (esEdicion) {
-                              final index =
-                                  revisionMaterialesList.indexWhere(
-                                (rm) =>
-                                    rm.otMaterialId ==
-                                    materialActual.otMaterialId,
-                              );
-                              if (index != -1) {
-                                revisionMaterialesList[index] =
-                                    revisionMaterialActualizada;
-                              }
-                            } else {
-                              revisionMaterialesList
-                                  .add(revisionMaterialActualizada);
-                            }
-                          });
-                        }
-                        Navigator.of(context).pop(true);
-                      } else {
-                        Navigator.of(context).pop(false);
-                      }
-                    },
+                ),
+                const SizedBox(height: 16),
+                const Text('* Cantidad:'),
+                TextField(
+                  controller: cantidadController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: 'Ingrese la cantidad',
                   ),
-                ],
+                ),
+                const SizedBox(height: 16),
+                Text(lotes.isEmpty ? 'Lote:' : '* Lote:'),
+                DropdownSearch<Lote>(
+                  items: lotes,
+                  selectedItem: selectedLoteLocal,
+                  onChanged: (newValue) {
+                    selectedLoteLocal = newValue;
+                  },
+                  itemAsString: (Lote lote) => lote.materialLoteId == 0 ? 'Sin lote' : lote.lote,
+                  dropdownDecoratorProps: const DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      hintText: 'Seleccione un lote',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Método de Aplicación:'),
+                DropdownSearch<MetodoAplicacion>(
+                  items: metodosAplicacion,
+                  selectedItem: selectedMetodoLocal,
+                  onChanged: (newValue) {
+                    selectedMetodoLocal = newValue;
+                  },
+                  itemAsString: (MetodoAplicacion metodo) => metodo.descripcion,
+                  dropdownDecoratorProps: const DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      hintText: 'Seleccione un método (opcional)',
+                    ),
+                  ),
+                  popupProps: const PopupProps.menu(
+                    showSearchBox: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Comentario:'),
+                TextField(
+                  controller: comentarioController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: 'Ingrese un comentario (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
               ),
-            );
-          },
-        ) ??
-        false;
+              TextButton(
+                child: const Text('Guardar'),
+                onPressed: () async {
+                  final String cantidad = cantidadController.text;
+                  final String comentario = comentarioController.text;
+                  bool validacionExitosa = true;
+                  String mensajeError = '';
+                  if (cantidad.isEmpty || double.tryParse(cantidad) == null) {
+                    validacionExitosa = false;
+                    mensajeError = 'La cantidad es obligatoria y debe ser un número válido';
+                  } else if (lotes.isNotEmpty && (selectedLoteLocal == null || selectedLoteLocal!.materialLoteId == 0)) {
+                    validacionExitosa = false;
+                    mensajeError = 'Debe seleccionar un lote';
+                  }
+                  if (!validacionExitosa) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Error'),
+                          content: Text(mensajeError),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cerrar'),
+                            )
+                          ],
+                        );
+                      },
+                    );
+                    return;
+                  }
+                  final RevisionMaterial revisionMaterialActualizada = RevisionMaterial(
+                    otMaterialId: materialActual.otMaterialId,
+                    ordenTrabajoId: orden.ordenTrabajoId!,
+                    otRevisionId: orden.otRevisionId!,
+                    cantidad: double.parse(cantidad),
+                    comentario: comentario,
+                    ubicacion: '',
+                    areaCobertura: '',
+                    plagas: [],
+                    material: materialActual.material,
+                    lote: selectedLoteLocal ?? Lote.empty(),
+                    metodoAplicacion: selectedMetodoLocal ?? MetodoAplicacion.empty(),
+                  );
+                  final List<int> plagasIds = [];
+                  if (esEdicion) {
+                    await _materialesServices.putRevisionMaterial(
+                      context,
+                      orden,
+                      plagasIds,
+                      revisionMaterialActualizada,
+                      token,
+                    );
+                  } else {
+                    await _materialesServices.postRevisionMaterial(
+                      context,
+                      orden,
+                      plagasIds,
+                      revisionMaterialActualizada,
+                      token,
+                    );
+                  }
+                  statusCodeRevision = await _materialesServices.getStatusCode();
+                  await _materialesServices.resetStatusCode();
+                  if (statusCodeRevision == 1) {
+                    if (mounted) {
+                      setState(() {
+                        if (esEdicion) {
+                          final index = revisionMaterialesList.indexWhere((rm) => rm.otMaterialId == materialActual.otMaterialId,
+                          );
+                          if (index != -1) {
+                            revisionMaterialesList[index] = revisionMaterialActualizada;
+                          }
+                        } else {
+                          revisionMaterialesList.add(revisionMaterialActualizada);
+                        }
+                      });
+                    }
+                    Navigator.of(context).pop(true);
+                  } else {
+                    Navigator.of(context).pop(false);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ) ??
+    false;
+
+    // Después del diálogo, siempre establecer a false
+    if (mounted) {
+      setState(() {
+        estaBuscando = false;
+      });
+    }
 
     return resultado;
   }
@@ -406,10 +384,8 @@ class _MaterialesPageState extends State<MaterialesPage> {
                               searchDelay: Duration.zero,
                             ),
                             onChanged: (newValue) async {
-                              if (orden.estado == 'PENDIENTE' ||
-                                  orden.estado == 'FINALIZADA') {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
+                              if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
                                       'No puede de ingresar o editar datos.',
@@ -430,9 +406,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                   selectedMaterial.materialId,
                                   token,
                                 );
-                                metodosAplicacion =
-                                    await _materialesServices
-                                        .getMetodosAplicacion(
+                                metodosAplicacion = await _materialesServices.getMetodosAplicacion(
                                   context,
                                   token,
                                 );
@@ -448,15 +422,19 @@ class _MaterialesPageState extends State<MaterialesPage> {
                               }
 
                               if (metodosAplicacion.isNotEmpty) {
-                                final resultado =
-                                    await _showMaterialDialog(
+                                final resultado = await _showMaterialDialog(
                                   context,
-                                  materialParaAgregar:
-                                      selectedMaterial,
+                                  materialParaAgregar: selectedMaterial,
                                 );
                                 if (mounted) {
                                   setState(() {
-                                    estaBuscando = resultado;
+                                    estaBuscando = false;
+                                  });
+                                }
+                              } else {
+                                if (mounted) {
+                                  setState(() {
+                                    estaBuscando = false;
                                   });
                                 }
                               }
@@ -473,8 +451,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                 height: 30,
                                 decoration: BoxDecoration(
                                   color: colors.primary,
-                                  borderRadius:
-                                      BorderRadius.circular(5),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: const Center(
                                   child: Text(
@@ -491,28 +468,19 @@ class _MaterialesPageState extends State<MaterialesPage> {
                               Expanded(
                                 child: ListView.separated(
                                   controller: _scrollController,
-                                  itemCount:
-                                      revisionMaterialesList.length,
-                                  separatorBuilder:
-                                      (_, __) => const Divider(
+                                  itemCount: revisionMaterialesList.length,
+                                  separatorBuilder: (_, __) => const Divider(
                                     thickness: 2,
                                     color: Colors.green,
                                   ),
                                   itemBuilder: (context, i) {
-                                    final item =
-                                        revisionMaterialesList[i];
+                                    final item = revisionMaterialesList[i];
                                     return Dismissible(
                                       key: Key(item.otMaterialId.toString()),
-                                      direction:
-                                          DismissDirection.endToStart,
-                                      confirmDismiss:
-                                          (DismissDirection direction) async {
-                                        if (orden.estado ==
-                                                'PENDIENTE' ||
-                                            orden.estado ==
-                                                'FINALIZADA') {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                      direction: DismissDirection.endToStart,
+                                      confirmDismiss: (DismissDirection direction) async {
+                                        if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                          ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(
                                               content: Text(
                                                 'No puede de ingresar o editar datos.',
@@ -524,56 +492,38 @@ class _MaterialesPageState extends State<MaterialesPage> {
 
                                         return await showDialog(
                                           context: context,
-                                          builder:
-                                              (BuildContext context) {
+                                          builder: (BuildContext context) {
                                             return AlertDialog(
-                                              surfaceTintColor:
-                                                  Colors.white,
-                                              title:
-                                                  const Text("Confirmar"),
+                                              surfaceTintColor:Colors.white,
+                                              title: const Text("Confirmar"),
                                               content: const Text(
                                                 "¿Estas seguro de querer borrar el material?",
                                               ),
                                               actions: <Widget>[
                                                 TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(
-                                                              context)
-                                                          .pop(false),
-                                                  child: const Text(
-                                                      "CANCELAR"),
+                                                  onPressed: () => Navigator.of(context).pop(false),
+                                                  child: const Text("CANCELAR"),
                                                 ),
                                                 TextButton(
-                                                  style: TextButton
-                                                      .styleFrom(
-                                                    foregroundColor:
-                                                        Colors.red,
+                                                  style: TextButton.styleFrom(
+                                                    foregroundColor:Colors.red,
                                                   ),
                                                   onPressed: () async {
-                                                    await _materialesServices
-                                                        .deleteRevisionMaterial(
+                                                    await _materialesServices.deleteRevisionMaterial(
                                                       context,
                                                       orden,
-                                                      revisionMaterialesList[
-                                                          i],
+                                                      revisionMaterialesList[i],
                                                       token,
                                                     );
 
-                                                    statusCodeRevision =
-                                                        await _materialesServices
-                                                            .getStatusCode();
-                                                    await _materialesServices
-                                                        .resetStatusCode();
+                                                    statusCodeRevision = await _materialesServices.getStatusCode();
+                                                    await _materialesServices.resetStatusCode();
 
-                                                    if (statusCodeRevision ==
-                                                        1) {
-                                                      Navigator.of(
-                                                              context)
-                                                          .pop(true);
+                                                    if (statusCodeRevision == 1) {
+                                                      Navigator.of(context).pop(true);
                                                     }
                                                   },
-                                                  child: const Text(
-                                                      "BORRAR"),
+                                                  child: const Text("BORRAR"),
                                                 ),
                                               ],
                                             );
@@ -582,8 +532,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                       },
                                       onDismissed: (_) {
                                         if (statusCodeRevision == 1) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                          ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 'El material ${item.material.descripcion} ha sido borrado',
@@ -592,117 +541,83 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                           );
 
                                           setState(() {
-                                            revisionMaterialesList
-                                                .removeAt(i);
+                                            revisionMaterialesList.removeAt(i);
                                           });
                                         }
                                         statusCodeRevision = null;
                                       },
                                       background: Container(
                                         color: Colors.red,
-                                        padding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 20),
-                                        alignment: AlignmentDirectional
-                                            .centerEnd,
+                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        alignment: AlignmentDirectional.centerEnd,
                                         child: const Icon(
                                           Icons.delete,
                                           color: Colors.white,
                                         ),
                                       ),
                                       child: Card(
-                                        surfaceTintColor:
-                                            Colors.white,
+                                        surfaceTintColor:Colors.white,
                                         child: ListTile(
                                           trailing: Row(
-                                            mainAxisSize:
-                                                MainAxisSize.min,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               IconButton(
-                                                onPressed:
-                                                    !estaBuscando
-                                                        ? () async {
-                                                            if (orden.estado ==
-                                                                    'PENDIENTE' ||
-                                                                orden.estado ==
-                                                                    'FINALIZADA') {
-                                                              ScaffoldMessenger.of(
-                                                                      context)
-                                                                  .showSnackBar(
-                                                                const SnackBar(
-                                                                  content:
-                                                                      Text(
-                                                                    'No puede ingresar o editar datos.',
-                                                                  ),
-                                                                ),
-                                                              );
-                                                              return;
-                                                            }
+                                                onPressed: !estaBuscando ? () async {
+                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('No puede ingresar o editar datos.',),
+                                                      ),
+                                                    );
+                                                    return;
+                                                  }
 
-                                                            setState(() {
-                                                              estaBuscando =
-                                                                  true;
-                                                            });
+                                                  setState(() {
+                                                    estaBuscando = true;
+                                                  });
 
-                                                            try {
-                                                              lotes =
-                                                                  await _materialesServices
-                                                                      .getLotes(
-                                                                context,
-                                                                item.material
-                                                                    .materialId,
-                                                                token,
-                                                              );
-                                                              metodosAplicacion =
-                                                                  await _materialesServices
-                                                                      .getMetodosAplicacion(
-                                                                context,
-                                                                token,
-                                                              );
-                                                            } catch (e) {
-                                                              lotes = [];
-                                                              metodosAplicacion =
-                                                                  [];
-                                                            }
+                                                  try {
+                                                    lotes = await _materialesServices.getLotes(
+                                                      context,
+                                                      item.material.materialId,
+                                                      token,
+                                                    );
+                                                    metodosAplicacion = await _materialesServices.getMetodosAplicacion(
+                                                      context,
+                                                      token,
+                                                    );
+                                                  } catch (e) {
+                                                    lotes = [];
+                                                    metodosAplicacion = [];
+                                                  }
 
-                                                            if (mounted) {
-                                                              setState(() {
-                                                                estaBuscando =
-                                                                    false;
-                                                              });
-                                                            }
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      estaBuscando = false;
+                                                    });
+                                                  }
 
-                                                            if (lotes
-                                                                    .isNotEmpty &&
-                                                                metodosAplicacion
-                                                                    .isNotEmpty) {
-                                                              final resultado =
-                                                                  await _showMaterialDialog(
-                                                                context,
-                                                                materialParaEditar:
-                                                                    item,
-                                                              );
-                                                              if (mounted) {
-                                                                setState(() {
-                                                                  estaBuscando =
-                                                                      resultado;
-                                                                });
-                                                              }
-                                                            }
-                                                          }
-                                                        : null,
-                                                icon: const Icon(
-                                                    Icons.edit),
+                                                  if (lotes.isNotEmpty && metodosAplicacion.isNotEmpty) {
+                                                    final resultado = await _showMaterialDialog(context, materialParaEditar: item,);
+                                                    if (mounted) {
+                                                      setState(() {
+                                                        estaBuscando = false;
+                                                      });
+                                                    }
+                                                  } else {
+                                                    if (mounted) {
+                                                      setState(() {
+                                                        estaBuscando = false;
+                                                      });
+                                                    }
+                                                  }
+                                                } : null,
+                                                icon: const Icon(Icons.edit),
                                               ),
                                               IconButton(
                                                 onPressed: () {
-                                                  if (orden.estado ==
-                                                          'PENDIENTE' ||
-                                                      orden.estado ==
-                                                          'FINALIZADA') {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
+                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(
                                                         content: Text(
                                                           'No puede de ingresar o editar datos.',
@@ -711,18 +626,14 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                                     );
                                                     return;
                                                   }
-                                                  deleteMaterial(
-                                                      context, i);
+                                                  deleteMaterial(context, i);
                                                 },
-                                                icon: const Icon(
-                                                    Icons.delete),
+                                                icon: const Icon(Icons.delete),
                                               ),
                                             ],
                                           ),
                                           title: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment
-                                                    .start,
+                                            crossAxisAlignment:CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 'Material: ${item.material.descripcion}',
@@ -777,12 +688,10 @@ class _MaterialesPageState extends State<MaterialesPage> {
         return AlertDialog(
           surfaceTintColor: Colors.white,
           title: const Text("Confirmar"),
-          content: const Text(
-              "¿Estas seguro de querer borrar el material?"),
+          content: const Text("¿Estas seguro de querer borrar el material?"),
           actions: <Widget>[
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text("CANCELAR"),
             ),
             TextButton(
@@ -794,21 +703,18 @@ class _MaterialesPageState extends State<MaterialesPage> {
 
                 borrando = true;
 
-                await _materialesServices
-                    .deleteRevisionMaterial(
+                await _materialesServices.deleteRevisionMaterial(
                   context,
                   orden,
                   revisionMaterialesList[i],
                   token,
                 );
 
-                statusCodeRevision =
-                    await _materialesServices.getStatusCode();
+                statusCodeRevision = await _materialesServices.getStatusCode();
                 await _materialesServices.resetStatusCode();
 
                 if (statusCodeRevision == 1) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
                         'El material ${revisionMaterialesList[i].material.descripcion} ha sido borrado',
@@ -845,16 +751,16 @@ class _MaterialesPageState extends State<MaterialesPage> {
   }) async {
     try {
       manuales = material == null
-          ? await _materialesServices.getManualesMateriales(
-              context,
-              item!.material.materialId,
-              token,
-            )
-          : await _materialesServices.getManualesMateriales(
-              context,
-              material.materialId,
-              token,
-            );
+        ? await _materialesServices.getManualesMateriales(
+            context,
+            item!.material.materialId,
+            token,
+          )
+        : await _materialesServices.getManualesMateriales(
+            context,
+            material.materialId,
+            token,
+          );
     } catch (e) {
       print(e);
     }
@@ -882,8 +788,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text("CERRAR"),
             ),
           ],
