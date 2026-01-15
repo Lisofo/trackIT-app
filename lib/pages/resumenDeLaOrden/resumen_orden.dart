@@ -2,6 +2,7 @@ import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/clientes_firmas.dart';
 import 'package:app_tec_sedel/models/observacion.dart';
 import 'package:app_tec_sedel/models/orden.dart';
+import 'package:app_tec_sedel/models/revision_incidencia.dart';
 import 'package:app_tec_sedel/models/revision_materiales.dart';
 import 'package:app_tec_sedel/models/revision_plaga.dart';
 import 'package:app_tec_sedel/models/revision_pto_inspeccion.dart';
@@ -9,6 +10,7 @@ import 'package:app_tec_sedel/models/revision_tarea.dart';
 import 'package:app_tec_sedel/models/ubicacion.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
+import 'package:app_tec_sedel/services/incidencia_services.dart';
 import 'package:app_tec_sedel/services/materiales_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/ptos_services.dart';
@@ -39,9 +41,10 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   late List<RevisionMaterial> materiales = [];
   late List<RevisionPlaga> plagas = [];
   late List<Observacion> observaciones = [];
+  late List<RevisionIncidencia> incidencias = [];
   late Observacion observacion = Observacion.empty();
   List<ClienteFirma> firmas = [];
-  late String? firmaDisponible = '';
+  late String? firmaDisponible = ''; 
   List<RevisionPtoInspeccion> ptosInspeccion = [];
   bool faltanCompletarPtos = false;
   bool yaCargo = false;
@@ -50,6 +53,9 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   late int? statusCode = 0;
   bool resumenPlagas = false;
   bool resumenPtoInspeccion = false;
+  late String siguienteEstado = '';
+  final ordenServices = OrdenServices();
+  final _revisionServices = RevisionServices();
   
   @override
   void initState() {
@@ -64,14 +70,15 @@ class _ResumenOrdenState extends State<ResumenOrden> {
     if(orden.tipoOrden?.codTipoOrden == 'N'){
       ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
       faltanCompletarPtos = ptosInspeccion.any((pto)=> pto.otPuntoInspeccionId == 0);
-      tareas = await RevisionServices().getRevisionTareas(context, orden, token);
-      materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
       plagas = await RevisionServices().getRevisionPlagas(context, orden, token);
     } else if(orden.tipoOrden?.codTipoOrden == 'N' || orden.tipoOrden?.codTipoOrden == 'D') {
       materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
       plagas = await RevisionServices().getRevisionPlagas(context, orden, token);
     }
+    tareas = await RevisionServices().getRevisionTareas(context, orden, token);
+    materiales = await MaterialesServices().getRevisionMateriales(context, orden, token);
     observaciones = await RevisionServices().getObservacion(context, orden, token);
+    incidencias = await IncidenciaServices().getRevisionIncidencia(context, orden, token);
     if (observaciones.isNotEmpty) {
       observacion = observaciones[0];
     } else {
@@ -124,16 +131,7 @@ class _ResumenOrdenState extends State<ResumenOrden> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 10,),
                   ],
-                  const ContainerTituloPIRevision(titulo: 'Tareas'),
-                  const SizedBox(height: 10,),
-                  Text(
-                    tareas.isEmpty ? 'No registró tareas' : 'OK', 
-                    style: const TextStyle(
-                      fontSize: 18
-                    ),
-                  )
                 ],
                 if(orden.tipoOrden?.codTipoOrden == 'N' || orden.tipoOrden?.codTipoOrden == 'D')...[
                   if(resumenPlagas)...[
@@ -147,16 +145,25 @@ class _ResumenOrdenState extends State<ResumenOrden> {
                     ),
                     const SizedBox(height: 10,),
                   ],
-                  const ContainerTituloPIRevision(titulo: 'Materiales'),
-                  const SizedBox(height: 10,),
-                  Text(
-                    materiales.isEmpty ? 'No registró materiales' : 'OK', 
-                    style: const TextStyle(
-                      fontSize: 18
-                    ),
-                  ),
-                  const SizedBox(height: 10,),
                 ],
+                const ContainerTituloPIRevision(titulo: 'Tareas'),
+                const SizedBox(height: 10,),
+                Text(
+                  tareas.isEmpty ? 'No registró tareas' : 'OK', 
+                  style: const TextStyle(
+                    fontSize: 18
+                  ),
+                ),
+                const SizedBox(height: 10,),
+                const ContainerTituloPIRevision(titulo: 'Materiales'),
+                const SizedBox(height: 10,),
+                Text(
+                  materiales.isEmpty ? 'No registró materiales' : 'OK', 
+                  style: const TextStyle(
+                    fontSize: 18
+                  ),
+                ),
+                const SizedBox(height: 10,),
                 const ContainerTituloPIRevision(titulo: 'Observaciones'),
                 const SizedBox(height: 10,),
                 Text(
@@ -170,6 +177,14 @@ class _ResumenOrdenState extends State<ResumenOrden> {
                 const SizedBox(height: 10,),
                 Text(
                   (firmas.isEmpty && firmaDisponible != 'N') ? 'No registró firmas' : firmaDisponible == 'N' ? 'Cliente no disponible' : 'OK', 
+                  style: const TextStyle(
+                    fontSize: 18
+                  ),
+                ),
+                const SizedBox(height: 10,),
+                const ContainerTituloPIRevision(titulo: 'Incidencias'),
+                Text(
+                  incidencias.isEmpty ? 'No registró incidencias' : 'OK',
                   style: const TextStyle(
                     fontSize: 18
                   ),
@@ -207,7 +222,9 @@ class _ResumenOrdenState extends State<ResumenOrden> {
     );
   }
 
-  void _mostrarDialogoConfirmacion(String accion) {
+  void _mostrarDialogoConfirmacion(String accion) async {
+    late int accionId = accion == "recibir" ? 21 : 18;
+    siguienteEstado = await ordenServices.siguienteEstadoOrden(context, orden, accionId, token);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -226,9 +243,9 @@ class _ResumenOrdenState extends State<ResumenOrden> {
               onPressed: () {
                 setState(() {
                   if (accion == 'iniciar') {
-                    cambiarEstado('EN PROCESO');
+                    cambiarEstado(accionId);
                   } else {
-                    cambiarEstado('FINALIZADA');
+                    cambiarEstado(accionId);
                   }
                 });
                 router.pop(context);
@@ -241,17 +258,28 @@ class _ResumenOrdenState extends State<ResumenOrden> {
     );
   }
 
-  cambiarEstado(String estado) async {
+  cambiarEstado(int accionId) async {
     if (!ejecutando) {
       ejecutando = true;
       await obtenerUbicacion();
       if(statusCode == 1) {
         int ubicacionId = ubicacion.ubicacionId;
-        await _ordenServices.patchOrden(context, orden, estado, ubicacionId, token);
+        // ignore: unused_local_variable
+        int uId = context.read<AuthProvider>().uId;
+        String token = context.read<AuthProvider>().token;
+        orden.otRevisionId = await _ordenServices.patchOrdenCambioEstado(context, orden, accionId, ubicacionId, token);
         statusCode = await _ordenServices.getStatusCode();
         await _ordenServices.resetStatusCode();
-        if(statusCode == 1){
-          await Carteles.showDialogs(context, 'Estado cambiado correctamente', true, false, false);
+        if (statusCode == 1) {
+          if (accionId == 18) {
+            // await _revisionServices.postRevision(context, uId, orden, token);
+            statusCode = await _revisionServices.getStatusCode();
+            await _revisionServices.resetStatusCode();
+            if (statusCode == 1) {
+              orden.estado == siguienteEstado;
+              await Carteles.showDialogs(context, 'Estado cambiado correctamente', true, false, false);
+            }
+          }
         }
       }
       statusCode = null;
