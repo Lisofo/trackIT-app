@@ -40,7 +40,7 @@ class _TareasPageState extends State<TareasPage> {
   bool comenzando = false;
   bool sedel = false;
   bool track = false;
-  bool parabrisas = true;
+  bool parabrisas = false;
   bool pedirConfirmacion = true;
   bool isObscured = true;
   final TextEditingController pinController = TextEditingController();

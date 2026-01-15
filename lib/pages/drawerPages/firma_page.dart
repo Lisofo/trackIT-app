@@ -356,6 +356,24 @@ class _FirmaState extends State<Firma> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              TextButton(
+                              onPressed: () async {
+                                await showDialog(
+                                  context: context, 
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          item.firmaPath != '' ? Image.network('${item.firmaPath}?authorization=$token', width: 600, height: 450) : item.firma != null ? Image.memory(item.firma!, width: 600, height: 450) :const Center(child: Text('No hay firma registrada'),),
+                                        ],
+                                      ) 
+                                    );
+                                  },
+                                );
+                              }, 
+                              child: const Text('Ver firma')
+                            ),
                               IconButton(
                                 splashColor: Colors.transparent,
                                 splashRadius: 25,

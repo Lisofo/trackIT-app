@@ -22,28 +22,36 @@ class MaterialesPage extends StatefulWidget {
 }
 
 class _MaterialesPageState extends State<MaterialesPage> {
-  late List<String> savedData = [];
+  // =========================
+  // VARIABLES DE ESTADO
+  // =========================
+
+  List<String> savedData = [];
   List<Materiales> materiales = [];
   List<MetodoAplicacion> metodosAplicacion = [];
-  late List<Lote> lotes = [];
-  late List<RevisionMaterial> revisionMaterialesList = [];
-  late Materiales selectedMaterial = Materiales.empty();
-  late Lote? selectedLote = Lote.empty();
-  late String cantidad = '';
-  late String comentario = ''; // Cambiado de ubicacion a comentario
-  late MetodoAplicacion? selectedMetodo;
-  late String token = '';
-  late Materiales? materialInicial = null;
-  late Orden orden = Orden.empty();
+  List<Lote> lotes = [];
+  List<RevisionMaterial> revisionMaterialesList = [];
+  List<ManualesMateriales> manuales = [];
+
+  Materiales selectedMaterial = Materiales.empty();
+  Orden orden = Orden.empty();
+
+  String token = '';
+  int marcaId = 0;
+
   final ScrollController _scrollController = ScrollController();
-  late int marcaId = 0;
-  late List<ManualesMateriales> manuales = [];
+  final MaterialesServices _materialesServices = MaterialesServices();
+
   bool estaBuscando = false;
   bool borrando = false;
   bool cargoDatosCorrectamente = false;
   bool cargando = true;
+
   int? statusCodeRevision;
-  final _materialesServices = MaterialesServices();
+
+  // =========================
+  // CICLO DE VIDA
+  // =========================
 
   @override
   void initState() {
@@ -51,241 +59,295 @@ class _MaterialesPageState extends State<MaterialesPage> {
     cargarDatos();
   }
 
-  cargarDatos() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // =========================
+  // CARGA INICIAL
+  // =========================
+
+  Future<void> cargarDatos() async {
     token = context.read<AuthProvider>().token;
+
     try {
       orden = context.read<OrdenProvider>().orden;
       marcaId = context.read<OrdenProvider>().marcaId;
-      materiales = await _materialesServices.getMateriales(context, token);
-      if (orden.otRevisionId != 0) {
-        revisionMaterialesList = await _materialesServices.getRevisionMateriales(context, orden, token);
-      }
-      if (materiales.isNotEmpty) {
-        cargoDatosCorrectamente = true;
-      }
-      cargando = false;
-    } catch (e) {
-      cargando = false;
-    }
 
-    setState(() {});
+      materiales = await _materialesServices.getMateriales(context, token);
+
+      if (orden.otRevisionId != 0) {
+        revisionMaterialesList =
+            await _materialesServices.getRevisionMateriales(context, orden, token);
+      }
+
+      cargoDatosCorrectamente = materiales.isNotEmpty;
+    } catch (e) {
+      cargoDatosCorrectamente = false;
+    } finally {
+      cargando = false;
+      if (mounted) setState(() {});
+    }
   }
 
-  // Método unificado para mostrar el diálogo de materiales (agregar/editar)
-  Future<bool> _showMaterialDialog(BuildContext context, {Materiales? materialParaAgregar, RevisionMaterial? materialParaEditar}) async {
-    
-    bool esEdicion = materialParaEditar != null;
-    RevisionMaterial materialActual = materialParaEditar ?? 
-      RevisionMaterial(
-        otMaterialId: 0,
-        ordenTrabajoId: orden.ordenTrabajoId!,
-        otRevisionId: orden.otRevisionId!,
-        cantidad: 0.0,
-        comentario: '',
-        ubicacion: '',
-        areaCobertura: '',
-        plagas: [],
-        material: materialParaAgregar ?? Materiales.empty(),
-        lote: Lote.empty(),
-        metodoAplicacion: MetodoAplicacion.empty()
-      );
+  // =========================
+  // DIALOGO AGREGAR / EDITAR
+  // =========================
 
-    // Inicializar controladores con valores existentes si es edición
-    final TextEditingController cantidadController = TextEditingController(text: esEdicion ? materialActual.cantidad.toString() : '');
-    final TextEditingController comentarioController = TextEditingController(text: esEdicion ? materialActual.comentario : '');
-    
-    selectedLote = esEdicion ? materialActual.lote : Lote.empty();
-    selectedMetodo = esEdicion ? materialActual.metodoAplicacion : null;
+  Future<bool> _showMaterialDialog(
+    BuildContext context, {
+    Materiales? materialParaAgregar,
+    RevisionMaterial? materialParaEditar,
+  }) async {
+    final bool esEdicion = materialParaEditar != null;
 
-    bool resultado = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return SingleChildScrollView(
-          child: AlertDialog(
-            surfaceTintColor: Colors.white,
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Nombre: ${materialActual.material.descripcion}',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                Text(
-                  'Unidad: ${materialActual.material.unidad}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    verManual(context, material: materialActual.material);
-                  },
-                  child: const Text('Ver Manuales',
-                    style: TextStyle(
-                      fontSize: 16,
-                      decoration: TextDecoration.underline
-                    )
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('* Cantidad:'),
-                TextField(
-                  controller: cantidadController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    hintText: 'Ingrese la cantidad',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(lotes.isEmpty ? 'Lote:' : '* Lote:'),
-                DropdownSearch<Lote>(
-                  items: lotes,
-                  selectedItem: esEdicion ? materialActual.lote : null,
-                  onChanged: (newValue) {
-                    selectedLote = newValue;
-                  },
-                  itemAsString: (Lote lote) => lote.materialLoteId == 0 ? 'Sin lote' : lote.lote,
-                  dropdownDecoratorProps: const DropDownDecoratorProps(
-                    dropdownSearchDecoration: InputDecoration(
-                      hintText: 'Seleccione un lote',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Método de Aplicación:'), // Ya no es obligatorio
-                DropdownSearch<MetodoAplicacion>(
-                  items: metodosAplicacion,
-                  selectedItem: esEdicion ? materialActual.metodoAplicacion : null,
-                  onChanged: (newValue) {
-                    selectedMetodo = newValue;
-                  },
-                  itemAsString: (MetodoAplicacion metodo) => metodo.descripcion,
-                  dropdownDecoratorProps: const DropDownDecoratorProps(
-                    dropdownSearchDecoration: InputDecoration(
-                      hintText: 'Seleccione un método (opcional)',
-                    ),
-                  ),
-                  popupProps: const PopupProps.menu(
-                    showSearchBox: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Comentario:'),
-                TextField(
-                  controller: comentarioController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: 'Ingrese un comentario (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Cancelar'),
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                },
-              ),
-              TextButton(
-                child: const Text('Guardar'),
-                onPressed: () async {
-                  cantidad = cantidadController.text;
-                  comentario = comentarioController.text;
-
-                  // Validaciones
-                  bool validacionExitosa = true;
-                  String mensajeError = '';
-
-                  if (cantidad.isEmpty || !esNumerico(cantidad)) {
-                    validacionExitosa = false;
-                    mensajeError = 'La cantidad es obligatoria y debe ser un número válido';
-                  } else if (lotes.isNotEmpty && (selectedLote == null || selectedLote!.materialLoteId == 0)) {
-                    validacionExitosa = false;
-                    mensajeError = 'Debe seleccionar un lote';
-                  }
-
-                  if (!validacionExitosa) {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Error'),
-                          content: Text(mensajeError),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Cerrar')
-                            )
-                          ],
-                        );
-                      },
-                    );
-                    return;
-                  }
-
-                  // Crear/actualizar el objeto RevisionMaterial
-                  final RevisionMaterial revisionMaterialActualizada =
-                      RevisionMaterial(
-                    otMaterialId: esEdicion ? materialActual.otMaterialId : 0,
-                    ordenTrabajoId: orden.ordenTrabajoId!,
-                    otRevisionId: orden.otRevisionId!,
-                    cantidad: double.parse(cantidad),
-                    comentario: comentario,
-                    ubicacion: '', // Campo vacío como se solicitó
-                    areaCobertura: '', // Campo vacío como se solicitó
-                    plagas: [],
-                    material: materialActual.material,
-                    lote: selectedLote ?? Lote.empty(),
-                    metodoAplicacion: selectedMetodo ?? MetodoAplicacion.empty(),
-                  );
-
-                  late List<int> plagasIds = [];
-
-                  if (esEdicion) {
-                    await _materialesServices.putRevisionMaterial(context, orden, plagasIds, revisionMaterialActualizada, token);
-                  } else {
-                    await _materialesServices.postRevisionMaterial(context, orden, plagasIds, revisionMaterialActualizada, token);
-                  }
-
-                  statusCodeRevision = await _materialesServices.getStatusCode();
-                  await _materialesServices.resetStatusCode();
-
-                  if (statusCodeRevision == 1) {
-                    if (!esEdicion) {
-                      revisionMaterialActualizada.otMaterialId = 
-                          revisionMaterialActualizada.otMaterialId;
-                      revisionMaterialesList.add(revisionMaterialActualizada);
-                    } else {
-                      // Actualizar el elemento en la lista
-                      int index = revisionMaterialesList.indexWhere((rm) => rm.otMaterialId == materialActual.otMaterialId);
-                      if (index != -1) {
-                        revisionMaterialesList[index] = revisionMaterialActualizada;
-                      }
-                    }
-                    Navigator.of(context).pop(true);
-                  } else {
-                    Navigator.of(context).pop(false);
-                  }
-                },
-              ),
-            ],
-          ),
+    final RevisionMaterial materialActual = materialParaEditar ??
+        RevisionMaterial(
+          otMaterialId: 0,
+          ordenTrabajoId: orden.ordenTrabajoId!,
+          otRevisionId: orden.otRevisionId!,
+          cantidad: 0.0,
+          comentario: '',
+          ubicacion: '',
+          areaCobertura: '',
+          plagas: [],
+          material: materialParaAgregar ?? Materiales.empty(),
+          lote: Lote.empty(),
+          metodoAplicacion: MetodoAplicacion.empty(),
         );
-      },
-    );
+
+    // CONTROLADORES
+    final TextEditingController cantidadController =
+        TextEditingController(text: esEdicion ? materialActual.cantidad.toString() : '');
+    final TextEditingController comentarioController =
+        TextEditingController(text: esEdicion ? materialActual.comentario : '');
+
+    // ESTADO LOCAL DEL DIALOGO (FIX CRÍTICO)
+    Lote? selectedLoteLocal = esEdicion ? materialActual.lote : null;
+    MetodoAplicacion? selectedMetodoLocal =
+        esEdicion ? materialActual.metodoAplicacion : null;
+
+    final bool resultado = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return SingleChildScrollView(
+              child: AlertDialog(
+                surfaceTintColor: Colors.white,
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Nombre: ${materialActual.material.descripcion}',
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    Text(
+                      'Unidad: ${materialActual.material.unidad}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        verManual(context, material: materialActual.material);
+                      },
+                      child: const Text(
+                        'Ver Manuales',
+                        style: TextStyle(
+                          fontSize: 16,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('* Cantidad:'),
+                    TextField(
+                      controller: cantidadController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'Ingrese la cantidad',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(lotes.isEmpty ? 'Lote:' : '* Lote:'),
+                    DropdownSearch<Lote>(
+                      items: lotes,
+                      selectedItem: selectedLoteLocal,
+                      onChanged: (newValue) {
+                        selectedLoteLocal = newValue;
+                      },
+                      itemAsString: (Lote lote) =>
+                          lote.materialLoteId == 0 ? 'Sin lote' : lote.lote,
+                      dropdownDecoratorProps: const DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: 'Seleccione un lote',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Método de Aplicación:'), // Ya no es obligatorio
+                    DropdownSearch<MetodoAplicacion>(
+                      items: metodosAplicacion,
+                      selectedItem: selectedMetodoLocal,
+                      onChanged: (newValue) {
+                        selectedMetodoLocal = newValue;
+                      },
+                      itemAsString: (MetodoAplicacion metodo) =>
+                          metodo.descripcion,
+                      dropdownDecoratorProps:
+                          const DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: 'Seleccione un método (opcional)',
+                        ),
+                      ),
+                      popupProps: const PopupProps.menu(
+                        showSearchBox: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Comentario:'),
+                    TextField(
+                      controller: comentarioController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'Ingrese un comentario (opcional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('Cancelar'),
+                    onPressed: () {
+                      Navigator.of(context).pop(false);
+                    },
+                  ),
+                  TextButton(
+                    child: const Text('Guardar'),
+                    onPressed: () async {
+                      final String cantidad = cantidadController.text;
+                      final String comentario = comentarioController.text;
+
+                      bool validacionExitosa = true;
+                      String mensajeError = '';
+
+                      if (cantidad.isEmpty ||
+                          double.tryParse(cantidad) == null) {
+                        validacionExitosa = false;
+                        mensajeError =
+                            'La cantidad es obligatoria y debe ser un número válido';
+                      } else if (lotes.isNotEmpty &&
+                          (selectedLoteLocal == null ||
+                              selectedLoteLocal!.materialLoteId == 0)) {
+                        validacionExitosa = false;
+                        mensajeError = 'Debe seleccionar un lote';
+                      }
+
+                      if (!validacionExitosa) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Error'),
+                              content: Text(mensajeError),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(),
+                                  child: const Text('Cerrar'),
+                                )
+                              ],
+                            );
+                          },
+                        );
+                        return;
+                      }
+
+                      final RevisionMaterial revisionMaterialActualizada =
+                          RevisionMaterial(
+                        otMaterialId: materialActual.otMaterialId,
+                        ordenTrabajoId: orden.ordenTrabajoId!,
+                        otRevisionId: orden.otRevisionId!,
+                        cantidad: double.parse(cantidad),
+                        comentario: comentario,
+                        ubicacion: '',
+                        areaCobertura: '',
+                        plagas: [],
+                        material: materialActual.material,
+                        lote: selectedLoteLocal ?? Lote.empty(),
+                        metodoAplicacion:
+                            selectedMetodoLocal ?? MetodoAplicacion.empty(),
+                      );
+
+                      final List<int> plagasIds = [];
+
+                      if (esEdicion) {
+                        await _materialesServices.putRevisionMaterial(
+                          context,
+                          orden,
+                          plagasIds,
+                          revisionMaterialActualizada,
+                          token,
+                        );
+                      } else {
+                        await _materialesServices.postRevisionMaterial(
+                          context,
+                          orden,
+                          plagasIds,
+                          revisionMaterialActualizada,
+                          token,
+                        );
+                      }
+
+                      statusCodeRevision =
+                          await _materialesServices.getStatusCode();
+                      await _materialesServices.resetStatusCode();
+
+                      if (statusCodeRevision == 1) {
+                        if (mounted) {
+                          setState(() {
+                            if (esEdicion) {
+                              final index =
+                                  revisionMaterialesList.indexWhere(
+                                (rm) =>
+                                    rm.otMaterialId ==
+                                    materialActual.otMaterialId,
+                              );
+                              if (index != -1) {
+                                revisionMaterialesList[index] =
+                                    revisionMaterialActualizada;
+                              }
+                            } else {
+                              revisionMaterialesList
+                                  .add(revisionMaterialActualizada);
+                            }
+                          });
+                        }
+                        Navigator.of(context).pop(true);
+                      } else {
+                        Navigator.of(context).pop(false);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ) ??
+        false;
 
     return resultado;
   }
 
+  // =========================
+  // BUILD
+  // =========================
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    if (selectedMaterial.materialId != 0 && materiales.isNotEmpty) {
-      materialInicial = materiales.firstWhere(
-          (material) => material.materialId == selectedMaterial.materialId);
-    }
 
     return SafeArea(
       child: Scaffold(
@@ -300,7 +362,6 @@ class _MaterialesPageState extends State<MaterialesPage> {
         body: cargando
             ? const Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(),
@@ -311,9 +372,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
             : !cargoDatosCorrectamente
                 ? Center(
                     child: TextButton.icon(
-                      onPressed: () async {
-                        await cargarDatos();
-                      },
+                      onPressed: cargarDatos,
                       icon: const Icon(Icons.replay_outlined),
                       label: const Text('Recargar'),
                     ),
@@ -324,61 +383,99 @@ class _MaterialesPageState extends State<MaterialesPage> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                              border: Border.all(width: 2, color: colors.primary),
-                              borderRadius: BorderRadius.circular(5)),
-                          child: DropdownSearch(
+                            border: Border.all(
+                              width: 2,
+                              color: colors.primary,
+                            ),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: DropdownSearch<Materiales>(
                             enabled: !estaBuscando,
-                            dropdownDecoratorProps: const DropDownDecoratorProps(
-                                textAlignVertical: TextAlignVertical.center,
-                                dropdownSearchDecoration: InputDecoration(
-                                  hintText: 'Seleccione un material',
-                                )),
+                            dropdownDecoratorProps:
+                                const DropDownDecoratorProps(
+                              textAlignVertical:
+                                  TextAlignVertical.center,
+                              dropdownSearchDecoration:
+                                  InputDecoration(
+                                hintText: 'Seleccione un material',
+                              ),
+                            ),
                             items: materiales,
                             popupProps: const PopupProps.menu(
-                                showSearchBox: true, searchDelay: Duration.zero),
+                              showSearchBox: true,
+                              searchDelay: Duration.zero,
+                            ),
                             onChanged: (newValue) async {
-                              if ((orden.estado == 'PENDIENTE' ||
-                                  orden.estado == 'FINALIZADA')) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'No puede de ingresar o editar datos.')));
-                                return Future.value(false);
+                              if (orden.estado == 'PENDIENTE' ||
+                                  orden.estado == 'FINALIZADA') {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No puede de ingresar o editar datos.',
+                                    ),
+                                  ),
+                                );
+                                return;
                               }
+
                               setState(() {
                                 selectedMaterial = newValue!;
                                 estaBuscando = true;
                               });
+
                               try {
-                                lotes = await MaterialesServices().getLotes(context, selectedMaterial.materialId, token);
-                                metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
+                                lotes = await _materialesServices.getLotes(
+                                  context,
+                                  selectedMaterial.materialId,
+                                  token,
+                                );
+                                metodosAplicacion =
+                                    await _materialesServices
+                                        .getMetodosAplicacion(
+                                  context,
+                                  token,
+                                );
                               } catch (e) {
                                 lotes = [];
                                 metodosAplicacion = [];
-                                estaBuscando = false;
-                                setState(() {});
                               }
-                              if (metodosAplicacion.isNotEmpty) {
-                                bool resultado = await _showMaterialDialog(context, materialParaAgregar: selectedMaterial);
+
+                              if (mounted) {
                                 setState(() {
-                                  estaBuscando = resultado;
+                                  estaBuscando = false;
                                 });
+                              }
+
+                              if (metodosAplicacion.isNotEmpty) {
+                                final resultado =
+                                    await _showMaterialDialog(
+                                  context,
+                                  materialParaAgregar:
+                                      selectedMaterial,
+                                );
+                                if (mounted) {
+                                  setState(() {
+                                    estaBuscando = resultado;
+                                  });
+                                }
                               }
                             },
                           ),
                         ),
-                        const SizedBox(
-                          height: 20,
-                        ),
+                        const SizedBox(height: 20),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Container(
-                                decoration: BoxDecoration(
-                                    color: colors.primary,
-                                    borderRadius: BorderRadius.circular(5)),
                                 height: 30,
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius:
+                                      BorderRadius.circular(5),
+                                ),
                                 child: const Center(
                                   child: Text(
                                     'Materiales Utilizados:',
@@ -387,82 +484,116 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 10),
                               Expanded(
                                 child: ListView.separated(
-                                  scrollDirection: Axis.vertical,
-                                  shrinkWrap: true,
                                   controller: _scrollController,
-                                  itemCount: revisionMaterialesList.length,
+                                  itemCount:
+                                      revisionMaterialesList.length,
+                                  separatorBuilder:
+                                      (_, __) => const Divider(
+                                    thickness: 2,
+                                    color: Colors.green,
+                                  ),
                                   itemBuilder: (context, i) {
-                                    final item = revisionMaterialesList[i];
+                                    final item =
+                                        revisionMaterialesList[i];
                                     return Dismissible(
                                       key: Key(item.otMaterialId.toString()),
-                                      direction: DismissDirection.endToStart,
+                                      direction:
+                                          DismissDirection.endToStart,
                                       confirmDismiss:
                                           (DismissDirection direction) async {
-                                        if ((orden.estado == 'PENDIENTE' ||
-                                            orden.estado == 'FINALIZADA')) {
+                                        if (orden.estado ==
+                                                'PENDIENTE' ||
+                                            orden.estado ==
+                                                'FINALIZADA') {
                                           ScaffoldMessenger.of(context)
-                                              .showSnackBar(const SnackBar(
-                                            content: Text(
-                                                'No puede de ingresar o editar datos.'),
-                                          ));
-                                          return Future.value(false);
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'No puede de ingresar o editar datos.',
+                                              ),
+                                            ),
+                                          );
+                                          return false;
                                         }
+
                                         return await showDialog(
                                           context: context,
-                                          builder: (BuildContext context) {
+                                          builder:
+                                              (BuildContext context) {
                                             return AlertDialog(
-                                              surfaceTintColor: Colors.white,
-                                              title: const Text("Confirmar"),
+                                              surfaceTintColor:
+                                                  Colors.white,
+                                              title:
+                                                  const Text("Confirmar"),
                                               content: const Text(
-                                                  "¿Estas seguro de querer borrar el material?"),
+                                                "¿Estas seguro de querer borrar el material?",
+                                              ),
                                               actions: <Widget>[
                                                 TextButton(
                                                   onPressed: () =>
-                                                      Navigator.of(context).pop(false),
-                                                  child: const Text("CANCELAR"),
+                                                      Navigator.of(
+                                                              context)
+                                                          .pop(false),
+                                                  child: const Text(
+                                                      "CANCELAR"),
                                                 ),
                                                 TextButton(
-                                                  style: TextButton.styleFrom(
-                                                    foregroundColor: Colors.red,
+                                                  style: TextButton
+                                                      .styleFrom(
+                                                    foregroundColor:
+                                                        Colors.red,
                                                   ),
                                                   onPressed: () async {
                                                     await _materialesServices
                                                         .deleteRevisionMaterial(
-                                                            context,
-                                                            orden,
-                                                            revisionMaterialesList[i],
-                                                            token);
+                                                      context,
+                                                      orden,
+                                                      revisionMaterialesList[
+                                                          i],
+                                                      token,
+                                                    );
+
                                                     statusCodeRevision =
                                                         await _materialesServices
                                                             .getStatusCode();
                                                     await _materialesServices
                                                         .resetStatusCode();
-                                                    if (statusCodeRevision == 1) {
-                                                      Navigator.of(context).pop(true);
+
+                                                    if (statusCodeRevision ==
+                                                        1) {
+                                                      Navigator.of(
+                                                              context)
+                                                          .pop(true);
                                                     }
                                                   },
-                                                  child: const Text("BORRAR"),
+                                                  child: const Text(
+                                                      "BORRAR"),
                                                 ),
                                               ],
                                             );
                                           },
                                         );
                                       },
-                                      onDismissed: (direction) {
+                                      onDismissed: (_) {
                                         if (statusCodeRevision == 1) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'El material ${item.material.descripcion} ha sido borrado')));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'El material ${item.material.descripcion} ha sido borrado',
+                                              ),
+                                            ),
+                                          );
+
                                           setState(() {
-                                            revisionMaterialesList.removeAt(i);
+                                            revisionMaterialesList
+                                                .removeAt(i);
                                           });
                                         }
                                         statusCodeRevision = null;
@@ -470,94 +601,157 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                       background: Container(
                                         color: Colors.red,
                                         padding:
-                                            const EdgeInsets.symmetric(horizontal: 20),
-                                        alignment: AlignmentDirectional.centerEnd,
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 20),
+                                        alignment: AlignmentDirectional
+                                            .centerEnd,
                                         child: const Icon(
                                           Icons.delete,
                                           color: Colors.white,
                                         ),
                                       ),
                                       child: Card(
-                                        surfaceTintColor: Colors.white,
+                                        surfaceTintColor:
+                                            Colors.white,
                                         child: ListTile(
                                           trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisSize:
+                                                MainAxisSize.min,
                                             children: [
                                               IconButton(
-                                                  onPressed: !estaBuscando
-                                                      ? () async {
-                                                          estaBuscando = true;
-                                                          setState(() {});
-                                                          if ((orden.estado =='PENDIENTE' || orden.estado == 'FINALIZADA')) {
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              const SnackBar(
-                                                                content: Text('No puede ingresar o editar datos.'),
-                                                              ),
-                                                            );
-                                                            estaBuscando = false;
-                                                            return Future.value(false);
-                                                          }
-                                                          try {
-                                                            lotes = await MaterialesServices().getLotes(context, item.material.materialId, token);
-                                                            metodosAplicacion = await MaterialesServices().getMetodosAplicacion(context, token);
-                                                            estaBuscando = false;
-                                                            setState(() {});
-                                                          } catch (e) {
-                                                            lotes = [];
-                                                            metodosAplicacion = [];
-                                                            estaBuscando = false;
-                                                            setState(() {});
-                                                          }
-                                                          if (lotes.isNotEmpty && metodosAplicacion.isNotEmpty) {
-                                                            bool resultado = await _showMaterialDialog(context, materialParaEditar: item);
+                                                onPressed:
+                                                    !estaBuscando
+                                                        ? () async {
+                                                            if (orden.estado ==
+                                                                    'PENDIENTE' ||
+                                                                orden.estado ==
+                                                                    'FINALIZADA') {
+                                                              ScaffoldMessenger.of(
+                                                                      context)
+                                                                  .showSnackBar(
+                                                                const SnackBar(
+                                                                  content:
+                                                                      Text(
+                                                                    'No puede ingresar o editar datos.',
+                                                                  ),
+                                                                ),
+                                                              );
+                                                              return;
+                                                            }
+
                                                             setState(() {
-                                                              estaBuscando = resultado;
+                                                              estaBuscando =
+                                                                  true;
                                                             });
+
+                                                            try {
+                                                              lotes =
+                                                                  await _materialesServices
+                                                                      .getLotes(
+                                                                context,
+                                                                item.material
+                                                                    .materialId,
+                                                                token,
+                                                              );
+                                                              metodosAplicacion =
+                                                                  await _materialesServices
+                                                                      .getMetodosAplicacion(
+                                                                context,
+                                                                token,
+                                                              );
+                                                            } catch (e) {
+                                                              lotes = [];
+                                                              metodosAplicacion =
+                                                                  [];
+                                                            }
+
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                estaBuscando =
+                                                                    false;
+                                                              });
+                                                            }
+
+                                                            if (lotes
+                                                                    .isNotEmpty &&
+                                                                metodosAplicacion
+                                                                    .isNotEmpty) {
+                                                              final resultado =
+                                                                  await _showMaterialDialog(
+                                                                context,
+                                                                materialParaEditar:
+                                                                    item,
+                                                              );
+                                                              if (mounted) {
+                                                                setState(() {
+                                                                  estaBuscando =
+                                                                      resultado;
+                                                                });
+                                                              }
+                                                            }
                                                           }
-                                                          setState(() {});
-                                                        }
-                                                      : null,
-                                                  icon: const Icon(Icons.edit)),
+                                                        : null,
+                                                icon: const Icon(
+                                                    Icons.edit),
+                                              ),
                                               IconButton(
-                                                onPressed: () async {
-                                                  if ((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                onPressed: () {
+                                                  if (orden.estado ==
+                                                          'PENDIENTE' ||
+                                                      orden.estado ==
+                                                          'FINALIZADA') {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
                                                       const SnackBar(
                                                         content: Text(
-                                                          'No puede de ingresar o editar datos.'
+                                                          'No puede de ingresar o editar datos.',
                                                         ),
-                                                      )
+                                                      ),
                                                     );
-                                                    return Future.value(false);
+                                                    return;
                                                   }
-                                                  deleteMaterial(context, i);
+                                                  deleteMaterial(
+                                                      context, i);
                                                 },
-                                                icon: const Icon(Icons.delete)
+                                                icon: const Icon(
+                                                    Icons.delete),
                                               ),
                                             ],
                                           ),
                                           title: Column(
-                                            crossAxisAlignment:CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment
+                                                    .start,
                                             children: [
-                                              Text('Material: ${revisionMaterialesList[i].material.descripcion}'),
-                                              Text('Unidad: ${revisionMaterialesList[i].material.unidad}'),
-                                              Text('Cantidad: ${revisionMaterialesList[i].cantidad}'),
-                                              Text('Lote: ${revisionMaterialesList[i].lote?.lote ?? "Sin lote"}'),
-                                              Text('Método de aplicación: ${revisionMaterialesList[i].metodoAplicacion.descripcion}'),
-                                              Text('Comentario: ${revisionMaterialesList[i].comentario}'),
+                                              Text(
+                                                'Material: ${item.material.descripcion}',
+                                              ),
+                                              Text(
+                                                'Unidad: ${item.material.unidad}',
+                                              ),
+                                              Text(
+                                                'Cantidad: ${item.cantidad}',
+                                              ),
+                                              Text(
+                                                'Lote: ${item.lote?.lote ?? "Sin lote"}',
+                                              ),
+                                              Text(
+                                                'Método de aplicación: ${item.metodoAplicacion.descripcion}',
+                                              ),
+                                              Text(
+                                                'Comentario: ${item.comentario}',
+                                              ),
                                             ],
                                           ),
                                           onLongPress: () async {
-                                            await verManual(context,material: item.material);
+                                            await verManual(
+                                              context,
+                                              material: item.material,
+                                            );
                                           },
                                         ),
                                       ),
-                                    );
-                                  },
-                                  separatorBuilder: (BuildContext context, int index) {
-                                    return const Divider(
-                                      thickness: 2,
-                                      color: Colors.green,
                                     );
                                   },
                                 ),
@@ -572,58 +766,99 @@ class _MaterialesPageState extends State<MaterialesPage> {
     );
   }
 
+  // =========================
+  // BORRADO MANUAL
+  // =========================
+
   void deleteMaterial(BuildContext context, int i) {
     showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            surfaceTintColor: Colors.white,
-            title: const Text("Confirmar"),
-            content: const Text("¿Estas seguro de querer borrar el material?"),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text("CANCELAR"),
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          surfaceTintColor: Colors.white,
+          title: const Text("Confirmar"),
+          content: const Text(
+              "¿Estas seguro de querer borrar el material?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(false),
+              child: const Text("CANCELAR"),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
               ),
-              TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
-                  onPressed: () async {
-                    if (!borrando) {
-                      borrando = true;
-                      await _materialesServices.deleteRevisionMaterial(
-                          context, orden, revisionMaterialesList[i], token);
-                      statusCodeRevision =
-                          await _materialesServices.getStatusCode();
-                      await _materialesServices.resetStatusCode();
-                      if (statusCodeRevision == 1) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('El material ${revisionMaterialesList[i].material.descripcion} ha sido borrado'),
-                        ));
-                        setState(() {
-                          revisionMaterialesList.removeAt(i);
-                        });
-                        router.pop();
-                      }
-                      statusCodeRevision = null;
-                      borrando = false;
-                    }
-                  },
-                  child: const Text("BORRAR")),
-            ],
-          );
-        });
+              onPressed: () async {
+                if (borrando) return;
+
+                borrando = true;
+
+                await _materialesServices
+                    .deleteRevisionMaterial(
+                  context,
+                  orden,
+                  revisionMaterialesList[i],
+                  token,
+                );
+
+                statusCodeRevision =
+                    await _materialesServices.getStatusCode();
+                await _materialesServices.resetStatusCode();
+
+                if (statusCodeRevision == 1) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'El material ${revisionMaterialesList[i].material.descripcion} ha sido borrado',
+                      ),
+                    ),
+                  );
+
+                  setState(() {
+                    revisionMaterialesList.removeAt(i);
+                  });
+
+                  router.pop();
+                }
+
+                statusCodeRevision = null;
+                borrando = false;
+              },
+              child: const Text("BORRAR"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  Future<void> verManual(BuildContext context, {RevisionMaterial? item, Materiales? material}) async {
+  // =========================
+  // MANUALES
+  // =========================
+
+  Future<void> verManual(
+    BuildContext context, {
+    RevisionMaterial? item,
+    Materiales? material,
+  }) async {
     try {
       manuales = material == null
-        ? await _materialesServices.getManualesMateriales(context, item!.material.materialId, token)
-        : await _materialesServices.getManualesMateriales(context, material.materialId, token);
+          ? await _materialesServices.getManualesMateriales(
+              context,
+              item!.material.materialId,
+              token,
+            )
+          : await _materialesServices.getManualesMateriales(
+              context,
+              material.materialId,
+              token,
+            );
     } catch (e) {
       print(e);
     }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -635,56 +870,57 @@ class _MaterialesPageState extends State<MaterialesPage> {
             child: ListView.builder(
               itemCount: manuales.length,
               itemBuilder: (context, i) {
-                var manual = manuales[i];
+                final manual = manuales[i];
                 return ListTile(
                   title: Text(manual.filename),
                   onTap: () {
                     launchURL(manual.filepath, token);
                   },
                 );
-              }
-            )
+              },
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () =>
+                  Navigator.of(context).pop(false),
               child: const Text("CERRAR"),
             ),
           ],
         );
-      }
+      },
     );
   }
+
+  // =========================
+  // HELPERS
+  // =========================
 
   bool esNumerico(String str) {
     return double.tryParse(str) != null;
   }
 
-  launchURL(String url, String token) async {
-    Dio dio = Dio();
-    String link = url += '?authorization=$token';
-    print(link);
+  Future<void> launchURL(String url, String token) async {
+    final Dio dio = Dio();
+    final String link = '$url?authorization=$token';
+
     try {
-      // Realizar la solicitud HTTP con el encabezado de autorización
-      Response response = await dio.get(
+      final Response response = await dio.get(
         link,
         options: Options(
           headers: {
-            'Authorization': 'headers $token',
+            'Authorization': 'Bearer $token',
           },
         ),
       );
-      // Verificar si la solicitud fue exitosa (código de estado 200)
+
       if (response.statusCode == 200) {
-        // Si la respuesta fue exitosa, abrir la URL en el navegador
-        Uri uri = Uri.parse(url);
+        final Uri uri = Uri.parse(link);
         await launchUrl(uri);
       } else {
-        // Si la solicitud no fue exitosa, mostrar un mensaje de error
         print('Error al cargar la URL: ${response.statusCode}');
       }
     } catch (e) {
-      // Manejar errores de solicitud
       print('Error al realizar la solicitud: $e');
     }
   }
