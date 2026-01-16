@@ -1,8 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:app_tec_sedel/main.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +22,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   String token = '';
   List<Orden> ordenes = [];
   late int tecnicoId = 0;
-  int groupValue = 0;
+  int groupValue = 0; // 0=PENDIENTE, 1=RECIBIDO, 2=APROBADO
   List trabajodres = [];
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   bool datosCargados = false;
@@ -36,18 +35,24 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   DateTime? _fechaDesdeFiltro;
   DateTime? _fechaHastaFiltro;
   String? _numeroOrdenFiltro;
+  
+  // Estados disponibles
+  List<String> estados = ['PENDIENTE', 'RECIBIDO', 'APROBADO'];
 
   @override
   void initState() {
     super.initState();
     token = context.read<AuthProvider>().token;
     tecnicoId = context.read<AuthProvider>().tecnicoId;
+    // Establecer estado inicial como PENDIENTE (groupValue = 0)
+    groupValue = 0;
     
     // Verificar si hay una unidad seleccionada (viene desde MonitorVehiculos)
     final unidadSeleccionada = context.read<OrdenProvider>().unidadSeleccionada;
     // Verificar si hay un cliente seleccionado (viene desde MonitorClientes)
     final clienteSeleccionado = context.read<OrdenProvider>().cliente;
     
+    // Cargar datos automáticamente con estado PENDIENTE por defecto
     if (unidadSeleccionada.unidadId > 0 || clienteSeleccionado.clienteId > 0) {
       // Si hay unidad o cliente seleccionado, cargar datos automáticamente
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -98,6 +103,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
       
+      // AGREGAR FILTRO POR ESTADO (PENDIENTE por defecto)
+      queryParams['estado'] = estados[groupValue];
+      
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
         queryParams['clienteId'] = _clienteIdFiltro.toString();
@@ -111,7 +119,6 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         queryParams['unidadId'] = unidadSeleccionada.unidadId.toString();
       }
       
-      // Resto del método permanece igual...
       if (_fechaDesdeFiltro != null) {
         queryParams['fechaDesde'] = DateFormat('yyyy-MM-dd').format(_fechaDesdeFiltro!);
       }
@@ -170,6 +177,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
       
+      // AGREGAR FILTRO POR ESTADO
+      queryParams['estado'] = estados[groupValue];
+      
       // Agregar parámetros de filtro
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
         queryParams['clienteId'] = _clienteIdFiltro.toString();
@@ -220,6 +230,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       _fechaDesdeFiltro = null;
       _fechaHastaFiltro = null;
       _numeroOrdenFiltro = null;
+      groupValue = 0; // Resetear a PENDIENTE
       _isFilterExpanded = false;
     });
     cargarDatos();
@@ -522,8 +533,10 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     switch (estado.toLowerCase()) {
       case 'pendiente':
         return Colors.orange;
+      case 'recibido':
       case 'en proceso':
         return Colors.blue;
+      case 'aprobado':
       case 'completado':
         return Colors.green;
       case 'cancelado':
@@ -578,6 +591,27 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                   onToggleFilter: _toggleFiltros,
                   cantidadDeOrdenes: ordenes.length,
                   token: token,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: CupertinoSegmentedControl<int>(
+                    groupValue: groupValue,
+                    borderColor: Colors.black,
+                    selectedColor: colors.primary,
+                    unselectedColor: Colors.white,
+                    children: {
+                      0: buildSegment('Pendiente'),
+                      1: buildSegment('Recibido'),
+                      2: buildSegment('Aprobado'),
+                    },
+                    onValueChanged: (newValue) {
+                      setState(() {
+                        groupValue = newValue;
+                        // Actualizar datos cuando se cambia el estado
+                        _filtrarYRecargarOrdenes();
+                      });
+                    },
+                  ),
                 ),
                 
                 Expanded(
@@ -674,9 +708,12 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   Widget buildSegment(String text) {
     return Container(
       padding: const EdgeInsets.all(12),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 15),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 15),
+        ),
       ),
     );
   }

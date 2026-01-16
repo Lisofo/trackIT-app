@@ -28,9 +28,8 @@ class _MonitoreoState extends State<Monitoreo> {
   List<Orden> ordenes = [];
   List<String> estados = [
     'Pendiente',
-    'En Proceso',
-    'Finalizada',
-    'Revisada',
+    'Recibido',
+    'Aprobado',
   ];
   late String token = '';
   Tecnico? selectedTecnico;
@@ -44,15 +43,15 @@ class _MonitoreoState extends State<Monitoreo> {
   List<Orden> ordenesRevisadas = [];
   Map<String, Color> colores = {
     'Pendiente': Colors.yellow.shade200,
-    'En Proceso': Colors.greenAccent.shade400,
-    'Revisada': Colors.blue.shade400,
-    'Finalizada': Colors.red.shade200
+    'Recibido': Colors.greenAccent.shade400,
+    // 'Revisada': Colors.blue.shade400,
+    'Aprobado': Colors.red.shade200
   };
   Map<String, Color> coloresCampanita = {
     'PENDIENTE': Colors.yellow.shade200,
-    'EN PROCESO': Colors.greenAccent.shade400,
-    'REVISADA': Colors.blue.shade400,
-    'FINALIZADA': Colors.red.shade200
+    'RECIBIDO': Colors.greenAccent.shade400,
+    // 'REVISADA': Colors.blue.shade400,
+    'APROBADO': Colors.red.shade200
   };
   late Cliente clienteSeleccionado;
   List<Orden> ordenesCampanita = [];
@@ -89,7 +88,7 @@ class _MonitoreoState extends State<Monitoreo> {
 
   cargarDatos() async {
     token = context.watch<AuthProvider>().token;
-    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, EN PROCESO, FINALIZADA', 1, token);
+    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, RECIBIDO, APROBADO', 1, token);
     setState(() {});
   }
 
@@ -210,10 +209,10 @@ class _MonitoreoState extends State<Monitoreo> {
         case 'PENDIENTE':
           ordenesPendientes.add(orden);
           break;
-        case 'EN PROCESO':
+        case 'RECIBIDO':
           ordenesEnProceso.add(orden);
           break;
-        case 'FINALIZADA':
+        case 'APROBADO':
           ordenesFinalizadas.add(orden);
           break;
         case 'REVISADA':
@@ -231,7 +230,7 @@ class _MonitoreoState extends State<Monitoreo> {
   }
 
   Future<void> ordenesARevisar(BuildContext context) async {
-    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, EN PROCESO, FINALIZADA', 1000, token);
+    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, APROBADO, RECIBIDO', 1000, token);
     
     bool isMobile = MediaQuery.of(context).size.width < 800;
     
@@ -346,7 +345,7 @@ class _MonitoreoState extends State<Monitoreo> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
                 )
               ),
-              Text('Tecnico: ${orden[index].tecnico!.nombre}''\n${orden[index].cliente!.codCliente} Cliente: ${orden[index].cliente!.nombre}'),
+              // Text('Tecnico: ${orden[index].tecnico!.nombre}''\n${orden[index].cliente!.codCliente} Cliente: ${orden[index].cliente!.nombre}'),
               Text('Fecha Desde: ${orden[index].fechaDesde != null ? DateFormat("E d, MMM, HH:mm", 'es').format(orden[index].fechaDesde!) : ''}'),
               Text('Fecha Hasta: ${orden[index].fechaHasta != null ? DateFormat("E d, MMM, HH:mm", 'es').format(orden[index].fechaHasta!) : ''}'),
               if(orden[index].estado != 'PENDIENTE')...[
@@ -421,6 +420,12 @@ class _MonitoreoState extends State<Monitoreo> {
         appBar: AppBar(
           title: const Text('Monitor de ordenes'),
           foregroundColor: colors.onPrimary,
+          actions: [
+            IconButton(
+              onPressed: () {router.pop();},
+              icon: const Icon(Icons.arrow_back)
+            )
+          ],
         ),
         drawer: Drawer(
           child: Container(
@@ -547,9 +552,9 @@ class _MonitoreoState extends State<Monitoreo> {
           scrollDirection: Axis.horizontal,
           children: [
             _buildEstadoContainer('Pendiente', ordenesPendientes),
-            _buildEstadoContainer('En Proceso', ordenesEnProceso),
-            _buildEstadoContainer('Finalizada', ordenesFinalizadas),
-            _buildEstadoContainer('Revisada', ordenesRevisadas),
+            _buildEstadoContainer('Recibido', ordenesEnProceso),
+            _buildEstadoContainer('', ordenesFinalizadas),
+            // _buildEstadoContainer('Revisada', ordenesRevisadas),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -581,16 +586,16 @@ class _MonitoreoState extends State<Monitoreo> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.play_arrow),
-              label: 'En Proceso',
+              label: 'Recibido',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.done),
-              label: 'Finalizada',
+              label: 'Aprobado',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.check),
-              label: 'Revisada',
-            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.check),
+            //   label: 'Revisada',
+            // ),
           ],
         ),
       ),
@@ -824,7 +829,7 @@ class _MonitoreoState extends State<Monitoreo> {
                               scrollDirection: Axis.vertical,
                               itemCount: ordenesEnProceso.length,
                               itemBuilder: (context, index) {
-                                return cardsDeLaLista(ordenesEnProceso, index, 'En Proceso');
+                                return cardsDeLaLista(ordenesEnProceso, index, 'Recibido');
                               },
                             ),
                           ],
@@ -842,32 +847,32 @@ class _MonitoreoState extends State<Monitoreo> {
                               scrollDirection: Axis.vertical,
                               itemCount: ordenesFinalizadas.length,
                               itemBuilder: (context, index) {
-                                return cardsDeLaLista(ordenesFinalizadas, index, 'Finalizada');
+                                return cardsDeLaLista(ordenesFinalizadas, index, 'Aprobado');
                               },
                             ),
                           ],
                         ),
                       ),
                     ),
-                    Flexible(
-                      flex: 1,
-                      child: SizedBox(
-                        width: 450,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            ListView.builder(
-                              shrinkWrap: true,
-                              scrollDirection: Axis.vertical,
-                              itemCount: ordenesRevisadas.length,
-                              itemBuilder: (context, index) {
-                                return cardsDeLaLista(ordenesRevisadas, index, 'Revisada');
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // Flexible(
+                    //   flex: 1,
+                    //   child: SizedBox(
+                    //     width: 450,
+                    //     child: Column(
+                    //       mainAxisAlignment: MainAxisAlignment.start,
+                    //       children: [
+                    //         ListView.builder(
+                    //           shrinkWrap: true,
+                    //           scrollDirection: Axis.vertical,
+                    //           itemCount: ordenesRevisadas.length,
+                    //           itemBuilder: (context, index) {
+                    //             return cardsDeLaLista(ordenesRevisadas, index, 'Revisada');
+                    //           },
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ],
