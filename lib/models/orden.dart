@@ -244,7 +244,7 @@ class Orden {
     "otRevisionId": otRevisionId,
     "planoId": planoId,
     "alerta": alerta,
-    "tecnicoId": tecnicoId,
+    "tecnicoId": tecnicoId ?? tecnico?.tecnicoId,
     "clienteId": clienteId,
     "tipoOrdenId": tipoOrdenId,
     // Nuevos campos
@@ -274,7 +274,7 @@ class Orden {
   Map<String, dynamic> toMapCyP() => {
     "tipoOrdenId": tipoOrdenId,
     "clienteId": cliente?.clienteId,
-    "tecnicoId": tecnicoId,
+    "tecnicoId": tecnicoId ?? tecnico?.tecnicoId,
     "unidadId": unidad?.unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
