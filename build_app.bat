@@ -84,16 +84,19 @@ set BUILD_APK=false
 set BUILD_WEB=false
 set BUILD_WINDOWS=false
 
+:: Limpiar espacios
+set "PLATFORM_OPTIONS=%PLATFORM_OPTIONS: =%"
+
+:: Procesar opción "Todas"
 if "%PLATFORM_OPTIONS%"=="4" (
     set BUILD_APK=true
     set BUILD_WEB=true
     set BUILD_WINDOWS=true
 ) else (
-    for %%i in (%PLATFORM_OPTIONS%) do (
-        if "%%i"=="1" set BUILD_APK=true
-        if "%%i"=="2" set BUILD_WEB=true
-        if "%%i"=="3" set BUILD_WINDOWS=true
-    )
+    :: Procesar usando un método simple
+    echo "%PLATFORM_OPTIONS%" | findstr /C:"1" >nul && set BUILD_APK=true
+    echo "%PLATFORM_OPTIONS%" | findstr /C:"2" >nul && set BUILD_WEB=true
+    echo "%PLATFORM_OPTIONS%" | findstr /C:"3" >nul && set BUILD_WINDOWS=true
 )
 
 :: Mostrar resumen de selección
@@ -116,7 +119,7 @@ if "%BUILD_APK%"=="false" if "%BUILD_WEB%"=="false" if "%BUILD_WINDOWS%"=="false
     exit /b
 )
 
-:: --- APK ---
+:: Compilar APK
 if "%BUILD_APK%"=="true" (
     echo ========================================
     echo COMPILANDO APK...
@@ -133,7 +136,7 @@ if "%BUILD_APK%"=="true" (
     echo.
 )
 
-:: --- Web ---
+:: Compilar Web
 if "%BUILD_WEB%"=="true" (
     echo ========================================
     echo COMPILANDO WEB...
@@ -148,14 +151,13 @@ if "%BUILD_WEB%"=="true" (
     echo.
 )
 
-:: --- Windows ---
+:: Compilar Windows
 if "%BUILD_WINDOWS%"=="true" (
     echo ========================================
     echo COMPILANDO WINDOWS...
     echo ========================================
     echo Verificando icono de Windows para %FLAVOR_BASE%...
     
-    :: Verificar si existe carpeta específica del flavor, sino usar carpeta genérica
     if exist "windows_assets\%FLAVOR_BASE%\app_icon.ico" (
         echo Copiando icono específico para %FLAVOR_BASE%...
         copy /Y "windows_assets\%FLAVOR_BASE%\app_icon.ico" "windows\runner\resources\app_icon.ico"

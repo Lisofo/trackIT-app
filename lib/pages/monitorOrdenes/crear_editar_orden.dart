@@ -3,6 +3,7 @@ import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
+import 'package:app_tec_sedel/services/tecnico_services.dart'; // Importar servicio de técnicos
 import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
 import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
@@ -34,14 +35,17 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final UnidadesServices unidadesServices = UnidadesServices();
   final CodiguerasServices codiguerasServices = CodiguerasServices();
   final OrdenServices ordenServices = OrdenServices();
+  final TecnicoServices tecnicoServices = TecnicoServices(); // Nuevo servicio de técnicos
   
   // Variables para ambos flavors
   List<Cliente> clientesLocales = [];
   List<Unidad> unidades = [];
+  List<Tecnico> tecnicos = []; // Nueva lista de técnicos
   DateTime fecha = DateTime.now();
   bool condIva = true;
   Cliente? clienteSeleccionado;
   Unidad? unidadSeleccionada;
+  Tecnico? tecnicoSeleccionado; // Nuevo técnico seleccionado
   final TextEditingController _numOrdenController = TextEditingController();
   final TextEditingController _comentClienteController = TextEditingController();
   final TextEditingController _comentTrabajoController = TextEditingController();
@@ -107,6 +111,19 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
+  // Método para cargar la lista de técnicos
+  Future<void> _cargarTecnicos() async {
+    try {
+      final listaTecnicos = await tecnicoServices.getAllTecnicos(context, token);
+      if (listaTecnicos != null && listaTecnicos is List<Tecnico>) {
+        setState(() {
+          tecnicos = listaTecnicos;
+        });
+      }
+    } catch (e) {
+      print('Error cargando técnicos: $e');
+    }
+  }
 
   @override
   void initState() {
@@ -122,6 +139,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarOrdenExistente();
+      _cargarTecnicos(); // Cargar técnicos al inicializar
     });
   }
 
@@ -146,6 +164,22 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       );
 
       try {
+        // Cargar la lista de técnicos primero
+        await _cargarTecnicos();
+        
+        // Establecer el técnico seleccionado si existe
+        if (ordenExistente.tecnico != null) {
+          // Buscar el técnico en la lista cargada
+          final tecnicoDeOrden = tecnicos.firstWhere(
+            (t) => t.tecnicoId == ordenExistente.tecnico!.tecnicoId,
+            orElse: () => Tecnico.empty(),
+          );
+          
+          setState(() {
+            tecnicoSeleccionado = tecnicoDeOrden;
+          });
+                }
+        
         if (ordenExistente.cliente?.clienteId != null) {
           await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
           
@@ -372,13 +406,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       instrucciones: _isEditMode ? _ordenExistente!.instrucciones : '',
       tipoOrden: _isEditMode ? _ordenExistente!.tipoOrden : TipoOrden.empty(),
       cliente: clienteSeleccionado ?? Cliente.empty(),
-      tecnico: _isEditMode ? _ordenExistente!.tecnico : Tecnico.empty(),
+      tecnico: tecnicoSeleccionado ?? Tecnico.empty(), // Usar el técnico seleccionado
       unidad: unidadResysol,
       servicio: _isEditMode ? _ordenExistente!.servicio : [],
       otRevisionId: _isEditMode ? _ordenExistente!.otRevisionId : 0,
       planoId: _isEditMode ? _ordenExistente!.planoId : 0,
       alerta: _isEditMode ? _ordenExistente!.alerta : false,
-      tecnicoId: authProvider.tecnicoId,
+      tecnicoId: tecnicoSeleccionado?.tecnicoId ?? authProvider.tecnicoId, // Usar ID del técnico seleccionado o el del auth
       clienteId: clienteSeleccionado?.clienteId ?? 0,
       tipoOrdenId: getTipoOrden(),
       producto: _productoController.text,
@@ -827,7 +861,31 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ]
             ],
           ),
+          
+          // AÑADIDO: Dropdown para seleccionar técnico
           const SizedBox(height: 16),
+          if (_isEditMode && tecnicos.isNotEmpty) ...[
+            DropdownButtonFormField<Tecnico>(
+              value: tecnicoSeleccionado,
+              decoration: const InputDecoration(
+                labelText: 'Técnico asignado',
+                border: OutlineInputBorder(),
+              ),
+              items: tecnicos.map((Tecnico tecnico) {
+                return DropdownMenuItem<Tecnico>(
+                  value: tecnico,
+                  child: Text(tecnico.nombre.trim()),
+                );
+              }).toList(),
+              onChanged: (Tecnico? nuevoTecnico) {
+                setState(() {
+                  tecnicoSeleccionado = nuevoTecnico;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+          
           TextFormField(
             controller: _descripcionController,
             decoration: const InputDecoration(
@@ -1166,6 +1224,24 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
               ],
             ),
+            
+            // AÑADIDO: Dropdown para técnico en modo edición (Resysol)
+            if (_isEditMode && tecnicos.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildLabeledDropdownTecnico(
+                label: 'Técnico responsable',
+                tecnicos: tecnicos,
+                tecnicoSeleccionado: tecnicoSeleccionado,
+                onChanged: (Tecnico? nuevoTecnico) {
+                  setState(() {
+                    tecnicoSeleccionado = nuevoTecnico;
+                  });
+                },
+                width: 300,
+              ),
+              const SizedBox(height: 20),
+            ],
+            
             const Divider(height: 24),
             Wrap(
               spacing: 16,
@@ -1283,6 +1359,57 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Widget para construir dropdown de técnicos
+  Widget _buildLabeledDropdownTecnico({
+    required String label,
+    required List<Tecnico> tecnicos,
+    required Tecnico? tecnicoSeleccionado,
+    required ValueChanged<Tecnico?> onChanged,
+    required double width,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.blueGrey,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: DropdownButton<Tecnico>(
+              value: tecnicoSeleccionado,
+              isExpanded: true,
+              underline: const SizedBox(),
+              items: tecnicos.map((Tecnico tecnico) {
+                return DropdownMenuItem<Tecnico>(
+                  value: tecnico,
+                  child: Text(
+                    tecnico.nombre.trim(),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+              hint: const Text('Seleccione un técnico'),
+            ),
+          ),
+        ],
       ),
     );
   }
