@@ -110,6 +110,8 @@ class TecnicosServices {
   Future putTecnico(BuildContext context, Tecnico tecnico, String token) async {
     String link = '${apiUrl}api/v1/tecnicos/${tecnico.tecnicoId}/';
 
+    print(tecnico.toMap());
+
     try {
       var headers = {'Authorization': token};
       //var xx = tecnico.toMap();

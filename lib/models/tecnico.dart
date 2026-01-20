@@ -65,7 +65,7 @@ class Tecnico {
     "documento": documento,
     "fechaIngreso": fechaIngreso == null ? null : fechaIngreso!.toIso8601String(),
     "fechaVtoCarneSalud": fechaVtoCarneSalud == null ? null : fechaVtoCarneSalud!.toIso8601String(),
-    "cargoId": cargoId,
+    "cargoId": cargo?.cargoId,
     "verDiaSiguiente": verDiaSiguiente,
   };
 

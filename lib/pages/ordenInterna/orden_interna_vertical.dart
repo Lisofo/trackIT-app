@@ -57,7 +57,7 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
 
   void _mostrarDialogoConfirmacion(String accion) async {
     pinController.text = '';
-    late int accionId = accion == "recibir" ? 21 : 18;
+    late int accionId = accion == "en proceso" ? 21 : 18;
     siguienteEstado = await ordenServices.siguienteEstadoOrden(context, orden, accionId, token);
     showDialog(
       context: context,
@@ -363,14 +363,14 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
             children: [
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: ((orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('recibir') : null,
+                onPressed: ((orden.estado != 'EN PROCESO') || !ejecutando ) ? () => _mostrarDialogoConfirmacion('en proceso') : null,
                 text: 'Iniciar',
                 tamano: 18,
                 disabled: (!(orden.estado == 'PENDIENTE') || ejecutando),
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: orden.estado == 'RECIBIDO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
+                onPressed: orden.estado == 'EN PROCESO' ? () => router.push('/resumenOrden') : null, /*_mostrarDialogoConfirmacion('finalizar')*/ 
                 text: 'Finalizar',
                 tamano: 18,
                 disabled: !((orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO')),

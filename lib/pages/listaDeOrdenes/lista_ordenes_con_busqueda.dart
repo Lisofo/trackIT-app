@@ -22,7 +22,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   String token = '';
   List<Orden> ordenes = [];
   late int tecnicoId = 0;
-  int groupValue = 0; // 0=PENDIENTE, 1=RECIBIDO, 2=APROBADO
+  int groupValue = 0; // 0=PENDIENTE, 1=EN PROCESO, 2=fDO
   List trabajodres = [];
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   bool datosCargados = false;
@@ -37,7 +37,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   String? _numeroOrdenFiltro;
   
   // Estados disponibles
-  List<String> estados = ['PENDIENTE', 'RECIBIDO', 'APROBADO'];
+  List<String> estados = ['PENDIENTE', 'EN PROCESO', 'FINALIZADO'];
 
   @override
   void initState() {
@@ -546,6 +546,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         return Colors.blue;
       case 'aprobado':
       case 'completado':
+      case 'finalizado':
         return Colors.green;
       case 'cancelado':
         return Colors.red;
@@ -592,14 +593,15 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             return Column(
               children: [
                 // Widget de Filtros
-                FiltrosOrdenes(
-                  onSearch: _aplicarFiltros,
-                  onReset: _limpiarFiltros,
-                  isFilterExpanded: _isFilterExpanded,
-                  onToggleFilter: _toggleFiltros,
-                  cantidadDeOrdenes: ordenes.length,
-                  token: token,
-                ),
+                if (isAdmin)
+                  FiltrosOrdenes(
+                    onSearch: _aplicarFiltros,
+                    onReset: _limpiarFiltros,
+                    isFilterExpanded: _isFilterExpanded,
+                    onToggleFilter: _toggleFiltros,
+                    cantidadDeOrdenes: ordenes.length,
+                    token: token,
+                  ),
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: CupertinoSegmentedControl<int>(
@@ -609,8 +611,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     unselectedColor: Colors.white,
                     children: {
                       0: buildSegment('Pendiente'),
-                      1: buildSegment('Recibido'),
-                      2: buildSegment('Aprobado'),
+                      1: buildSegment('En proceso'),
+                      2: buildSegment('Finalizado'),
                     },
                     onValueChanged: (newValue) {
                       setState(() {

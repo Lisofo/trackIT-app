@@ -27,8 +27,8 @@ class _MonitoreoState extends State<Monitoreo> {
   List<Orden> ordenes = [];
   List<String> estados = [
     'Pendiente',
-    'Recibido',
-    'Aprobado',
+    'En proceso',
+    'Finalizado',
   ];
   late String token = '';
   Tecnico? selectedTecnico;
@@ -45,20 +45,20 @@ class _MonitoreoState extends State<Monitoreo> {
   // Colores mejorados con paleta profesional
   Map<String, Color> coloresEstado = {
     'Pendiente': const Color(0xFFFFE082), // Amarillo suave
-    'Recibido': const Color(0xFF81C784),  // Verde suave
-    'Aprobado': const Color(0xFFEF9A9A),  // Rojo suave
+    'En proceso': const Color(0xFF81C784),  // Verde suave
+    'Finalizado': const Color(0xFFEF9A9A),  // Rojo suave
   };
   
   Map<String, Color> coloresBorde = {
     'Pendiente': const Color(0xFFFFB74D),
-    'Recibido': const Color(0xFF66BB6A),
-    'Aprobado': const Color(0xFFEF5350),
+    'En proceso': const Color(0xFF66BB6A),
+    'Finalizado': const Color(0xFFEF5350),
   };
   
   Map<String, Color> coloresCampanita = {
     'PENDIENTE': const Color(0xFFFFE082),
-    'RECIBIDO': const Color(0xFF81C784),
-    'APROBADO': const Color(0xFFEF9A9A),
+    'EN PROCESO': const Color(0xFF81C784),
+    'FINALIZADO': const Color(0xFFEF9A9A),
   };
   
   late Cliente clienteSeleccionado;
@@ -96,7 +96,7 @@ class _MonitoreoState extends State<Monitoreo> {
 
   cargarDatos() async {
     token = context.watch<AuthProvider>().token;
-    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, RECIBIDO, APROBADO', 1, token);
+    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, EN PROCESO, FINALIZADO', 1, token);
     setState(() {});
   }
 
@@ -172,6 +172,9 @@ class _MonitoreoState extends State<Monitoreo> {
   if (tecnicoId.isNotEmpty) {
     queryParams['tecnicoId'] = tecnicoId;
   }
+
+  queryParams['fechaDesde'] = desdeStr;
+  queryParams['fechaHasta'] = hastaStr;
   
   
   try {
@@ -219,10 +222,10 @@ class _MonitoreoState extends State<Monitoreo> {
         case 'PENDIENTE':
           ordenesPendientes.add(orden);
           break;
-        case 'RECIBIDO':
+        case 'EN PROCESO':
           ordenesEnProceso.add(orden);
           break;
-        case 'APROBADO':
+        case 'FINALIZADO':
           ordenesFinalizadas.add(orden);
           break;
         case 'REVISADA':
@@ -240,7 +243,7 @@ class _MonitoreoState extends State<Monitoreo> {
   }
 
   Future<void> ordenesARevisar(BuildContext context) async {
-    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, APROBADO, RECIBIDO', 1000, token);
+    ordenesCampanita = await OrdenServices().getOrdenCampanita(context, desde, hasta, 'PENDIENTE, FINALIZADO, EN PROCESO', 1000, token);
     
     bool isMobile = MediaQuery.of(context).size.width < 800;
     
@@ -472,9 +475,9 @@ class _MonitoreoState extends State<Monitoreo> {
     switch (estado?.toUpperCase()) {
       case 'PENDIENTE':
         return Icons.pending;
-      case 'RECIBIDO':
+      case 'EN PROCESO':
         return Icons.play_arrow;
-      case 'APROBADO':
+      case 'FINALIZADO':
         return Icons.check_circle;
       default:
         return Icons.question_mark;
@@ -1079,8 +1082,8 @@ class _MonitoreoState extends State<Monitoreo> {
         scrollDirection: Axis.horizontal,
         children: [
           _buildEstadoContainer('Pendiente', ordenesPendientes),
-          _buildEstadoContainer('Recibido', ordenesEnProceso),
-          _buildEstadoContainer('Aprobado', ordenesFinalizadas),
+          _buildEstadoContainer('En proceso', ordenesEnProceso),
+          _buildEstadoContainer('Finalizado', ordenesFinalizadas),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -1161,7 +1164,7 @@ class _MonitoreoState extends State<Monitoreo> {
                 ),
                 child: const Icon(Icons.play_arrow),
               ),
-              label: 'Recibido',
+              label: 'En proceso',
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.done_all),
@@ -1173,7 +1176,7 @@ class _MonitoreoState extends State<Monitoreo> {
                 ),
                 child: const Icon(Icons.done_all),
               ),
-              label: 'Aprobado',
+              label: 'Finalizado',
             ),
           ],
         ),
@@ -1557,13 +1560,13 @@ class _MonitoreoState extends State<Monitoreo> {
                             _buildResumenChipCompact(
                               count: ordenesEnProceso.length,
                               label: 'RECIBIDAS',
-                              color: coloresEstado['Recibido']!,
+                              color: coloresEstado['En proceso']!,
                             ),
                             const SizedBox(width: 8),
                             _buildResumenChipCompact(
                               count: ordenesFinalizadas.length,
                               label: 'APROBADAS',
-                              color: coloresEstado['Aprobado']!,
+                              color: coloresEstado['Finalizado']!,
                             ),
                           ],
                         ),
@@ -1584,14 +1587,14 @@ class _MonitoreoState extends State<Monitoreo> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildEstadoColumnCompact(
-                          estado: 'Recibido',
+                          estado: 'En proceso',
                           ordenes: ordenesEnProceso,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildEstadoColumnCompact(
-                          estado: 'Aprobado',
+                          estado: 'Finalizado',
                           ordenes: ordenesFinalizadas,
                         ),
                       ),

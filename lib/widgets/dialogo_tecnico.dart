@@ -98,13 +98,12 @@ class _DialogoTecnicoState extends State<DialogoTecnico> {
         fechaIngreso: _fechaIngreso,
         fechaVtoCarneSalud: _fechaVtoCarne,
         deshabilitado: false,
-        cargo: Cargo(cargoId: 1, codCargo: 'TEC', descripcion: 'Técnico'),
+        cargo: Cargo(cargoId: 1, codCargo: 'GEN', descripcion: 'GENERAL'),
         firmaPath: '',
         avatarMd5: '',
         avatarPath:
         '',
-        cargoId:
-        0,
+        cargoId: 0,
         firmaMd5:
         '',
         verDiaSiguiente: false

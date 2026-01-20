@@ -22,7 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
   // Estadísticas con los nuevos estados
   int _totalOrders = 0;
   int _pendientes = 0;
-  int _recibidos = 0;
+  int _enProceso = 0;
   int _aprobados = 0;
   int _facturados = 0;
   int _finalizados = 0;
@@ -73,9 +73,9 @@ class _DashboardPageState extends State<DashboardPage> {
   void _calculateStats() {
     _totalOrders = _ordenes.length;
     _pendientes = _ordenes.where((orden) => orden.estado == 'PENDIENTE').length;
-    _recibidos = _ordenes.where((orden) => orden.estado == 'RECIBIDO').length;
-    _aprobados = _ordenes.where((orden) => orden.estado == 'APROBADO').length;
-    _facturados = _ordenes.where((orden) => orden.estado == 'FACTURADO').length;
+    _enProceso = _ordenes.where((orden) => orden.estado == 'EN PROCESO').length;
+    // _aprobados = _ordenes.where((orden) => orden.estado == 'APROBADO').length;
+    // _facturados = _ordenes.where((orden) => orden.estado == 'FACTURADO').length;
     _finalizados = _ordenes.where((orden) => orden.estado == 'FINALIZADO').length;
     _descartados = _ordenes.where((orden) => orden.estado == 'DESCARTADO').length;
   }
@@ -112,9 +112,9 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> getChartData() {
     return [
       {'status': 'Pendientes', 'value': _pendientes, 'color': Colors.orange},
-      {'status': 'Recibidos', 'value': _recibidos, 'color': Colors.blue},
-      {'status': 'Aprobados', 'value': _aprobados, 'color': Colors.green},
-      {'status': 'Facturados', 'value': _facturados, 'color': Colors.purple},
+      {'status': 'En proceso', 'value': _enProceso, 'color': Colors.blue},
+      // {'status': 'Aprobados', 'value': _aprobados, 'color': Colors.green},
+      // {'status': 'Facturados', 'value': _facturados, 'color': Colors.purple},
       {'status': 'Finalizados', 'value': _finalizados, 'color': Colors.teal},
       {'status': 'Descartados', 'value': _descartados, 'color': Colors.red},
     ];
@@ -308,9 +308,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         _buildStatCard('Total', _totalOrders, colors.primary, Icons.list_alt),
                         _buildStatCard('Pendientes', _pendientes, Colors.orange, Icons.schedule),
-                        _buildStatCard('Recibidos', _recibidos, Colors.blue, Icons.play_arrow),
-                        _buildStatCard('Aprobados', _aprobados, Colors.green, Icons.check_circle),
-                        _buildStatCard('Facturados', _facturados, Colors.purple, Icons.inventory_2),
+                        _buildStatCard('En proceso', _enProceso, Colors.blue, Icons.play_arrow),
+                        // _buildStatCard('Aprobados', _aprobados, Colors.green, Icons.check_circle),
+                        // _buildStatCard('Facturados', _facturados, Colors.purple, Icons.inventory_2),
                         _buildStatCard('Finalizados', _finalizados, Colors.teal, Icons.done_all),
                         _buildStatCard('Descartados', _descartados, Colors.red, Icons.cancel),
                       ],
@@ -350,9 +350,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Column(
                                     children: [
                                       _buildStatusRow('Pendientes', _pendientes, Colors.orange),
-                                      _buildStatusRow('Recibidos', _recibidos, Colors.blue),
-                                      _buildStatusRow('Aprobados', _aprobados, Colors.green),
-                                      _buildStatusRow('Facturados', _facturados, Colors.purple),
+                                      _buildStatusRow('En proceso', _enProceso, Colors.blue),
+                                      // _buildStatusRow('Aprobados', _aprobados, Colors.green),
+                                      // _buildStatusRow('Facturados', _facturados, Colors.purple),
                                       _buildStatusRow('Finalizados', _finalizados, Colors.teal),
                                       _buildStatusRow('Descartados', _descartados, Colors.red),
                                     ],
@@ -454,9 +454,9 @@ class _DashboardPageState extends State<DashboardPage> {
                             Column(
                               children: [
                                 _buildStatusRow('Pendientes', _pendientes, Colors.orange),
-                                _buildStatusRow('Recibidos', _recibidos, Colors.blue),
-                                _buildStatusRow('Aprobados', _aprobados, Colors.green),
-                                _buildStatusRow('Facturados', _facturados, Colors.purple),
+                                _buildStatusRow('En proceso', _enProceso, Colors.blue),
+                                // _buildStatusRow('Aprobados', _aprobados, Colors.green),
+                                // _buildStatusRow('Facturados', _facturados, Colors.purple),
                                 _buildStatusRow('Finalizados', _finalizados, Colors.teal),
                                 _buildStatusRow('Descartados', _descartados, Colors.red),
                               ],
