@@ -116,8 +116,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     try {
       final listaTecnicos = await tecnicoServices.getAllTecnicos(context, token);
       if (listaTecnicos != null && listaTecnicos is List<Tecnico>) {
+        // Filtrar duplicados por ID
+        final Map<int, Tecnico> tecnicoMap = {};
+        for (var tecnico in listaTecnicos) {
+          tecnicoMap[tecnico.tecnicoId] = tecnico;
+        }
+        
         setState(() {
-          tecnicos = listaTecnicos;
+          tecnicos = tecnicoMap.values.toList();
         });
       }
     } catch (e) {
@@ -168,17 +174,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         await _cargarTecnicos();
         
         // Establecer el técnico seleccionado si existe
-        if (ordenExistente.tecnico != null) {
+        if (ordenExistente.tecnico != null && ordenExistente.tecnico!.tecnicoId > 0) {
           // Buscar el técnico en la lista cargada
-          final tecnicoDeOrden = tecnicos.firstWhere(
+          final tecnicoEncontrado = tecnicos.firstWhere(
             (t) => t.tecnicoId == ordenExistente.tecnico!.tecnicoId,
             orElse: () => Tecnico.empty(),
           );
           
-          setState(() {
-            tecnicoSeleccionado = tecnicoDeOrden;
-          });
-                }
+          // Solo asignar si es un técnico válido (ID > 0)
+          if (tecnicoEncontrado.tecnicoId > 0) {
+            setState(() {
+              tecnicoSeleccionado = tecnicoEncontrado;
+            });
+          }
+        }
         
         if (ordenExistente.cliente?.clienteId != null) {
           await _cargarClienteDesdeAPI(ordenExistente.cliente!.clienteId);
@@ -862,25 +871,35 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ],
           ),
           
-          // AÑADIDO: Dropdown para seleccionar técnico
+          // AÑADIDO: Dropdown para seleccionar técnico - AHORA SIEMPRE VISIBLE
           const SizedBox(height: 16),
-          if (_isEditMode && tecnicos.isNotEmpty) ...[
-            DropdownButtonFormField<Tecnico>(
-              value: tecnicoSeleccionado,
+          if (tecnicos.isNotEmpty) ...[
+            DropdownButtonFormField<int>(
+              value: tecnicoSeleccionado?.tecnicoId,
               decoration: const InputDecoration(
                 labelText: 'Técnico asignado',
                 border: OutlineInputBorder(),
               ),
               items: tecnicos.map((Tecnico tecnico) {
-                return DropdownMenuItem<Tecnico>(
-                  value: tecnico,
+                return DropdownMenuItem<int>(
+                  value: tecnico.tecnicoId,
                   child: Text(tecnico.nombre.trim()),
                 );
               }).toList(),
-              onChanged: (Tecnico? nuevoTecnico) {
-                setState(() {
-                  tecnicoSeleccionado = nuevoTecnico;
-                });
+              onChanged: (int? nuevoTecnicoId) {
+                if (nuevoTecnicoId != null) {
+                  Tecnico? nuevoTecnico = tecnicos.firstWhere(
+                    (t) => t.tecnicoId == nuevoTecnicoId,
+                    orElse: () => Tecnico.empty(),
+                  );
+                  setState(() {
+                    tecnicoSeleccionado = nuevoTecnico.tecnicoId != 0 ? nuevoTecnico : null;
+                  });
+                } else {
+                  setState(() {
+                    tecnicoSeleccionado = null;
+                  });
+                }
               },
             ),
             const SizedBox(height: 16),
@@ -1225,8 +1244,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ],
             ),
             
-            // AÑADIDO: Dropdown para técnico en modo edición (Resysol)
-            if (_isEditMode && tecnicos.isNotEmpty) ...[
+            // AÑADIDO: Dropdown para técnico - AHORA SIEMPRE VISIBLE (no solo en modo edición)
+            if (tecnicos.isNotEmpty) ...[
               const SizedBox(height: 16),
               _buildLabeledDropdownTecnico(
                 label: 'Técnico responsable',
@@ -1392,20 +1411,30 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               borderRadius: BorderRadius.circular(8),
               color: Colors.white,
             ),
-            child: DropdownButton<Tecnico>(
-              value: tecnicoSeleccionado,
+            child: DropdownButton<int>(
+              value: tecnicoSeleccionado?.tecnicoId,
               isExpanded: true,
               underline: const SizedBox(),
               items: tecnicos.map((Tecnico tecnico) {
-                return DropdownMenuItem<Tecnico>(
-                  value: tecnico,
+                return DropdownMenuItem<int>(
+                  value: tecnico.tecnicoId,
                   child: Text(
                     tecnico.nombre.trim(),
                     style: const TextStyle(fontSize: 14),
                   ),
                 );
               }).toList(),
-              onChanged: onChanged,
+              onChanged: (int? nuevoTecnicoId) {
+                if (nuevoTecnicoId != null) {
+                  final nuevoTecnico = tecnicos.firstWhere(
+                    (t) => t.tecnicoId == nuevoTecnicoId,
+                    orElse: () => Tecnico.empty(),
+                  );
+                  onChanged(nuevoTecnico.tecnicoId != 0 ? nuevoTecnico : null);
+                } else {
+                  onChanged(null);
+                }
+              },
               hint: const Text('Seleccione un técnico'),
             ),
           ),

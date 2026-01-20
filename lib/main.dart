@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:app_tec_sedel/providers/usuarios_provider.dart';
 import 'package:flutter/foundation.dart'; // Añade este import
 
 import 'package:app_tec_sedel/config/config.dart';
@@ -50,6 +51,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => OrdenProvider(),),
         ChangeNotifierProvider(create: (_) => AuthProvider()..setFlavor(flavor),),
+        ChangeNotifierProvider(create: (_) => UsuariosProvider()),
       ],
       child: const MyApp(),
     )
@@ -73,7 +75,6 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: appTheme.getTheme(),
       debugShowCheckedModeBanner: false,
-      title: 'Resysol',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

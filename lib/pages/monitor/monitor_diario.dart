@@ -152,18 +152,6 @@ class _MonitoreoState extends State<Monitoreo> {
   Future<void> buscar(String token) async {
   if (token.isEmpty) return;
   
-  // Si no hay cliente seleccionado, no buscar
-  if (clienteSeleccionado.clienteId == 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Por favor seleccione un cliente'),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      )
-    );
-    return;
-  }
 
   String tecnicoId = selectedTecnico != null && selectedTecnico!.tecnicoId > 0 
     ? selectedTecnico!.tecnicoId.toString() 
@@ -177,8 +165,10 @@ class _MonitoreoState extends State<Monitoreo> {
   Map<String, dynamic> queryParams = {};
   
   // Agregar filtros
-  queryParams['clienteId'] = clienteSeleccionado.clienteId.toString();
-  
+  if (clienteSeleccionado.clienteId != 0) {
+    queryParams['clienteId'] = clienteSeleccionado.clienteId.toString();
+  }
+
   if (tecnicoId.isNotEmpty) {
     queryParams['tecnicoId'] = tecnicoId;
   }
@@ -292,175 +282,14 @@ class _MonitoreoState extends State<Monitoreo> {
                   width: isMobile 
                     ? MediaQuery.of(context).size.width * 0.8
                     : MediaQuery.of(context).size.width * 0.4,
-                  child: isMobile 
-                    ? ListView.separated(
-                        itemCount: ordenesCampanita.length,
-                        itemBuilder: (context, i) {
-                          var orden = ordenesCampanita[i];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: coloresCampanita[orden.estado]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: InkWell(
-                              onTap: () {
-                                Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
-                                Navigator.of(context).pop();
-                                router.push('/editOrden');
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: coloresCampanita[orden.estado],
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            '#${orden.ordenTrabajoId}',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          _getEstadoIcon(orden.estado),
-                                          color: coloresCampanita[orden.estado],
-                                          size: 20,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      orden.cliente!.nombre,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      orden.tecnico!.nombre,
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_today,
-                                          size: 14,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            orden.fechaDesde != null 
-                                              ? DateFormat("dd/MM/yyyy HH:mm", 'es').format(orden.fechaDesde!)
-                                              : 'Sin fecha',
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }, 
-                        separatorBuilder: (BuildContext context, int index) { 
-                          return const SizedBox(height: 4); 
-                        },
-                      )
-                    : ListView.builder(
-                        itemCount: ordenesCampanita.length,
-                        itemBuilder: (context, i) {
-                          var orden = ordenesCampanita[i];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: coloresCampanita[orden.estado]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: ListTile(
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: coloresCampanita[orden.estado],
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '#${orden.ordenTrabajoId}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                orden.cliente!.nombre,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(orden.tecnico!.nombre),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.calendar_today,
-                                        size: 12,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        orden.fechaDesde != null 
-                                          ? DateFormat("dd/MM/yyyy HH:mm", 'es').format(orden.fechaDesde!)
-                                          : 'Sin fecha',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              trailing: Icon(
-                                _getEstadoIcon(orden.estado),
-                                color: coloresCampanita[orden.estado],
-                              ),
-                              onTap: () {
-                                Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
-                                Navigator.of(context).pop();
-                                router.push('/editOrden');
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < ordenesCampanita.length; i++)
+                          _buildCampanitaCard(ordenesCampanita[i], isMobile, context),
+                      ],
+                    ),
+                  ),
                 )
               ],
             ),
@@ -478,6 +307,165 @@ class _MonitoreoState extends State<Monitoreo> {
         );
       },
     );
+  }
+
+  Widget _buildCampanitaCard(Orden orden, bool isMobile, BuildContext context) {
+    if (isMobile) {
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: coloresCampanita[orden.estado]!,
+            width: 2,
+          ),
+        ),
+        child: InkWell(
+          onTap: () {
+            Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
+            Navigator.of(context).pop();
+            router.push('/editOrden');
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: coloresCampanita[orden.estado],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '#${orden.ordenTrabajoId}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _getEstadoIcon(orden.estado),
+                      color: coloresCampanita[orden.estado],
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  orden.cliente!.nombre,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  orden.tecnico!.nombre,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        orden.fechaDesde != null 
+                          ? DateFormat("dd/MM/yyyy HH:mm", 'es').format(orden.fechaDesde!)
+                          : 'Sin fecha',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: coloresCampanita[orden.estado]!,
+            width: 2,
+          ),
+        ),
+        child: ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: coloresCampanita[orden.estado],
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '#${orden.ordenTrabajoId}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            orden.cliente!.nombre,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(orden.tecnico!.nombre),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 12,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    orden.fechaDesde != null 
+                      ? DateFormat("dd/MM/yyyy HH:mm", 'es').format(orden.fechaDesde!)
+                      : 'Sin fecha',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          trailing: Icon(
+            _getEstadoIcon(orden.estado),
+            color: coloresCampanita[orden.estado],
+          ),
+          onTap: () {
+            Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
+            Navigator.of(context).pop();
+            router.push('/editOrden');
+          },
+        ),
+      );
+    }
   }
 
   IconData _getEstadoIcon(String? estado) {
@@ -716,96 +704,99 @@ class _MonitoreoState extends State<Monitoreo> {
   }
 
   Widget _buildEstadoContainer(String estado, List<Orden> ordenesEstado) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  coloresEstado[estado]!.withOpacity(0.8),
-                  coloresEstado[estado]!,
+    return Scaffold(
+      body: Container(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    coloresEstado[estado]!.withOpacity(0.8),
+                    coloresEstado[estado]!,
+                  ],
+              ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: coloresEstado[estado]!.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: coloresEstado[estado]!.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  estado.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 20,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${ordenesEstado.length}',
-                    style: TextStyle(
-                      color: coloresEstado[estado],
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    estado.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${ordenesEstado.length}',
+                      style: TextStyle(
+                        color: coloresEstado[estado],
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ordenesEstado.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox,
-                          size: 60,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No hay órdenes $estado',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                            fontSize: 16,
+            const SizedBox(height: 16),
+            Expanded(
+              child: ordenesEstado.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox,
+                            size: 60,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay órdenes $estado',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          for (int index = 0; index < ordenesEstado.length; index++)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: cardsDeLaLista(ordenesEstado, index, estado),
+                            ),
+                        ],
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: ordenesEstado.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: cardsDeLaLista(ordenesEstado, index, estado),
-                      );
-                    },
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1078,24 +1069,18 @@ class _MonitoreoState extends State<Monitoreo> {
           ),
         ),
       ),
-      body: Column(
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _pageIndex = index;
+          });
+        },
+        scrollDirection: Axis.horizontal,
         children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _pageIndex = index;
-                });
-              },
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildEstadoContainer('Pendiente', ordenesPendientes),
-                _buildEstadoContainer('Recibido', ordenesEnProceso),
-                _buildEstadoContainer('Aprobado', ordenesFinalizadas),
-              ],
-            ),
-          ),
+          _buildEstadoContainer('Pendiente', ordenesPendientes),
+          _buildEstadoContainer('Recibido', ordenesEnProceso),
+          _buildEstadoContainer('Aprobado', ordenesFinalizadas),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -1278,346 +1263,592 @@ class _MonitoreoState extends State<Monitoreo> {
 
   Widget _buildDesktopView(ColorScheme colors) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Header superior
-          Container(
-            decoration: BoxDecoration(
-              color: colors.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => router.pop(),
-                          tooltip: 'Volver',
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            'Monitoreo de Órdenes de Trabajo',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
+      body: SingleChildScrollView( // ← AÑADIDO Scroll general
+        child: Column(
+          children: [
+            // Header superior
+            Container(
+              decoration: BoxDecoration(
+                color: colors.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => router.pop(),
+                            tooltip: 'Volver',
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Text(
+                              'Monitoreo de Órdenes de Trabajo',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
-                        _buildNotificationButton(colors),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // Filtros en tarjeta
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                          _buildNotificationButton(colors),
+                        ],
                       ),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildFilterField(
-                                    label: 'Técnico',
-                                    icon: Icons.person_search,
-                                    child: DropdownSearch<Tecnico>(
-                                      dropdownDecoratorProps: DropDownDecoratorProps(
-                                        dropdownSearchDecoration: InputDecoration(
-                                          hintText: 'Seleccione un técnico',
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                            borderSide: BorderSide(color: colors.outline),
-                                          ),
-                                          filled: true,
-                                          fillColor: colors.surface,
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                        ),
-                                      ),
-                                      items: tecnicos,
-                                      popupProps: PopupProps.menu(
-                                        showSearchBox: true,
-                                        searchDelay: Duration.zero,
-                                        menuProps: MenuProps(
-                                          borderRadius: BorderRadius.circular(12),
-                                          elevation: 4,
-                                        ),
-                                        containerBuilder: (context, popupWidget) {
-                                          return Card(
-                                            elevation: 8,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: popupWidget,
-                                          );
-                                        },
-                                      ),
-                                      itemAsString: (Tecnico t) => t.nombre,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedTecnico = value;
-                                          tecnicoFiltro = value?.tecnicoId ?? 0;
-                                        });
-                                      },
+                      const SizedBox(height: 12), // ← REDUCIDO de 20 a 12
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Filtros compactos
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // ← MENOS espacio vertical
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16), // ← REDUCIDO de 20 a 16
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterFieldCompact( // ← NUEVO método compacto
+                              label: 'Técnico',
+                              icon: Icons.person_search,
+                              child: DropdownSearch<Tecnico>(
+                                dropdownDecoratorProps: DropDownDecoratorProps(
+                                  dropdownSearchDecoration: InputDecoration(
+                                    hintText: 'Seleccione un técnico',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: colors.outline),
                                     ),
+                                    filled: true,
+                                    fillColor: colors.surface,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // ← COMPACTO
+                                    isDense: true,
                                   ),
                                 ),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  flex: 2,
-                                  child: _buildFilterField(
-                                    label: 'Cliente',
-                                    icon: Icons.business,
-                                    child: InkWell(
-                                      onTap: _mostrarBusquedaCliente,
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: colors.outline),
-                                          borderRadius: BorderRadius.circular(10),
-                                          color: colors.surface,
-                                        ),
-                                        child: Row(
+                                items: tecnicos,
+                                popupProps: PopupProps.menu(
+                                  showSearchBox: true,
+                                  searchDelay: Duration.zero,
+                                  menuProps: MenuProps(
+                                    borderRadius: BorderRadius.circular(8),
+                                    elevation: 4,
+                                  ),
+                                  containerBuilder: (context, popupWidget) {
+                                    return Card(
+                                      elevation: 8,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: popupWidget,
+                                    );
+                                  },
+                                ),
+                                itemAsString: (Tecnico t) => t.nombre,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedTecnico = value;
+                                    tecnicoFiltro = value?.tecnicoId ?? 0;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12), // ← REDUCIDO de 20 a 12
+                          Expanded(
+                            flex: 2,
+                            child: _buildFilterFieldCompact(
+                              label: 'Cliente',
+                              icon: Icons.business,
+                              child: InkWell(
+                                onTap: _mostrarBusquedaCliente,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // ← COMPACTO
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: colors.outline),
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: colors.surface,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.business,
+                                        size: 18, // ← REDUCIDO
+                                        color: clienteSeleccionado.clienteId > 0 
+                                          ? colors.primary 
+                                          : colors.onSurface.withOpacity(0.5),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Icon(
-                                              Icons.business,
-                                              color: clienteSeleccionado.clienteId > 0 
-                                                ? colors.primary 
-                                                : colors.onSurface.withOpacity(0.5),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    clienteSeleccionado.clienteId > 0 
-                                                      ? clienteSeleccionado.nombre
-                                                      : 'Buscar cliente...',
-                                                    style: TextStyle(
-                                                      color: clienteSeleccionado.clienteId > 0 
-                                                        ? colors.primary 
-                                                        : colors.onSurface.withOpacity(0.7),
-                                                      fontWeight: clienteSeleccionado.clienteId > 0 
-                                                        ? FontWeight.w600 
-                                                        : FontWeight.normal,
-                                                    ),
-                                                  ),
-                                                  if (clienteSeleccionado.clienteId > 0)
-                                                    Text(
-                                                      clienteSeleccionado.nombreFantasia,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: colors.onSurface.withOpacity(0.6),
-                                                      ),
-                                                    ),
-                                                ],
+                                            Text(
+                                              clienteSeleccionado.clienteId > 0 
+                                                ? clienteSeleccionado.nombre
+                                                : 'Buscar cliente...',
+                                              style: TextStyle(
+                                                fontSize: 14, // ← COMPACTO
+                                                color: clienteSeleccionado.clienteId > 0 
+                                                  ? colors.primary 
+                                                  : colors.onSurface.withOpacity(0.7),
+                                                fontWeight: clienteSeleccionado.clienteId > 0 
+                                                  ? FontWeight.w600 
+                                                  : FontWeight.normal,
                                               ),
                                             ),
                                             if (clienteSeleccionado.clienteId > 0)
-                                              IconButton(
-                                                icon: const Icon(Icons.clear, size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    clienteSeleccionado = Cliente.empty();
-                                                    clienteFiltro = 0;
-                                                  });
-                                                  if (token.isNotEmpty) {
-                                                    buscar(token);
-                                                  }
-                                                },
+                                              Text(
+                                                clienteSeleccionado.nombreFantasia,
+                                                style: TextStyle(
+                                                  fontSize: 11, // ← COMPACTO
+                                                  color: colors.onSurface.withOpacity(0.6),
+                                                ),
                                               ),
                                           ],
                                         ),
                                       ),
-                                    ),
+                                      if (clienteSeleccionado.clienteId > 0)
+                                        IconButton(
+                                          icon: const Icon(Icons.clear, size: 16), // ← REDUCIDO
+                                          onPressed: () {
+                                            setState(() {
+                                              clienteSeleccionado = Cliente.empty();
+                                              clienteFiltro = 0;
+                                            });
+                                            if (token.isNotEmpty) {
+                                              buscar(token);
+                                            }
+                                          },
+                                        ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildDateField(
-                                    context: context,
-                                    label: 'Fecha Desde',
-                                    date: fechaDesde,
-                                    onTap: () async {
-                                      final pickedDate = await showDatePicker(
-                                        context: context,
-                                        initialDate: fechaDesde,
-                                        firstDate: DateTime(2022),
-                                        lastDate: DateTime(2099),
-                                      );
-                                      if (pickedDate != null && pickedDate != fechaDesde) {
-                                        setState(() {
-                                          fechaDesde = pickedDate;
-                                        });
-                                      }
-                                    },
-                                  ),
+                          ),
+                          const SizedBox(width: 12), // ← REDUCIDO
+                          Expanded(
+                            child: _buildDateFieldCompact(
+                              context: context,
+                              label: 'Desde',
+                              date: fechaDesde,
+                              onTap: () async {
+                                final pickedDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: fechaDesde,
+                                  firstDate: DateTime(2022),
+                                  lastDate: DateTime(2099),
+                                );
+                                if (pickedDate != null && pickedDate != fechaDesde) {
+                                  setState(() {
+                                    fechaDesde = pickedDate;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12), // ← REDUCIDO
+                          Expanded(
+                            child: _buildDateFieldCompact(
+                              context: context,
+                              label: 'Hasta',
+                              date: fechaHasta,
+                              onTap: () async {
+                                final pickedDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: fechaHasta,
+                                  firstDate: DateTime(2022),
+                                  lastDate: DateTime(2099),
+                                );
+                                if (pickedDate != null && pickedDate != fechaHasta) {
+                                  setState(() {
+                                    fechaHasta = pickedDate;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12), // ← REDUCIDO
+                          SizedBox(
+                            width: 120, // ← REDUCIDO de 200 a 120
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await buscar(token);
+                              },
+                              icon: const Icon(Icons.search, size: 18), // ← REDUCIDO
+                              label: const Text('BUSCAR', style: TextStyle(fontSize: 12)), // ← COMPACTO
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10), // ← COMPACTO
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  child: _buildDateField(
-                                    context: context,
-                                    label: 'Fecha Hasta',
-                                    date: fechaHasta,
-                                    onTap: () async {
-                                      final pickedDate = await showDatePicker(
-                                        context: context,
-                                        initialDate: fechaHasta,
-                                        firstDate: DateTime(2022),
-                                        lastDate: DateTime(2099),
-                                      );
-                                      if (pickedDate != null && pickedDate != fechaHasta) {
-                                        setState(() {
-                                          fechaHasta = pickedDate;
-                                        });
-                                      }
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 20),
-                                SizedBox(
-                                  width: 200,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () async {
-                                      await buscar(token);
-                                    },
-                                    icon: const Icon(Icons.search),
-                                    label: const Text('BUSCAR'),
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      backgroundColor: colors.primary,
-                                      foregroundColor: colors.onPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                backgroundColor: colors.primary,
+                                foregroundColor: colors.onPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Contenido principal
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Encabezado de resumen
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), // ← COMPACTO
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Resumen de Órdenes',
+                          style: TextStyle(
+                            fontSize: 16, // ← REDUCIDO
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _buildResumenChipCompact( // ← NUEVO método compacto
+                              count: ordenesPendientes.length,
+                              label: 'PENDIENTES',
+                              color: coloresEstado['Pendiente']!,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildResumenChipCompact(
+                              count: ordenesEnProceso.length,
+                              label: 'RECIBIDAS',
+                              color: coloresEstado['Recibido']!,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildResumenChipCompact(
+                              count: ordenesFinalizadas.length,
+                              label: 'APROBADAS',
+                              color: coloresEstado['Aprobado']!,
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Grid de órdenes
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildEstadoColumnCompact(
+                          estado: 'Pendiente',
+                          ordenes: ordenesPendientes,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildEstadoColumnCompact(
+                          estado: 'Recibido',
+                          ordenes: ordenesEnProceso,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildEstadoColumnCompact(
+                          estado: 'Aprobado',
+                          ordenes: ordenesFinalizadas,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32), // ← Espacio al final para mejor scroll
+                ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterFieldCompact({
+    required String label,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary), // ← REDUCIDO
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12, // ← REDUCIDO
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6), // ← REDUCIDO
+        child,
+      ],
+    );
+  }
+
+  Widget _buildDateFieldCompact({
+    required BuildContext context,
+    required String label,
+    required DateTime date,
+    required Function() onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 14, color: Color(0xFF4F46E5)), // ← REDUCIDO
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12, // ← REDUCIDO
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4F46E5),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6), // ← REDUCIDO
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // ← COMPACTO
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_month,
+                  size: 16, // ← REDUCIDO
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    DateFormat('dd/MM/yyyy').format(date),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13, // ← COMPACTO
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          // Contenido principal
-          Expanded(
-            child: Container(
-              color: colors.background,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResumenChipCompact({
+    required int count,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // ← COMPACTO
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6, // ← REDUCIDO
+            height: 6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 14, // ← REDUCIDO
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 10, // ← REDUCIDO
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstadoColumnCompact({
+    required String estado,
+    required List<Orden> ordenes,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header de la columna
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16), // ← COMPACTO
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  coloresEstado[estado]!.withOpacity(0.8),
+                  coloresEstado[estado]!,
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    // Encabezado de resumen
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Resumen de Órdenes',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              _buildResumenChip(
-                                count: ordenesPendientes.length,
-                                label: 'PENDIENTES',
-                                color: coloresEstado['Pendiente']!,
-                              ),
-                              const SizedBox(width: 12),
-                              _buildResumenChip(
-                                count: ordenesEnProceso.length,
-                                label: 'RECIBIDAS',
-                                color: coloresEstado['Recibido']!,
-                              ),
-                              const SizedBox(width: 12),
-                              _buildResumenChip(
-                                count: ordenesFinalizadas.length,
-                                label: 'APROBADAS',
-                                color: coloresEstado['Aprobado']!,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    Icon(
+                      _getEstadoIcon(estado),
+                      color: Colors.white,
+                      size: 20, // ← REDUCIDO
                     ),
-                    const SizedBox(height: 20),
-                    // Grid de órdenes
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _buildEstadoColumn(
-                              estado: 'Pendiente',
-                              ordenes: ordenesPendientes,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildEstadoColumn(
-                              estado: 'Recibido',
-                              ordenes: ordenesEnProceso,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildEstadoColumn(
-                              estado: 'Aprobado',
-                              ordenes: ordenesFinalizadas,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 8),
+                    Text(
+                      estado.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14, // ← REDUCIDO
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ],
                 ),
-              ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // ← COMPACTO
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '${ordenes.length}',
+                    style: TextStyle(
+                      color: coloresEstado[estado],
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14, // ← REDUCIDO
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
+          // Lista de órdenes
+          Container(
+            padding: const EdgeInsets.all(12), // ← COMPACTO
+            child: ordenes.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox,
+                          size: 40, // ← REDUCIDO
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No hay órdenes $estado',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                            fontSize: 14, // ← REDUCIDO
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (int index = 0; index < ordenes.length; index++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: cardsDeLaLista(ordenes, index, estado),
+                        ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -1632,39 +1863,39 @@ class _MonitoreoState extends State<Monitoreo> {
             await ordenesARevisar(context);
           },
           icon: Container(
-            width: 48,
-            height: 48,
+            width: 40, // ← REDUCIDO
+            height: 40,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: ordenesCampanita.isEmpty
-                  ? const Icon(Icons.notifications_none, color: Colors.white)
-                  : const Icon(Icons.notifications_active, color: Colors.white),
+                  ? const Icon(Icons.notifications_none, color: Colors.white, size: 20)
+                  : const Icon(Icons.notifications_active, color: Colors.white, size: 20),
             ),
           ),
           tooltip: 'Órdenes a revisar',
         ),
         if (ordenesCampanita.isNotEmpty)
           Positioned(
-            right: 8,
-            top: 8,
+            right: 6, // ← AJUSTADO
+            top: 6,
             child: Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(
                 color: Colors.red,
                 shape: BoxShape.circle,
               ),
               constraints: const BoxConstraints(
-                minWidth: 18,
-                minHeight: 18,
+                minWidth: 16,
+                minHeight: 16,
               ),
               child: Text(
                 ordenesCampanita.length > 99 ? '99+' : ordenesCampanita.length.toString(),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -1672,252 +1903,6 @@ class _MonitoreoState extends State<Monitoreo> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildFilterField({
-    required String label,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required BuildContext context,
-    required String label,
-    required DateTime date,
-    required Function() onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 16, color: Color(0xFF4F46E5)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4F46E5),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).colorScheme.outline),
-              borderRadius: BorderRadius.circular(10),
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_month,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    DateFormat('dd/MM/yyyy').format(date),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResumenChip({
-    required int count,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$count',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEstadoColumn({
-    required String estado,
-    required List<Orden> ordenes,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header de la columna
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  coloresEstado[estado]!.withOpacity(0.8),
-                  coloresEstado[estado]!,
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _getEstadoIcon(estado),
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      estado.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${ordenes.length}',
-                    style: TextStyle(
-                      color: coloresEstado[estado],
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Lista de órdenes
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: ordenes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inbox,
-                            size: 60,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay órdenes $estado',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      itemCount: ordenes.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return cardsDeLaLista(ordenes, index, estado);
-                      },
-                    ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

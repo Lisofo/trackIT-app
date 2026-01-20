@@ -1,5 +1,9 @@
 import 'package:app_tec_sedel/models/lote.dart';
 import 'package:app_tec_sedel/pages/monitorOrdenes/busqueda_lotes_screen.dart';
+import 'package:app_tec_sedel/pages/usuarios/add_usuarios_page.dart';
+import 'package:app_tec_sedel/pages/usuarios/busqueda_usuarios.dart';
+import 'package:app_tec_sedel/pages/usuarios/edit_password.dart';
+import 'package:app_tec_sedel/pages/usuarios/establecer_perfiles.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_tec_sedel/pages/pages.dart';
@@ -64,6 +68,10 @@ final router = GoRouter(
     
     GoRoute(path: '/ordenesMonitoreo', builder: (context, state) => const Monitoreo(),),
     GoRoute(path: '/incidencias', builder: (context, state) => const IncidenciaScreen(),),
+    GoRoute(path: '/usuarios', builder: (context, state) => const UsuariosPage(),),
+    GoRoute(path: '/editUsuarios', builder: (context, state) => const AddUsuarioPage(),),
+    GoRoute(path: '/editPassword', builder: (context, state) => const EditPassword(),),
+    GoRoute(path: '/establecerPerfiles', builder: (context, state) => const EstablecerPerfiles(),),
   ],
   errorBuilder: (context, state) => const ErrorPage(),
 );

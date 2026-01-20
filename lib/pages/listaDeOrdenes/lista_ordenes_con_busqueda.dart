@@ -106,7 +106,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       // AGREGAR FILTRO POR ESTADO (PENDIENTE por defecto)
       queryParams['estado'] = estados[groupValue];
 
-      queryParams['tecnicoId'] = tecnicoId.toString();
+      if (!isAdmin) {
+        queryParams['tecnicoId'] = tecnicoId.toString();
+      }
       
       // Agregar parámetros de filtro si existen
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {
@@ -182,7 +184,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       // AGREGAR FILTRO POR ESTADO
       queryParams['estado'] = estados[groupValue];
 
-      queryParams['tecnicoId'] = tecnicoId.toString();
+      if (!isAdmin) {
+        queryParams['tecnicoId'] = tecnicoId.toString();
+      }
       
       // Agregar parámetros de filtro
       if (_clienteIdFiltro != null && _clienteIdFiltro! > 0) {

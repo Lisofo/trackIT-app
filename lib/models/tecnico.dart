@@ -87,6 +87,18 @@ class Tecnico {
     verDiaSiguiente = false;
   }
 
+  // AGREGAR ESTOS MÉTODOS PARA RESOLVER EL PROBLEMA DEL DROPDOWN
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Tecnico && 
+           other.tecnicoId == tecnicoId &&
+           other.nombre == nombre;
+  }
+
+  @override
+  int get hashCode => tecnicoId.hashCode ^ nombre.hashCode;
+
   @override
   String toString() {
     return nombre;
@@ -115,11 +127,21 @@ class Cargo {
     "codCargo": codCargo,
     "descripcion": descripcion,
   };
+  
   Cargo.empty() {
     cargoId = 0;
     codCargo = '';
     descripcion = '';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Cargo && other.cargoId == cargoId;
+  }
+
+  @override
+  int get hashCode => cargoId.hashCode;
 
   @override
   String toString() {
