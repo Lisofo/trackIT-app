@@ -1,4 +1,3 @@
-// filtros_ordenes.dart
 import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
 import 'package:app_tec_sedel/delegates/unidad_search_delegate.dart';
 import 'package:app_tec_sedel/services/unidades_services.dart';
@@ -14,13 +13,16 @@ class FiltrosOrdenes extends StatefulWidget {
     int? unidadId,
     DateTime? fechaDesde,
     DateTime? fechaHasta,
-    String? numeroOrden, // Agregar este parámetro
+    String? numeroOrden,
+    String? estado, // Agregar este parámetro para estado
   ) onSearch;
   final Function onReset;
   final bool isFilterExpanded;
   final Function(bool) onToggleFilter;
   final int cantidadDeOrdenes;
   final String token;
+  final bool isAdmin; // Nuevo: saber si es admin
+  final String? estadoSeleccionado; // Nuevo: estado seleccionado inicialmente
 
   const FiltrosOrdenes({
     super.key,
@@ -30,6 +32,8 @@ class FiltrosOrdenes extends StatefulWidget {
     required this.onToggleFilter,
     required this.cantidadDeOrdenes,
     required this.token,
+    required this.isAdmin, // Agregar al constructor
+    this.estadoSeleccionado, // Agregar al constructor
   });
 
   @override
@@ -44,6 +48,22 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
   final TextEditingController _numeroOrdenController = TextEditingController();
   final ClientServices _clientService = ClientServices();
   final UnidadesServices _unidadService = UnidadesServices();
+  String? _selectedEstado; // Variable para el estado seleccionado
+
+  // Estados disponibles (con opción vacía para "Todos")
+  final List<String?> _estados = [
+    null, // null significa "Todos"
+    'PENDIENTE',
+    'EN PROCESO',
+    'FINALIZADO'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar el estado seleccionado con el valor pasado
+    _selectedEstado = widget.estadoSeleccionado;
+  }
 
   @override
   void dispose() {
@@ -130,6 +150,39 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
                           },
                         ),
                         const SizedBox(height: 15),
+                        // Selector de Estado (solo para admin)
+                        if (widget.isAdmin)
+                          DropdownButtonFormField<String?>(
+                            value: _selectedEstado,
+                            decoration: const InputDecoration(
+                              labelText: 'Estado',
+                              border: OutlineInputBorder(),
+                              hintText: 'Seleccione un estado',
+                            ),
+                            items: _estados.map((String? estado) {
+                              return DropdownMenuItem<String?>(
+                                value: estado,
+                                child: Text(
+                                  estado ?? 'Todos',
+                                  style: TextStyle(
+                                    color: estado == null ? Colors.grey[600] : null,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (String? nuevoEstado) {
+                              setState(() {
+                                _selectedEstado = nuevoEstado;
+                              });
+                              // Si hay un número de orden, no aplicamos el filtro de estado automáticamente
+                              if (_numeroOrdenController.text.isEmpty) {
+                                _handleSearch();
+                              }
+                            },
+                            hint: const Text('Seleccione un estado'),
+                            isExpanded: true,
+                          ),
+                        if (widget.isAdmin) const SizedBox(height: 15),
                         // Selector de Cliente
                         InkWell(
                           onTap: _mostrarBusquedaCliente,
@@ -310,7 +363,8 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
           _fechaHasta != null ||
           _selectedCliente != null ||
           _selectedUnidad != null ||
-          _numeroOrdenController.text.isNotEmpty; // Agregar esta condición
+          _numeroOrdenController.text.isNotEmpty ||
+          (widget.isAdmin && _selectedEstado != null); // Agregar esta condición
   }
 
   Future<void> _selectDate(BuildContext context, bool isDesde) async {
@@ -376,7 +430,8 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
       _selectedUnidad?.unidadId,
       _fechaDesde,
       _fechaHasta,
-      numeroOrden, // Agregar este parámetro
+      numeroOrden,
+      _selectedEstado, // Agregar este parámetro
     );
   }
 
@@ -386,6 +441,7 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
       _fechaHasta = null;
       _selectedCliente = null;
       _selectedUnidad = null;
+      _selectedEstado = null; // Limpiar el estado
       _numeroOrdenController.clear(); // Limpiar el campo
     });
     widget.onReset();

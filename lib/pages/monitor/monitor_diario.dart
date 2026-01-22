@@ -328,7 +328,7 @@ class _MonitoreoState extends State<Monitoreo> {
           onTap: () {
             Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
             Navigator.of(context).pop();
-            router.push('/editOrden');
+            router.push('/monitorOrdenes');
           },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
@@ -346,7 +346,7 @@ class _MonitoreoState extends State<Monitoreo> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '#${orden.ordenTrabajoId}',
+                        '${orden.ordenTrabajoId}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -420,7 +420,7 @@ class _MonitoreoState extends State<Monitoreo> {
             ),
             child: Center(
               child: Text(
-                '#${orden.ordenTrabajoId}',
+                '${orden.ordenTrabajoId}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -464,7 +464,7 @@ class _MonitoreoState extends State<Monitoreo> {
           onTap: () {
             Provider.of<OrdenProvider>(context, listen: false).setOrden(orden);
             Navigator.of(context).pop();
-            router.push('/editOrden');
+            router.push('/monitorOrdenes');
           },
         ),
       );
@@ -497,7 +497,7 @@ class _MonitoreoState extends State<Monitoreo> {
       child: InkWell(
         onTap: () {
           Provider.of<OrdenProvider>(context, listen: false).setOrden(orden[index]);
-          router.push('/editOrden');
+          router.push('/monitorOrdenes');
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -527,7 +527,7 @@ class _MonitoreoState extends State<Monitoreo> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '#${orden[index].ordenTrabajoId}',
+                        '${orden[index].ordenTrabajoId}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

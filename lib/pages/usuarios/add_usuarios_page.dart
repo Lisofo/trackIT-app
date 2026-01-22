@@ -25,7 +25,7 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
   final _formKey = GlobalKey<FormState>();
   int _buttonIndex = 0;
   bool _isLoading = false;
-  int? _lastUpdatedUserId; // Para evitar actualizaciones repetidas
+  bool _isInitialized = false; // Para controlar si ya se inicializó
 
   @override
   void initState() {
@@ -38,29 +38,26 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
 
   void _initializeControllers() {
     final user = context.read<UsuariosProvider>().usuario;
+    
+    // Limpiar todos los controladores primero
+    _loginController.clear();
+    _nombreController.clear();
+    _apellidoController.clear();
+    _direccionController.clear();
+    _telefonoController.clear();
+    
+    // Solo llenar con datos si es un usuario existente
     if (user.usuarioId != 0) {
-      _updateControllersFromProvider(user);
-    } else {
-      // Para nuevo usuario, limpiar todos los campos
-      _loginController.clear();
-      _nombreController.clear();
-      _apellidoController.clear();
-      _direccionController.clear();
-      _telefonoController.clear();
-    }
-    setState(() {});
-  }
-
-  void _updateControllersFromProvider(Usuario user) {
-    // Solo actualizar si el usuario ha cambiado
-    if (_lastUpdatedUserId != user.usuarioId) {
       _loginController.text = user.login;
       _nombreController.text = user.nombre;
       _apellidoController.text = user.apellido;
       _direccionController.text = user.direccion;
       _telefonoController.text = user.telefono;
-      _lastUpdatedUserId = user.usuarioId;
     }
+    
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   @override
@@ -68,8 +65,36 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
     super.didChangeDependencies();
     // Actualizar cuando cambie el usuario en el provider
     final user = context.watch<UsuariosProvider>().usuario;
+    
+    if (!_isInitialized) {
+      return; // No hacer nada si aún no se inicializó
+    }
+    
+    // Solo actualizar si el usuario ha cambiado y es un usuario existente
     if (user.usuarioId != 0) {
-      _updateControllersFromProvider(user);
+      // Verificar si los valores son diferentes para evitar actualizaciones innecesarias
+      if (_loginController.text != user.login) {
+        _loginController.text = user.login;
+      }
+      if (_nombreController.text != user.nombre) {
+        _nombreController.text = user.nombre;
+      }
+      if (_apellidoController.text != user.apellido) {
+        _apellidoController.text = user.apellido;
+      }
+      if (_direccionController.text != user.direccion) {
+        _direccionController.text = user.direccion;
+      }
+      if (_telefonoController.text != user.telefono) {
+        _telefonoController.text = user.telefono;
+      }
+    } else {
+      // Para nuevo usuario, asegurarse de que los campos estén vacíos
+      if (_loginController.text.isNotEmpty) _loginController.clear();
+      if (_nombreController.text.isNotEmpty) _nombreController.clear();
+      if (_apellidoController.text.isNotEmpty) _apellidoController.clear();
+      if (_direccionController.text.isNotEmpty) _direccionController.clear();
+      if (_telefonoController.text.isNotEmpty) _telefonoController.clear();
     }
   }
 
@@ -87,18 +112,29 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       
-      userSeleccionado.login = _loginController.text;
-      userSeleccionado.nombre = _nombreController.text;
-      userSeleccionado.apellido = _apellidoController.text;
-      userSeleccionado.direccion = _direccionController.text;
-      userSeleccionado.telefono = _telefonoController.text;
+      userSeleccionado.login = _loginController.text.trim();
+      userSeleccionado.nombre = _nombreController.text.trim();
+      userSeleccionado.apellido = _apellidoController.text.trim();
+      userSeleccionado.direccion = _direccionController.text.trim();
+      userSeleccionado.telefono = _telefonoController.text.trim();
 
       try {
         if (userSeleccionado.usuarioId != 0) {
           await _userServices.putUsuario(context, userSeleccionado, token);
         } else {
           await _userServices.postUsuario(context, userSeleccionado, token);
+          // Después de crear, mostrar mensaje de éxito y cerrar
+          if (mounted) {
+            await UserServices.showDialogs(
+              context, 
+              'Usuario creado correctamente', 
+              false, // doblePop
+              false
+            );
+          }
         }
+      } catch (e) {
+        // El error ya se maneja en UserServices
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -118,8 +154,9 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
             onPressed: () async {
               Navigator.of(context).pop();
               await _userServices.deleteUser(context, userSeleccionado, token);
-              await UserServices.showDialogs(context, 'Usuario borrado correctamente', true, true);
-              if (mounted) Navigator.of(context).pop();
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
             },
             child: const Text('Borrar'),
           ),
@@ -310,12 +347,6 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
             onPressed: () => router.push('/establecerPerfiles'),
             tamano: 16,
           ),
-          // const SizedBox(width: 12),
-          // CustomButton(
-          //   text: 'Clientes',
-          //   onPressed: () => router.push('/establecerClientes'),
-          //   tamano: 16,
-          // ),
           const SizedBox(width: 12),
           CustomButton(
             text: 'Contraseña',
@@ -433,8 +464,8 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
     final user = context.watch<UsuariosProvider>().usuario;
     final token = context.watch<AuthProvider>().token;
 
-    // Mostrar loading solo al inicializar
-    if (_lastUpdatedUserId == null && user.usuarioId != 0) {
+    // Mostrar loading solo mientras se inicializa
+    if (!_isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
 

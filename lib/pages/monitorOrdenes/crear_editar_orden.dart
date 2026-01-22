@@ -52,6 +52,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _descripcionController = TextEditingController();
   late Orden ordenExistente = Orden.empty();
   bool _isEditMode = false;
+  bool _isReadOnly = false; // Nueva variable para controlar modo solo lectura
   Orden? _ordenExistente;
 
   // Variables específicas para resysol (producción química)
@@ -87,6 +88,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     'DR': false,
     'II': false,
     'IO': false,
+  };
+  Map<String, Color> colores = {
+    'PENDIENTE': Colors.yellow.shade800,
+    'EN PROCESO': Colors.green,
+    'REVISADA': Colors.blue.shade400,
+    'FINALIZADO': Colors.red.shade200
   };
 
   void _calcularTotalTambores() {
@@ -157,6 +164,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       setState(() {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
+        // Determinar si la orden es de solo lectura basado en el estado
+        _isReadOnly = ordenExistente.estado == 'EN PROCESO' || ordenExistente.estado == 'FINALIZADO';
       });
 
       if (!mounted) return;
@@ -329,6 +338,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   void _abrirBusquedaCliente(BuildContext context) async {
+    if (_isReadOnly) return;
+    
     final Cliente? resultado = await showSearch<Cliente>(
       context: context,
       delegate: ClienteSearchDelegate(
@@ -444,6 +455,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+    if (_isReadOnly) return;
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -800,18 +813,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
             const SizedBox(height: 12),
             GestureDetector(
-              onDoubleTap: clienteSeleccionado != null ? _editarClienteSeleccionado : null,
+              onDoubleTap: _isReadOnly ? null : (clienteSeleccionado != null ? _editarClienteSeleccionado : null),
               child: TextFormField(
                 readOnly: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Buscar cliente...',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: const Icon(Icons.search),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
                 ),
                 controller: TextEditingController(
                   text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
                 ),
-                onTap: () {
+                onTap: _isReadOnly ? null : () {
                   _abrirBusquedaCliente(context);
                 },
               ),
@@ -828,6 +843,24 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            decoration: BoxDecoration(
+              color: colores[ordenExistente.estado],
+              borderRadius: BorderRadius.circular(5)
+            ),
+            height: 30,
+            child: const Center(
+              child: Text(
+                'Detalles',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -836,11 +869,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   controller: TextEditingController(
                     text: DateFormat('dd/MM/yyyy').format(fecha),
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Fecha',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    filled: _isReadOnly,
+                    fillColor: _isReadOnly ? Colors.grey[200] : null,
                   ),
-                  onTap: () async {
+                  onTap: _isReadOnly ? null : () async {
                     final DateTime? picked = await showDatePicker(
                       context: context,
                       initialDate: fecha,
@@ -860,9 +895,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 Expanded(
                   child: TextFormField(
                     controller: _numOrdenController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'N° Orden',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
                     ),
                     readOnly: true,
                   )
@@ -876,9 +913,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           if (tecnicos.isNotEmpty) ...[
             DropdownButtonFormField<int>(
               value: tecnicoSeleccionado?.tecnicoId,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Técnico asignado',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
               items: tecnicos.map((Tecnico tecnico) {
                 return DropdownMenuItem<int>(
@@ -886,7 +925,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   child: Text(tecnico.nombre.trim()),
                 );
               }).toList(),
-              onChanged: (int? nuevoTecnicoId) {
+              onChanged: _isReadOnly ? null : (int? nuevoTecnicoId) {
                 if (nuevoTecnicoId != null) {
                   Tecnico? nuevoTecnico = tecnicos.firstWhere(
                     (t) => t.tecnicoId == nuevoTecnicoId,
@@ -907,11 +946,26 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           
           TextFormField(
             controller: _descripcionController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Descripción',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              filled: _isReadOnly,
+              fillColor: _isReadOnly ? Colors.grey[200] : null,
             ),
+            readOnly: _isReadOnly,
           ),
+          const SizedBox(height: 16),
+          if (_isEditMode)
+            TextFormField(
+              readOnly: true,
+              controller: TextEditingController(text: _ordenExistente!.estado ?? ''),
+              decoration: InputDecoration(
+                labelText: 'Estado',
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              ),
+            ),
           const SizedBox(height: 24),
           
           const Text(
@@ -921,18 +975,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           const SizedBox(height: 8),
           
           GestureDetector(
-            onDoubleTap: clienteSeleccionado != null ? _editarClienteSeleccionado : null,
+            onDoubleTap: _isReadOnly ? null : (clienteSeleccionado != null ? _editarClienteSeleccionado : null),
             child: TextFormField(
               readOnly: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Buscar cliente...',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                suffixIcon: const Icon(Icons.search),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
               controller: TextEditingController(
                 text: clienteSeleccionado != null ? '${clienteSeleccionado!.nombre} ${clienteSeleccionado!.nombreFantasia}' : '',
               ),
-              onTap: () {
+              onTap: _isReadOnly ? null : () {
                 _abrirBusquedaCliente(context);
               },
             ),
@@ -942,7 +998,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: () {
+              onPressed: _isReadOnly ? null : () {
                 _mostrarDialogoNuevoCliente(context);
               },
               icon: const Icon(Icons.person_add),
@@ -955,36 +1011,44 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: clienteSeleccionado!.direccion),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Dirección',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: clienteSeleccionado!.telefono1),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Teléfono',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: clienteSeleccionado!.email),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Correo electrónico',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: 'RUC: ${clienteSeleccionado!.ruc}'),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Documento',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
           ],
@@ -1000,12 +1064,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             children: [
               Expanded(
                 child: GestureDetector(
-                  onDoubleTap: unidadSeleccionada != null ? _editarUnidadSeleccionada : null,
+                  onDoubleTap: _isReadOnly ? null : (unidadSeleccionada != null ? _editarUnidadSeleccionada : null),
                   child: DropdownButtonFormField<Unidad>(
                     value: unidadSeleccionada,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
                       labelText: 'Seleccione un vehículo',
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
                     ),
                     items: unidades.map((Unidad unidad) {
                       return DropdownMenuItem<Unidad>(
@@ -1013,7 +1079,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                         child: Text(unidad.displayInfo),
                       );
                     }).toList(),
-                    onChanged: (Unidad? nuevaUnidad) {
+                    onChanged: _isReadOnly ? null : (Unidad? nuevaUnidad) {
                       setState(() {
                         unidadSeleccionada = nuevaUnidad;
                       });
@@ -1024,7 +1090,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed: () {
+                onPressed: _isReadOnly ? null : () {
                   _mostrarDialogoNuevaUnidad(context);
                 },
               ),
@@ -1039,9 +1105,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   child: TextFormField(
                     readOnly: true,
                     controller: TextEditingController(text: unidadSeleccionada!.marca),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Marca',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
                     ),
                   ),
                 ),
@@ -1050,9 +1118,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   child: TextFormField(
                     readOnly: true,
                     controller: TextEditingController(text: unidadSeleccionada!.modelo),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Modelo',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
                     ),
                   ),
                 ),
@@ -1062,36 +1132,44 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: unidadSeleccionada!.matricula),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Matrícula',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: unidadSeleccionada!.motor),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Número de Motor',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: unidadSeleccionada!.chasis),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Número de Chasis',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               readOnly: true,
               controller: TextEditingController(text: unidadSeleccionada!.anio.toString()),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Año',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
           ],
@@ -1101,22 +1179,28 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             children: [
               TextFormField(
                 controller: _comentClienteController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Comentario Cliente',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
                 ),
                 minLines: 1,
-                maxLines: 5
+                maxLines: 5,
+                readOnly: _isReadOnly,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _comentTrabajoController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Comentario Trabajo',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
                 ),
                 minLines: 1,
-                maxLines: 5
+                maxLines: 5,
+                readOnly: _isReadOnly,
               ),
             ],
           ),
@@ -1127,13 +1211,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               children: [
                 if (_isEditMode) ... [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _isReadOnly ? null : () {},
                     child: const Text('Descartar orden'),
                   ),
                   const SizedBox(width: 16),
                 ],
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: _isReadOnly ? null : () async {
                     if (clienteSeleccionado == null || unidadSeleccionada == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
@@ -1236,7 +1320,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ),
                 const SizedBox(width: 8,),
                 TextButton(
-                  onPressed: () async {
+                  onPressed: _isReadOnly ? null : () async {
                     await _mostrarDialogoCopiarOrden();
                   },
                   child: const Text('Generar copia')
@@ -1257,6 +1341,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   });
                 },
                 width: 300,
+                isReadOnly: _isReadOnly,
               ),
               const SizedBox(height: 20),
             ],
@@ -1270,14 +1355,16 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   label: 'Fecha Emisión',
                   controller: _fechaEmisionController,
                   width: 200,
-                  readOnly: true,
-                  onTap: () => _selectDate(context, _fechaEmisionController),
+                  readOnly: _isReadOnly,
+                  onTap: _isReadOnly ? null : () => _selectDate(context, _fechaEmisionController),
                   icon: Icons.calendar_today,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Número',
                   controller: _numeroController,
                   width: 150,
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1290,11 +1377,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   label: 'Producto',
                   controller: _productoController,
                   width: 280,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Referencia',
                   controller: _refController,
                   width: 120,
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1309,6 +1398,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   width: 180,
                   keyboardType: TextInputType.number,
                   suffixText: 'kg',
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Envase (kg)',
@@ -1316,6 +1406,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   width: 180,
                   keyboardType: TextInputType.number,
                   suffixText: 'kg',
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1339,21 +1430,24 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   label: 'Fecha Producción',
                   controller: _iniciadaEnController,
                   width: 200,
-                  readOnly: true,
-                  onTap: () => _selectDate(context, _iniciadaEnController),
+                  readOnly: _isReadOnly,
+                  onTap: _isReadOnly ? null : () => _selectDate(context, _iniciadaEnController),
                   icon: Icons.calendar_today,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Producción (Kg)',
                   controller: _produccionController,
                   width: 150,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Bolsas',
                   controller: _bolsasController,
                   width: 150,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1367,12 +1461,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   controller: _nvporcController,
                   width: 120,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Visc. (cps) 25°',
                   controller: _viscController,
                   width: 120,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1389,6 +1485,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     required Tecnico? tecnicoSeleccionado,
     required ValueChanged<Tecnico?> onChanged,
     required double width,
+    required bool isReadOnly,
   }) {
     return SizedBox(
       width: width,
@@ -1409,7 +1506,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
+              color: isReadOnly ? Colors.grey[200] : Colors.white,
             ),
             child: DropdownButton<int>(
               value: tecnicoSeleccionado?.tecnicoId,
@@ -1420,11 +1517,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   value: tecnico.tecnicoId,
                   child: Text(
                     tecnico.nombre.trim(),
-                    style: const TextStyle(fontSize: 14),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isReadOnly ? Colors.grey[600] : Colors.black,
+                    ),
                   ),
                 );
               }).toList(),
-              onChanged: (int? nuevoTecnicoId) {
+              onChanged: isReadOnly ? null : (int? nuevoTecnicoId) {
                 if (nuevoTecnicoId != null) {
                   final nuevoTecnico = tecnicos.firstWhere(
                     (t) => t.tecnicoId == nuevoTecnicoId,
@@ -1435,7 +1535,12 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   onChanged(null);
                 }
               },
-              hint: const Text('Seleccione un técnico'),
+              hint: Text(
+                'Seleccione un técnico',
+                style: TextStyle(
+                  color: isReadOnly ? Colors.grey[600] : Colors.grey,
+                ),
+              ),
             ),
           ),
         ],
@@ -1444,6 +1549,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   Future<void> _mostrarDialogoCopiarOrden() async {
+    if (_isReadOnly) return;
+    
     if (_ordenExistente == null || _ordenExistente!.ordenTrabajoId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hay una orden válida para copiar')),
@@ -1562,6 +1669,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _ordenExistente = nuevaOrden;
           ordenExistente = nuevaOrden;
           _isEditMode = true;
+          _isReadOnly = false; // La nueva copia estará en estado PENDIENTE, por lo tanto editable
         });
 
         if (nuevaOrden.cliente?.clienteId != null) {
@@ -1652,19 +1760,22 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   controller: _numBatchesController,
                   width: 150,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Batches',
                   controller: _batchesController,
                   width: 150,
                   keyboardType: TextInputType.number,
+                  isReadOnly: _isReadOnly,
                 ),
                 _buildLabeledTextField(
                   label: 'Total Tambores',
                   controller: _totTambController,
                   width: 180,
                   keyboardType: TextInputType.number,
-                  readOnly: true, 
+                  readOnly: _isReadOnly,
+                  isReadOnly: _isReadOnly,
                 ),
               ],
             ),
@@ -1683,13 +1794,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _isReadOnly ? Colors.grey[200] : Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: TextField(
                     controller: _observacionesController,
                     maxLines: 3,
+                    readOnly: _isReadOnly,
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.all(12),
                       border: InputBorder.none,
@@ -1713,9 +1825,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         child: Column(
           children: [
             ElevatedButton(
-              onPressed: _crearOrdenResysol,
+              onPressed: _isReadOnly ? null : _crearOrdenResysol,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[700],
+                backgroundColor: _isReadOnly ? Colors.grey : Colors.blue[700],
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -1767,6 +1879,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     IconData? icon,
     TextInputType keyboardType = TextInputType.text,
     String? suffixText,
+    required bool isReadOnly,
   }) {
     return SizedBox(
       width: width,
@@ -1784,8 +1897,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           const SizedBox(height: 6),
           TextField(
             controller: controller,
-            readOnly: readOnly,
-            onTap: onTap,
+            readOnly: readOnly || isReadOnly,
+            onTap: (readOnly || isReadOnly) ? null : onTap,
             keyboardType: keyboardType,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -1802,7 +1915,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
               ),
               filled: true,
-              fillColor: readOnly ? Colors.grey[50] : Colors.white,
+              fillColor: (readOnly || isReadOnly) ? Colors.grey[200] : Colors.white,
               suffixIcon: icon != null ? Icon(icon, size: 20, color: Colors.grey) : null,
               suffixText: suffixText,
             ),
@@ -1813,6 +1926,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   void _mostrarDialogoNuevoCliente(BuildContext context) async {
+    if (_isReadOnly) return;
+    
     final clienteGuardado = await showDialog<Cliente>(
       context: context,
       builder: (BuildContext context) {
@@ -1842,6 +1957,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   void _mostrarDialogoNuevaUnidad(BuildContext context) async {
+    if (_isReadOnly) return;
+    
     if (clienteSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Primero debe seleccionar un cliente')),
@@ -1883,6 +2000,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   void _editarClienteSeleccionado() async {
+    if (_isReadOnly) return;
+    
     if (clienteSeleccionado == null) return;
 
     final clienteEditado = await showDialog<Cliente>(
@@ -1915,6 +2034,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   void _editarUnidadSeleccionada() async {
+    if (_isReadOnly) return;
+    
     if (unidadSeleccionada == null || clienteSeleccionado == null) return;
 
     final Unidad? unidadEditada = await showDialog<Unidad>(
@@ -1952,6 +2073,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   }
 
   Future<void> _crearOrdenResysol() async {
+    if (_isReadOnly) return;
+    
     if (clienteSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe seleccionar un cliente')),
@@ -1985,6 +2108,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _isEditMode = true;
           ordenExistente = ordenGuardada;
           _ordenExistente = ordenGuardada;
+          // Determinar si la nueva orden es de solo lectura
+          _isReadOnly = ordenGuardada.estado == 'EN PROCESO' || 
+                       ordenGuardada.estado == 'FINALIZADA';
         });
 
         // APLICADO: Actualizar el provider

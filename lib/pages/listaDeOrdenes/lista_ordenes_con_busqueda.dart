@@ -22,7 +22,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   String token = '';
   List<Orden> ordenes = [];
   late int tecnicoId = 0;
-  int groupValue = 0; // 0=PENDIENTE, 1=EN PROCESO, 2=fDO
+  int groupValue = 0; // 0=PENDIENTE, 1=EN PROCESO, 2=FINALIZADO
   List trabajodres = [];
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   bool datosCargados = false;
@@ -35,6 +35,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   DateTime? _fechaDesdeFiltro;
   DateTime? _fechaHastaFiltro;
   String? _numeroOrdenFiltro;
+  String? _estadoFiltro; // Nuevo: estado para filtro (solo admin)
   
   // Estados disponibles
   List<String> estados = ['PENDIENTE', 'EN PROCESO', 'FINALIZADO'];
@@ -52,9 +53,13 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     // Verificar si hay un cliente seleccionado (viene desde MonitorClientes)
     final clienteSeleccionado = context.read<OrdenProvider>().cliente;
     
-    // Cargar datos automáticamente con estado PENDIENTE por defecto
-    if (unidadSeleccionada.unidadId > 0 || clienteSeleccionado.clienteId > 0) {
-      // Si hay unidad o cliente seleccionado, cargar datos automáticamente
+    // Obtener si es admin del provider
+    isAdmin = context.read<OrdenProvider>().admOrdenes;
+    
+    // Cargar datos automáticamente:
+    // 1. Si NO es admin, cargar siempre
+    // 2. Si ES admin, cargar solo si hay unidad o cliente seleccionado
+    if (!isAdmin || unidadSeleccionada.unidadId > 0 || clienteSeleccionado.clienteId > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         cargarDatos();
       });
@@ -97,15 +102,24 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         _fechaDesdeFiltro = null;
         _fechaHastaFiltro = null;
         _numeroOrdenFiltro = null;
+        _estadoFiltro = null; // Limpiar estado también
       }
       
       // Obtener la unidad y cliente seleccionados del provider
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
       
-      // AGREGAR FILTRO POR ESTADO (PENDIENTE por defecto)
-      queryParams['estado'] = estados[groupValue];
+      // AGREGAR FILTRO POR ESTADO (PENDIENTE por defecto para no admin)
+      if (!isAdmin) {
+        queryParams['estado'] = estados[groupValue];
+      } else if (_estadoFiltro != null && _estadoFiltro!.isNotEmpty) {
+        // Solo aplicar filtro de estado si no hay número de orden (y es admin)
+        if (_numeroOrdenFiltro == null || _numeroOrdenFiltro!.isEmpty) {
+          queryParams['estado'] = _estadoFiltro;
+        }
+      }
 
+      // Si NO es admin, filtrar por técnico
       if (!isAdmin) {
         queryParams['tecnicoId'] = tecnicoId.toString();
       }
@@ -131,6 +145,11 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         queryParams['fechaHasta'] = DateFormat('yyyy-MM-dd').format(_fechaHastaFiltro!);
       }
 
+      // AGREGAR FILTRO POR NÚMERO DE ORDEN (si existe)
+      if (_numeroOrdenFiltro != null && _numeroOrdenFiltro!.isNotEmpty) {
+        queryParams['numeroOrdenTrabajo'] = _numeroOrdenFiltro;
+      }
+
       if (queryParams.isNotEmpty) {
         ordenes = await ordenServices.getOrden(
           context, 
@@ -139,6 +158,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
           queryParams: queryParams,
         );
       } else {
+        // Si es admin y no hay filtros, cargar todas las órdenes
         ordenes = await ordenServices.getOrden(
           context,
           tecnicoId.toString(),
@@ -160,6 +180,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     DateTime? fechaDesde,
     DateTime? fechaHasta,
     String? numeroOrden,
+    String? estado, // Nuevo parámetro para estado
   ) {
     setState(() {
       _clienteIdFiltro = clienteId;
@@ -167,6 +188,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       _fechaDesdeFiltro = fechaDesde;
       _fechaHastaFiltro = fechaHasta;
       _numeroOrdenFiltro = numeroOrden;
+      _estadoFiltro = estado; // Guardar el estado del filtro
       _isFilterExpanded = false;
     });
     
@@ -182,7 +204,14 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       queryParams['sort'] = 'fechaDesde DESC';
       
       // AGREGAR FILTRO POR ESTADO
-      queryParams['estado'] = estados[groupValue];
+      if (!isAdmin) {
+        queryParams['estado'] = estados[groupValue];
+      } else if (_estadoFiltro != null && _estadoFiltro!.isNotEmpty) {
+        // Solo aplicar filtro de estado si no hay número de orden (y es admin)
+        if (_numeroOrdenFiltro == null || _numeroOrdenFiltro!.isEmpty) {
+          queryParams['estado'] = _estadoFiltro;
+        }
+      }
 
       if (!isAdmin) {
         queryParams['tecnicoId'] = tecnicoId.toString();
@@ -206,8 +235,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       }
 
       // AGREGAR FILTRO POR NÚMERO DE ORDEN
-      if (_numeroOrdenFiltro != null && _numeroOrdenFiltro! != '') {
-        queryParams['numeroOrdenTrabajo'] = _numeroOrdenFiltro.toString();
+      if (_numeroOrdenFiltro != null && _numeroOrdenFiltro!.isNotEmpty) {
+        queryParams['numeroOrdenTrabajo'] = _numeroOrdenFiltro!;
       }
 
       // Obtener la unidad seleccionada del provider (si existe)
@@ -238,7 +267,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
       _fechaDesdeFiltro = null;
       _fechaHastaFiltro = null;
       _numeroOrdenFiltro = null;
-      groupValue = 0; // Resetear a PENDIENTE
+      _estadoFiltro = null; // Limpiar estado
+      groupValue = 0; // Resetear a PENDIENTE para no admin
       _isFilterExpanded = false;
     });
     cargarDatos();
@@ -328,6 +358,18 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
             ),
           ],
         ),
+        // NUEVO: Mostrar técnico en vista móvil
+        if (orden.tecnico != null && orden.tecnico!.nombre.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              'Técnico: ${orden.tecnico!.nombre}',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -385,6 +427,17 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
+              // NUEVO: Mostrar técnico en vista tablet
+              if (orden.tecnico != null && orden.tecnico!.nombre.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Text(
+                    orden.tecnico!.nombre,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
               Text(
                 orden.estado ?? "",
                 style: TextStyle(
@@ -439,6 +492,18 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                 child: Text(
                   orden.matricula!,
                   style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            const SizedBox(width: 16),
+            // NUEVO: Mostrar técnico en vista escritorio
+            if (orden.tecnico != null && orden.tecnico!.nombre.isNotEmpty)
+              SizedBox(
+                width: 150,
+                child: Text(
+                  orden.tecnico!.nombre,
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                  ),
                 ),
               ),
             const SizedBox(width: 16),
@@ -540,21 +605,21 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
     
     switch (estado.toLowerCase()) {
       case 'pendiente':
-        return Colors.orange;
+        return Colors.yellow[800]!;
       case 'recibido':
       case 'en proceso':
-        return Colors.blue;
+        return Colors.green;
       case 'aprobado':
       case 'completado':
       case 'finalizado':
-        return Colors.green;
-      case 'cancelado':
         return Colors.red;
+      case 'revisado':
+        return Colors.blue;
       default:
         return Colors.black;
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -592,7 +657,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
           builder: (context, constraints) {
             return Column(
               children: [
-                // Widget de Filtros
+                // Widget de Filtros (solo para admin)
                 if (isAdmin)
                   FiltrosOrdenes(
                     onSearch: _aplicarFiltros,
@@ -601,28 +666,32 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
                     onToggleFilter: _toggleFiltros,
                     cantidadDeOrdenes: ordenes.length,
                     token: token,
+                    isAdmin: isAdmin, // Pasar si es admin
+                    estadoSeleccionado: _estadoFiltro, // Pasar estado actual
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: CupertinoSegmentedControl<int>(
-                    groupValue: groupValue,
-                    borderColor: Colors.black,
-                    selectedColor: colors.primary,
-                    unselectedColor: Colors.white,
-                    children: {
-                      0: buildSegment('Pendiente'),
-                      1: buildSegment('En proceso'),
-                      2: buildSegment('Finalizado'),
-                    },
-                    onValueChanged: (newValue) {
-                      setState(() {
-                        groupValue = newValue;
-                        // Actualizar datos cuando se cambia el estado
-                        _filtrarYRecargarOrdenes();
-                      });
-                    },
+                // Solo mostrar segmented buttons si NO es admin
+                if (!isAdmin)
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: CupertinoSegmentedControl<int>(
+                      groupValue: groupValue,
+                      borderColor: Colors.black,
+                      selectedColor: colors.primary,
+                      unselectedColor: Colors.white,
+                      children: {
+                        0: buildSegment('Pendiente'),
+                        1: buildSegment('En proceso'),
+                        2: buildSegment('Finalizado'),
+                      },
+                      onValueChanged: (newValue) {
+                        setState(() {
+                          groupValue = newValue;
+                          // Actualizar datos cuando se cambia el estado
+                          _filtrarYRecargarOrdenes();
+                        });
+                      },
+                    ),
                   ),
-                ),
                 
                 Expanded(
                   child: RefreshIndicator(

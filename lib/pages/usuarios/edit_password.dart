@@ -53,7 +53,7 @@ class _EditPasswordState extends State<EditPassword> {
         elevation: 2,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: Container(
