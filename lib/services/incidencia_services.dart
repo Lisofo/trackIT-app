@@ -56,6 +56,7 @@ class IncidenciaServices {
       
       var body = {
         "descripcion": incidencia.descripcion,
+        "sinGarantia": incidencia.sinGarantia,
       };
       
       var resp = await _dio.request(
@@ -91,6 +92,7 @@ class IncidenciaServices {
       
       var body = {
         "descripcion": incidencia.descripcion,
+        "sinGarantia": incidencia.sinGarantia,
       };
       
       var resp = await _dio.request(

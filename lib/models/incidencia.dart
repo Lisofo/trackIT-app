@@ -23,7 +23,7 @@ class Incidencia {
     "incidenciaId": incidenciaId,
     "codIncidencia": codIncidencia,
     "descripcion": descripcion,
-    'sinGarantia': sinGarantia,
+    "sinGarantia": sinGarantia,
   };
 
   Incidencia.empty() {

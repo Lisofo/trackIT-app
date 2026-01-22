@@ -43,7 +43,7 @@ class OrdenServices {
     }
   }
 
-  Future<Orden> getOrdenPorId(BuildContext context, int ordenId, String token) async {
+  Future<Orden> getOrdenPorId(BuildContext context, int? ordenId, String token) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/$ordenId';
     

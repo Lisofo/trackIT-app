@@ -160,6 +160,7 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
   
   Future<void> _editIncidencia(Incidencia incidencia) async {
     _descripcionController.text = incidencia.descripcion;
+    _sinGarantiaController.text = incidencia.sinGarantia;
     
     return showDialog(
       context: context,

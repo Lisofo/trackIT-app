@@ -1419,7 +1419,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                       }
                     }
                   },
-                  child: Text(_isEditMode ? 'Actualizar Orden' : 'Siguiente'),
+                  child: Text(_isEditMode ? 'Actualizar Orden' : 'Crear orden'),
                 ),
               ],
             ),

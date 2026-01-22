@@ -79,6 +79,7 @@ class Orden {
   late String? visc;
   late String? ccVisc;     // ← NUEVO CAMPO
   late String? ccNvporc;   // ← NUEVO CAMPO
+  late String? sinGarantia;
 
   Orden({
     this.ordenTrabajoId,
@@ -142,6 +143,7 @@ class Orden {
     this.finalizadaEn,
     this.ccVisc,     // ← NUEVO
     this.ccNvporc,   // ← NUEVO
+    this.sinGarantia,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -206,6 +208,7 @@ class Orden {
     visc: json["visc"] as String?,
     ccVisc: json["ccVisc"] as String?,     // ← NUEVO
     ccNvporc: json["ccNvporc"] as String?, // ← NUEVO
+    sinGarantia: json['sinGarantia'] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -269,6 +272,7 @@ class Orden {
     "visc": visc,
     "ccVisc": ccVisc,     // ← NUEVO
     "ccNvporc": ccNvporc, // ← NUEVO
+    "sinGarantia": sinGarantia
   };
 
   Map<String, dynamic> toMapCyP() => {
@@ -383,6 +387,7 @@ class Orden {
     visc: null,
     ccVisc: null,     // ← NUEVO
     ccNvporc: null,   // ← NUEVO
+    sinGarantia: null,
   );
 }
 

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/providers/auth_provider.dart';
+import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:signature/signature.dart';
@@ -30,6 +31,7 @@ class _FirmaState extends State<Firma> {
   List<ClienteFirma> client = [];
   late int marcaId = 0;
   late Orden orden = Orden.empty();
+  late Orden ordenConGarantia = Orden.empty();
   late String token = '';
   Uint8List? exportedImage;
   late String md5Hash = '';
@@ -44,6 +46,7 @@ class _FirmaState extends State<Firma> {
   int? statusCode;
   bool estoyEditando = false;
   bool estoyBorrando = false;
+  bool tieneGarantia = false;
 
 
   SignatureController controller = SignatureController(
@@ -62,6 +65,8 @@ class _FirmaState extends State<Firma> {
     token = context.read<AuthProvider>().token;
     try {
       orden = context.read<OrdenProvider>().orden;
+      ordenConGarantia = await OrdenServices().getOrdenPorId(context, orden.ordenTrabajoId, token);
+      tieneGarantia = ordenConGarantia.sinGarantia == 'N' ? true : false;
       marcaId = context.read<OrdenProvider>().marcaId;
       if(orden.otRevisionId != 0){
         client = await RevisionServices().getRevisionFirmas(context, orden, token);
@@ -121,8 +126,28 @@ class _FirmaState extends State<Firma> {
         ),
       ) : SingleChildScrollView(
           child: Column(
-            children: [
+            children: [ 
               const SizedBox(height: 20,),
+              if (ordenConGarantia.sinGarantia != null)
+                Container(
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(5)
+                  ),
+                  height: 30,
+                  child: Center(
+                    child: Text(
+                      tieneGarantia ? 'Orden con garantía' : 'Orden sin garantía',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 10,),
               Container(
                 width: MediaQuery.of(context).size.width,
                 padding: const EdgeInsets.only(left: 5, right: 5),
