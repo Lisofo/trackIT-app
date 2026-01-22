@@ -1,9 +1,11 @@
+import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/tecnico.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/tecnico_services.dart'; // Importar servicio de técnicos
+import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
 import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
@@ -75,6 +77,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _viscController = TextEditingController();
   
   late String flavor = "";
+  late String siguienteEstado = '';
+  bool ejecutando = false;
+  int? statusCode;
 
   // Variables para impresión
   late bool generandoInforme = false;
@@ -165,7 +170,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
         // Determinar si la orden es de solo lectura basado en el estado
-        _isReadOnly = ordenExistente.estado == 'EN PROCESO' || ordenExistente.estado == 'FINALIZADO';
+        _isReadOnly = ordenExistente.estado == 'EN PROCESO' || ordenExistente.estado == 'FINALIZADO' || ordenExistente.estado == 'DESCARTADO';
       });
 
       if (!mounted) return;
@@ -335,6 +340,94 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     });
     
     _calcularTotalTambores();
+  }
+
+  void _mostrarDialogoConfirmacion(String accion) async {
+    late int accionId = accion == "descartar" ? 4 : 0;
+    siguienteEstado = await ordenServices.siguienteEstadoOrden(context, ordenExistente, accionId, token);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateBd) {
+            return AlertDialog(
+              surfaceTintColor: Colors.white,
+              title: const Text('Confirmación'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('¿Estás seguro que deseas pasar la OT al estado $siguienteEstado?'),
+                  // if(pedirConfirmacion)...[
+                  //   const SizedBox(height: 5,),
+                  //   CustomTextFormField(
+                  //     preffixIcon: const Icon(Icons.lock),
+                  //     keyboard: const TextInputType.numberWithOptions(),
+                  //     controller: pinController,
+                  //     hint: 'Ingrese PIN',
+                  //     maxLines: 1,
+                  //     obscure: isObscured,
+                  //     suffixIcon: IconButton(
+                  //       icon: isObscured
+                  //           ? const Icon(
+                  //               Icons.visibility_off,
+                  //               color: Colors.black,
+                  //             )
+                  //           : const Icon(
+                  //               Icons.visibility,
+                  //               color: Colors.black,
+                  //             ),
+                  //       onPressed: () {
+                  //         setStateBd(() {
+                  //           isObscured = !isObscured;
+                  //         });
+                  //       },
+                  //     ),
+                  //   )
+                  // ]
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    router.pop(context);
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      cambiarEstado(accionId);
+                    });
+                    router.pop(context);
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  cambiarEstado(int accionId) async {
+    if (!ejecutando) {
+      ejecutando = true;
+      String token = context.read<AuthProvider>().token;
+      ordenExistente.otRevisionId = await ordenServices.patchOrdenCambioEstado(context, ordenExistente, accionId, 0, token);
+      statusCode = await ordenServices.getStatusCode();
+      await ordenServices.resetStatusCode();
+      if (statusCode == 1) {
+        if (accionId == 4) {          
+          ordenExistente.estado == siguienteEstado;
+          await Carteles.showDialogs(context, 'Estado cambiado correctamente', false, false, false);
+        }
+        
+      }
+      ejecutando = false;
+      statusCode = null;
+      setState(() {});
+    }
   }
 
   void _abrirBusquedaCliente(BuildContext context) async {
@@ -748,6 +841,31 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       await launchUrl(uri);
     } else {
       print('No se puede abrir la URL: $url');
+    }
+  }
+
+  // NUEVO MÉTODO: Actualizar lista de órdenes en el provider
+  Future<void> _actualizarListaOrdenes(BuildContext context) async {
+    try {
+      final ordenProvider = Provider.of<OrdenProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Obtener parámetros actuales de filtro
+      Map<String, dynamic> queryParams = {};
+      queryParams['sort'] = 'fechaDesde DESC';
+      
+      // Obtener órdenes actualizadas
+      final ordenesActualizadas = await ordenServices.getOrden(
+        context,
+        authProvider.tecnicoId.toString(),
+        token,
+        queryParams: queryParams,
+      );
+      
+      // Actualizar el provider
+      ordenProvider.setOrdenes(ordenesActualizadas);
+    } catch (e) {
+      print('Error actualizando lista de órdenes: $e');
     }
   }
 
@@ -1211,7 +1329,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               children: [
                 if (_isEditMode) ... [
                   ElevatedButton(
-                    onPressed: _isReadOnly ? null : () {},
+                    onPressed: _isReadOnly ? null : () async {
+                      _mostrarDialogoConfirmacion('descartar');
+                    },
                     child: const Text('Descartar orden'),
                   ),
                   const SizedBox(width: 16),
@@ -1256,30 +1376,33 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                         // APLICADO: Actualizar el provider para la siguiente pantalla
                         context.read<OrdenProvider>().setOrden(ordenGuardada);
                         
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetallePiezasScreen(
-                              cliente: clienteSeleccionado!,
-                              vehiculo: unidadSeleccionada!,
-                              fecha: fecha,
-                              condIva: condIva,
-                              ordenPrevia: ordenGuardada,
-                            ),
-                          ),
-                        );
+                        // NUEVO: Actualizar la lista de órdenes en el provider
+                        await _actualizarListaOrdenes(context);
+                        
+                        // final result = await Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => DetallePiezasScreen(
+                        //       cliente: clienteSeleccionado!,
+                        //       vehiculo: unidadSeleccionada!,
+                        //       fecha: fecha,
+                        //       condIva: condIva,
+                        //       ordenPrevia: ordenGuardada,
+                        //     ),
+                        //   ),
+                        // );
 
-                        if (result != null && result is Orden) {
-                          setState(() {
-                            ordenExistente = result;
-                            _isEditMode = true;
-                            _ordenExistente = result;
-                          });
+                        // if (result != null && result is Orden) {
+                        //   setState(() {
+                        //     ordenExistente = result;
+                        //     _isEditMode = true;
+                        //     _ordenExistente = result;
+                        //   });
                           
-                          await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
-                          await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
-                          _cargarDatosComunesDesdeOrden();
-                        }
+                        //   await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
+                        //   await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
+                        //   _cargarDatosComunesDesdeOrden();
+                        // }
                       }
                     } catch (e) {
                       if (mounted && Navigator.of(context).canPop()) {
@@ -1685,6 +1808,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         if (flavor == 'resysol') {
           _cargarDatosResysolDesdeOrden();
         }
+
+        // NUEVO: Actualizar lista de órdenes después de crear la copia
+        await _actualizarListaOrdenes(context);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2115,6 +2241,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
         // APLICADO: Actualizar el provider
         context.read<OrdenProvider>().setOrden(ordenGuardada);
+
+        // NUEVO: Actualizar la lista de órdenes en el provider
+        await _actualizarListaOrdenes(context);
 
         await Navigator.push(
           context,

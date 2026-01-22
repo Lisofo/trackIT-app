@@ -117,6 +117,7 @@ class OrdenProvider with ChangeNotifier {
 
   void setOrdenes(List<Orden> ordenes) {
     ordenesEnProceso = ordenes;
+    notifyListeners();
   }
     
   void filtrarPuntosInspeccion1(String criterio) {

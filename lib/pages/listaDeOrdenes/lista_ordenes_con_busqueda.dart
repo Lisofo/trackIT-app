@@ -20,7 +20,7 @@ class ListaOrdenesConBusqueda extends StatefulWidget {
 class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   final ordenServices = OrdenServices();
   String token = '';
-  List<Orden> ordenes = [];
+  // Eliminamos la variable local 'ordenes' y usaremos la del provider
   late int tecnicoId = 0;
   int groupValue = 0; // 0=PENDIENTE, 1=EN PROCESO, 2=FINALIZADO
   List trabajodres = [];
@@ -84,7 +84,8 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
 
   // 2. Método para manejar la actualización de datos
   Future<void> _refreshData() async {
-    ordenes = [];
+    // Limpiamos la lista en el provider
+    Provider.of<OrdenProvider>(context, listen: false).setOrdenes([]);
     setState(() {});
     await cargarDatos();
   }
@@ -150,8 +151,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         queryParams['numeroOrdenTrabajo'] = _numeroOrdenFiltro;
       }
 
+      List<Orden> ordenesObtenidas;
       if (queryParams.isNotEmpty) {
-        ordenes = await ordenServices.getOrden(
+        ordenesObtenidas = await ordenServices.getOrden(
           context, 
           tecnicoId.toString(), 
           token,
@@ -159,17 +161,17 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         );
       } else {
         // Si es admin y no hay filtros, cargar todas las órdenes
-        ordenes = await ordenServices.getOrden(
+        ordenesObtenidas = await ordenServices.getOrden(
           context,
           tecnicoId.toString(),
           token,
         );
       }
       
-      Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
+      Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenesObtenidas);
       setState(() {});
     } catch (e) {
-      ordenes = [];
+      Provider.of<OrdenProvider>(context, listen: false).setOrdenes([]);
       setState(() {});
     }
   }
@@ -245,17 +247,17 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
         queryParams['unidadId'] = unidadSeleccionada.unidadId.toString();
       }
 
-      ordenes = await ordenServices.getOrden(
+      final ordenesObtenidas = await ordenServices.getOrden(
         context, 
         tecnicoId.toString(), 
         token,
         queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
       
-      Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenes);
+      Provider.of<OrdenProvider>(context, listen: false).setOrdenes(ordenesObtenidas);
       setState(() {});
     } catch (e) {
-      ordenes = [];
+      Provider.of<OrdenProvider>(context, listen: false).setOrdenes([]);
       setState(() {});
     }
   }
@@ -624,7 +626,9 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     isAdmin = context.watch<OrdenProvider>().admOrdenes;
-
+    // USAR la lista del provider en lugar de la variable local
+    final ordenes = context.watch<OrdenProvider>().ordenesEnProceso;
+    
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(

@@ -143,7 +143,7 @@ class TecnicosServices {
       var headers = {'Authorization': token};
 
       final resp = await _dio.request(
-        link += tecnico.tecnicoId.toString(),
+        link,
         options: Options(
           method: 'DELETE', 
           headers: headers
