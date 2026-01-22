@@ -208,7 +208,7 @@ class _FirmaState extends State<Firma> {
                       child: CustomButton(
                         onPressed: !guardandoFirma ? () async {
                           guardandoFirma = true;
-                          if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
+                          if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) || clienteNoDisponible){
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(clienteNoDisponible ? 'Cliente no disponible' : 'No puede de ingresar o editar datos.'),
                             ));
@@ -264,7 +264,7 @@ class _FirmaState extends State<Firma> {
                           activeColor: colors.primary,
                           value: filtro,
                           onChanged: (value) async {
-                            if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                            if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                 content: Text('No puede de ingresar o editar datos.'),
                               ));
@@ -310,7 +310,7 @@ class _FirmaState extends State<Firma> {
                       key: Key(item.toString()),
                       direction: DismissDirection.endToStart,
                       confirmDismiss: (DismissDirection direction) async {
-                        if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) || clienteNoDisponible){
+                        if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) || clienteNoDisponible){
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text('No puede de ingresar o editar datos.'),
                           ));
@@ -380,7 +380,7 @@ class _FirmaState extends State<Firma> {
                                 icon: const Icon(Icons.edit),
                                 onPressed: !estoyEditando ? () async {
                                   estoyEditando = true;
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('No puede de ingresar o editar datos.'),
                                     ));
@@ -398,7 +398,7 @@ class _FirmaState extends State<Firma> {
                                 icon: const Icon(Icons.delete),
                                 onPressed: !estoyBorrando ? () async {
                                   estoyBorrando = true;
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('No puede de ingresar o editar datos.'),
                                     ));

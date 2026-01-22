@@ -172,7 +172,7 @@ class _ObservacionesPageState extends State<ObservacionesPage> {
                     alignment: Alignment.center,
                     child: CustomButton(
                       onPressed: () async {
-                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('No puede de ingresar o editar datos.'),
                         ));

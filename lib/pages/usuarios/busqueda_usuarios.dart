@@ -448,6 +448,14 @@ class _UsuariosPageState extends State<UsuariosPage> {
   @override
   Widget build(BuildContext context) {
     final token = context.watch<AuthProvider>().token;
+    final usuariosProvider = context.watch<UsuariosProvider>();
+
+    if (usuariosProvider.needsRefresh) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        usuariosProvider.clearRefreshFlag();
+        _buscarUsuarios(context, token); // Volver a buscar
+      });
+    }
 
     return SafeArea(
       child: LayoutBuilder(

@@ -28,7 +28,7 @@ export 'package:app_tec_sedel/pages/monitor/monitor_tecnico.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_vehiculo.dart';
 export 'package:app_tec_sedel/pages/monitorOrdenes/crear_editar_orden.dart';
 export 'package:app_tec_sedel/pages/ordenInterna/orden_interna_horizontal.dart';
-export 'package:app_tec_sedel/pages/camera/camera_screen.dart';
+export 'package:app_tec_sedel/pages/drawerPages/incidencias_page.dart';
 export 'package:app_tec_sedel/pages/dashboard/dashboard.dart';
 export 'package:app_tec_sedel/pages/monitor/mapa.dart';
 export 'package:app_tec_sedel/pages/monitor/monitor_diario.dart';

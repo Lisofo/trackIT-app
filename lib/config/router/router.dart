@@ -1,5 +1,6 @@
 import 'package:app_tec_sedel/models/lote.dart';
 import 'package:app_tec_sedel/pages/monitorOrdenes/busqueda_lotes_screen.dart';
+import 'package:app_tec_sedel/pages/revisiones/revision_page.dart';
 import 'package:app_tec_sedel/pages/usuarios/add_usuarios_page.dart';
 import 'package:app_tec_sedel/pages/usuarios/busqueda_usuarios.dart';
 import 'package:app_tec_sedel/pages/usuarios/edit_password.dart';
@@ -72,6 +73,7 @@ final router = GoRouter(
     GoRoute(path: '/editUsuarios', builder: (context, state) => const AddUsuarioPage(),),
     GoRoute(path: '/editPassword', builder: (context, state) => const EditPassword(),),
     GoRoute(path: '/establecerPerfiles', builder: (context, state) => const EstablecerPerfiles(),),
+    GoRoute(path: '/revisionOrden', builder: (context, state) => const RevisionOrdenMain(),),
   ],
   errorBuilder: (context, state) => const ErrorPage(),
 );

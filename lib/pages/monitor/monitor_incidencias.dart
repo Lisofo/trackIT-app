@@ -17,6 +17,7 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
   final IncidenciaServices _services = IncidenciaServices();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
+  final TextEditingController _sinGarantiaController = TextEditingController();
   
   List<Incidencia> _incidencias = [];
   List<Incidencia> _filteredIncidencias = [];
@@ -92,14 +93,29 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Nueva Incidencia'),
-        content: TextField(
-          controller: _descripcionController,
-          decoration: const InputDecoration(
-            labelText: 'Descripción',
-            hintText: 'Ingrese la descripción de la incidencia',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _descripcionController,
+              decoration: const InputDecoration(
+                labelText: 'Descripción',
+                hintText: 'Ingrese la descripción de la incidencia',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 10,),
+            TextField(
+              controller: _sinGarantiaController,
+              decoration: const InputDecoration(
+                labelText: 'Sin Garantía',
+                hintText: 'Ingrese si la incidencia tiene o no garantía (S/N)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 1,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -113,6 +129,7 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
                   incidenciaId: 0,
                   codIncidencia: '', // Se generará automáticamente
                   descripcion: _descripcionController.text.trim(),
+                  sinGarantia: _sinGarantiaController.text.trim(),
                 );
                 
                 final creada = await _services.createIncidencia(
@@ -162,6 +179,16 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 16,),
+            TextField(
+              controller: _sinGarantiaController,
+              decoration: const InputDecoration(
+                labelText: 'Sin Garantía',
+                hintText: 'Ingrese si la incidencia tiene o no garantía (S/N)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 1,
+            ),
           ],
         ),
         actions: [
@@ -176,6 +203,7 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
                   incidenciaId: incidencia.incidenciaId,
                   codIncidencia: incidencia.codIncidencia,
                   descripcion: _descripcionController.text.trim(),
+                  sinGarantia: _sinGarantiaController.text.trim(),
                 );
                 
                 final actualizada = await _services.updateIncidencia(

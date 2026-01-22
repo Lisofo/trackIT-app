@@ -192,7 +192,7 @@ class UserServices {
       if (resp.statusCode == 201) {
         // showDialogs(context, 'Usuario creado correctamente', false, false);
       }
-      return;
+      return resp.statusCode;
     } catch (e) {
       statusCode = 0;
       if (e is DioException) {
@@ -235,7 +235,7 @@ class UserServices {
 
       statusCode = 1;
       if (resp.statusCode == 204) {
-        showDialogs(context, 'Cambio hecho correctamente', false, false);
+        showDialogs(context, 'Usuario borrado correctamente', true, true);
       }
       return resp.statusCode;
     } catch (e) {

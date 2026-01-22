@@ -268,7 +268,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                   IconButton(
                     onPressed: () {
                       if (selectedTipoPto.tipoPuntoInspeccionId != 0) {
-                        if (marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
+                        if (marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) {
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text('No puede de ingresar o editar datos.'),
                           ));
@@ -324,7 +324,7 @@ class _PtosInspeccionPageState extends State<PtosInspeccionPage> {
                   ),
                   IconButton(
                     onPressed: () async {
-                      if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                      if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('No puede de ingresar o editar datos.'),
                       ));

@@ -223,7 +223,7 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                     showSearchBox: true, searchDelay: Duration.zero
                   ),
                   onChanged: (newValue) async {
-                    if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                    if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('No puede de ingresar o editar datos.'),
                       ));
@@ -277,7 +277,7 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                             key: Key(item.toString()),
                             direction: DismissDirection.endToStart,
                             confirmDismiss: (DismissDirection direction) async {
-                              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                   content: Text('No puede de ingresar o editar datos.'),
                                 ));
@@ -345,7 +345,7 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                                     IconButton(
                                       onPressed: !estaBuscando
                                         ? () async {
-                                            if (marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')) {
+                                            if (marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 const SnackBar(
                                                   content: Text('No puede ingresar o editar datos.'),
@@ -366,7 +366,7 @@ class _MaterialesDiagnosticoPageState extends State<MaterialesDiagnosticoPage> {
                                     ),
                                     IconButton(
                                       onPressed: () async {
-                                        if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                        if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                             content: Text('No puede de ingresar o editar datos.'),
                                           ));

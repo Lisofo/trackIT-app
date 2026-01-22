@@ -46,6 +46,22 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   
   bool isDropdownSearchOpen = false;
 
+  // =========================
+  // VALIDACIÓN DE ESTADO
+  // =========================
+  bool get _ordenPermiteEdicion {
+    return orden.estado != 'PENDIENTE' && orden.estado != 'FINALIZADO';
+  }
+
+  void _mostrarErrorNoEdicion(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No puede ingresar o editar datos.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -192,6 +208,12 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   Future<void> _uploadAllImages() async {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     if (nuevasImagenes.isEmpty && selectedObservations.isEmpty && commentController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -393,6 +415,12 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   Future<void> _openCamera() async {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     await _initializeCamera();
     
     if (!mounted) return;
@@ -492,6 +520,12 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   Future<void> _pickImageFromGallery() async {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     try {
       final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -526,6 +560,12 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   void _showDeleteConfirmation(int index) {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -558,12 +598,24 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   void _deleteImage(int index) {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     setState(() {
       nuevasImagenes.removeAt(index);
     });
   }
 
   void _deleteAdjunto(int index) async {
+    // Validar estado de la orden
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     final adjunto = adjuntosExistentes[index];
     final incidenciaId = revisionIncidenciaExistente?.otIncidenciaId;
     
@@ -823,6 +875,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
               )
             else
               DropdownSearch<Incidencia>.multiSelection(
+                enabled: _ordenPermiteEdicion, // Habilitar/deshabilitar según estado
                 dropdownBuilder: (context, selectedItems) {
                   return Text(
                     selectedItems.isEmpty
@@ -907,6 +960,11 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                 items: observations,
                 selectedItems: selectedObservations,
                 onChanged: (List<Incidencia>? newValues) {
+                  if (!_ordenPermiteEdicion) {
+                    _mostrarErrorNoEdicion(context);
+                    return;
+                  }
+                  
                   if (newValues != null) {
                     setState(() {
                       selectedObservations = newValues;
@@ -1001,6 +1059,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
             TextField(
               controller: commentController,
               maxLines: 3,
+              enabled: _ordenPermiteEdicion, // Habilitar/deshabilitar según estado
               decoration: const InputDecoration(
                 hintText: 'Escribe tu comentario aquí...',
                 border: OutlineInputBorder(),
@@ -1051,20 +1110,21 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
             );
           },
         ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.black54,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.white, size: 18),
-              onPressed: () => _deleteAdjunto(index),
+        if (_ordenPermiteEdicion) // Solo mostrar botón de eliminar si se permite edición
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                onPressed: () => _deleteAdjunto(index),
+              ),
             ),
           ),
-        ),
         Positioned(
           bottom: 4,
           left: 4,
@@ -1109,20 +1169,21 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
             child: const Icon(Icons.error),
           ),
         ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.black54,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.white, size: 18),
-              onPressed: () => _showDeleteConfirmation(index),
+        if (_ordenPermiteEdicion) // Solo mostrar botón de eliminar si se permite edición
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                onPressed: () => _showDeleteConfirmation(index),
+              ),
             ),
           ),
-        ),
         Positioned(
           bottom: 4,
           left: 4,
@@ -1242,7 +1303,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.cloud_upload),
-              onPressed: _enviandoDatos ? null : _uploadAllImages,
+              onPressed: (_enviandoDatos || !_ordenPermiteEdicion) ? null : _uploadAllImages,
               tooltip: 'Enviar datos',
             ),
           ],
@@ -1306,7 +1367,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
           children: [
             FloatingActionButton(
               heroTag: "gallery_btn",
-              onPressed: _pickImageFromGallery,
+              onPressed: _ordenPermiteEdicion ? _pickImageFromGallery : null,
               mini: true,
               tooltip: 'Abrir galería',
               child: const Icon(Icons.photo_library),
@@ -1314,7 +1375,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
             const SizedBox(height: 16),
             FloatingActionButton(
               heroTag: "camera_btn",
-              onPressed: _openCamera,
+              onPressed: _ordenPermiteEdicion ? _openCamera : null,
               tooltip: 'Abrir cámara',
               child: const Icon(Icons.camera),
             ),

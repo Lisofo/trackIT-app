@@ -213,7 +213,7 @@ class _CuestionarioPageState extends State<CuestionarioPage> {
           color: Colors.grey.shade200,
           child: CustomButton(
             onPressed: () async {
-              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+              if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('No puede de ingresar o editar datos.'),
                 ));

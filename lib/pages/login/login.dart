@@ -125,7 +125,7 @@ class _LoginState extends State<Login> {
                         ),
                       ],
                       SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.4,
+                        width: MediaQuery.of(context).size.width < 600 ? MediaQuery.of(context).size.width * 0.6 : MediaQuery.of(context).size.width * 0.4,
                         child: CustomTextFormField(
                           controller: passwordController,
                           obscure: isObscured,

@@ -109,6 +109,7 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
   }
 
   Future<void> _guardarUsuario(BuildContext context, Usuario userSeleccionado, String token) async {
+    int? statusCode;
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       
@@ -122,9 +123,9 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
         if (userSeleccionado.usuarioId != 0) {
           await _userServices.putUsuario(context, userSeleccionado, token);
         } else {
-          await _userServices.postUsuario(context, userSeleccionado, token);
+          statusCode = await _userServices.postUsuario(context, userSeleccionado, token);
           // Después de crear, mostrar mensaje de éxito y cerrar
-          if (mounted) {
+          if (mounted && statusCode == 201) {
             await UserServices.showDialogs(
               context, 
               'Usuario creado correctamente', 
@@ -152,11 +153,9 @@ class _AddUsuarioPageState extends State<AddUsuarioPage> {
         actions: [
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
               await _userServices.deleteUser(context, userSeleccionado, token);
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
+              // Marcar que se necesita refrescar la lista
+              context.read<UsuariosProvider>().markNeedsRefresh();
             },
             child: const Text('Borrar'),
           ),

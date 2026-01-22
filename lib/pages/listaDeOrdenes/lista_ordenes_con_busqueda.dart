@@ -365,7 +365,7 @@ class _ListaOrdenesConBusquedaState extends State<ListaOrdenesConBusqueda> {
           Padding(
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
-              'Técnico: ${orden.tecnico!.nombre}',
+              orden.tecnico!.nombre,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[700],

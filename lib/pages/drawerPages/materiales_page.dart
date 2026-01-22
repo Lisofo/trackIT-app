@@ -384,7 +384,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                               searchDelay: Duration.zero,
                             ),
                             onChanged: (newValue) async {
-                              if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                              if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
@@ -479,7 +479,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                       key: Key(item.otMaterialId.toString()),
                                       direction: DismissDirection.endToStart,
                                       confirmDismiss: (DismissDirection direction) async {
-                                        if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                        if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(
                                               content: Text(
@@ -563,7 +563,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                             children: [
                                               IconButton(
                                                 onPressed: !estaBuscando ? () async {
-                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(
                                                         content: Text('No puede ingresar o editar datos.',),
@@ -616,7 +616,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
                                               ),
                                               IconButton(
                                                 onPressed: () {
-                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA') {
+                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(
                                                         content: Text(

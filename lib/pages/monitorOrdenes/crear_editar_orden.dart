@@ -6,6 +6,7 @@ import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
 import 'package:app_tec_sedel/services/tecnico_services.dart'; // Importar servicio de técnicos
 import 'package:app_tec_sedel/widgets/carteles.dart';
+import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
 import 'package:app_tec_sedel/widgets/dialogo_unidad.dart';
 import 'package:flutter/material.dart';
@@ -1084,6 +1085,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
             ),
+          if (ordenExistente.estado == 'EN PROCESO' || ordenExistente.estado == 'FINALIZADO') ... [
+            const SizedBox(height: 16,),
+            CustomButton(
+              text: 'Ver revisión', onPressed: () {
+                router.push('/revisionOrden');
+              }
+            ),
+          ],
           const SizedBox(height: 24),
           
           const Text(
@@ -2236,7 +2245,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _ordenExistente = ordenGuardada;
           // Determinar si la nueva orden es de solo lectura
           _isReadOnly = ordenGuardada.estado == 'EN PROCESO' || 
-                       ordenGuardada.estado == 'FINALIZADA';
+                       ordenGuardada.estado == 'FINALIZADO';
         });
 
         // APLICADO: Actualizar el provider

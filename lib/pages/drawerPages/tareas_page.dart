@@ -139,7 +139,7 @@ class _TareasPageState extends State<TareasPage> {
                     onPressed: !agregandoTarea ? () async {
                       agregandoTarea = true;
                       setState(() {});
-                      if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                      if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('No puede de ingresar o editar datos.'),
                         ));
@@ -182,7 +182,7 @@ class _TareasPageState extends State<TareasPage> {
                       key: Key(item.toString()),
                       direction: sedel ? DismissDirection.endToStart : track ? DismissDirection.startToEnd : DismissDirection.horizontal,
                       confirmDismiss: (DismissDirection direction) {
-                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text('No puede de ingresar o editar datos.'),
                           ));
@@ -251,7 +251,7 @@ class _TareasPageState extends State<TareasPage> {
                               if(parabrisas)...[
                                 IconButton(
                                   onPressed: () async {
-                                    if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                    if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                         content: Text('No puede de ingresar o editar datos.'),
                                       ));
@@ -264,7 +264,7 @@ class _TareasPageState extends State<TareasPage> {
                               ],
                               IconButton(
                                 onPressed: () async {
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('No puede de ingresar o editar datos.'),
                                     ));

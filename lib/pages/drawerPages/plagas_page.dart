@@ -179,7 +179,7 @@ class _PlagasPageState extends State<PlagasPage> {
                   onPressed: !agregandoPlaga ? () async {
                     agregandoPlaga = true;
                     setState(() {});
-                    if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                    if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('No puede de ingresar o editar datos.'),
                       ));
@@ -228,7 +228,7 @@ class _PlagasPageState extends State<PlagasPage> {
                         key: Key(item.toString()),
                         direction: DismissDirection.endToStart,
                         confirmDismiss: (DismissDirection direction) async {
-                          if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                          if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                               content: Text('No puede de ingresar o editar datos.'),
                             ));
@@ -294,7 +294,7 @@ class _PlagasPageState extends State<PlagasPage> {
                             subtitle: Text(revisionPlagasList[index].gradoInfestacion),
                             trailing: IconButton(
                               onPressed: () async {
-                                if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADA')){
+                                if(marcaId == 0 || (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                     content: Text('No puede de ingresar o editar datos.'),
                                   ));
