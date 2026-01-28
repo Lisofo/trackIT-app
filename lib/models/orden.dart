@@ -1,7 +1,3 @@
-// To parse this JSON data, do
-//
-//     final orden = ordenFromMap(jsonString);
-
 import 'dart:convert';
 
 import 'package:app_tec_sedel/models/unidad.dart';
@@ -58,7 +54,8 @@ class Orden {
   late DateTime? finalizadaEn;
   
   // Nuevos campos del JSON
-  late int? condOTId;
+  late int? condOTId;          // Campo existente
+  late int? tipoOTId;          // NUEVO CAMPO
   late bool? credito;
   late int? alertaUsuId;
   late String? producto;
@@ -121,8 +118,9 @@ class Orden {
     this.tipoOrdenId,
     this.tecnicoId,
     this.clienteId,
-    // Nuevos campos
-    this.condOTId,
+    // Campos existentes y nuevos
+    this.condOTId,          // Existente
+    this.tipoOTId,          // NUEVO
     this.credito,
     this.alertaUsuId,
     this.producto,
@@ -186,8 +184,9 @@ class Orden {
     tecnicoId: json["tecnicoId"] as int?,
     clienteId: json["clienteId"] as int?,
     tipoOrdenId: json['tipoOrdenId'] as int?,
-    // Nuevos campos
-    condOTId: json["condOTId"] as int?,
+    // Campos existentes y nuevos
+    condOTId: json["condOTId"] as int?,          // Existente
+    tipoOTId: json["tipoOTId"] as int?,          // NUEVO
     credito: json["credito"] as bool?,
     alertaUsuId: json["alertaUsuId"] as int?,
     producto: json["producto"] as String?,
@@ -250,8 +249,9 @@ class Orden {
     "tecnicoId": tecnicoId ?? tecnico?.tecnicoId,
     "clienteId": clienteId,
     "tipoOrdenId": tipoOrdenId,
-    // Nuevos campos
-    "condOTId": condOTId,
+    // Campos existentes y nuevos
+    "condOTId": condOTId,          // Existente
+    "tipoOTId": tipoOTId,          // NUEVO
     "credito": credito,
     "alertaUsuId": alertaUsuId,
     "producto": producto,
@@ -293,6 +293,9 @@ class Orden {
     "km": km,
     "instrucciones": instrucciones,
     "plantilla": plantilla ?? false,
+    // Campos existentes y nuevos
+    "condOTId": condOTId,          // Existente
+    "tipoOTId": tipoOTId,          // NUEVO
     // Campos específicos para producción química
     "producto": producto,
     "pedido": pedido,
@@ -365,8 +368,9 @@ class Orden {
     tipoOrdenId: null,
     tecnicoId: null,
     clienteId: null,
-    // Nuevos campos
-    condOTId: null,
+    // Campos existentes y nuevos
+    condOTId: null,          // Existente
+    tipoOTId: null,          // NUEVO
     credito: null,
     alertaUsuId: null,
     producto: null,

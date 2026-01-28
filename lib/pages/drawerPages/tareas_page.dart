@@ -15,7 +15,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TareasPage extends StatefulWidget {
-  const TareasPage({super.key});
+  final bool fromRevisionMenu;
+  final bool isReadOnly;
+  
+  const TareasPage({
+    super.key, 
+    this.fromRevisionMenu = false,
+    this.isReadOnly = false,
+  });
 
   @override
   State<TareasPage> createState() => _TareasPageState();
@@ -44,6 +51,14 @@ class _TareasPageState extends State<TareasPage> {
   bool pedirConfirmacion = true;
   bool isObscured = true;
   final TextEditingController pinController = TextEditingController();
+
+  // =========================
+  // FUNCIÓN AUXILIAR
+  // =========================
+
+  bool get _permiteEdicion {
+    return !widget.isReadOnly && !widget.fromRevisionMenu;
+  }
 
   @override
   void initState() {
@@ -80,6 +95,215 @@ class _TareasPageState extends State<TareasPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    
+    // Construir el contenido principal
+    Widget contenido = cargando ? const Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          Text('Cargando, por favor espere...')
+        ],
+      ),
+      ) : !cargoDatosCorrectamente ? 
+      Center(
+        child: TextButton.icon(
+          onPressed: () async {
+            await cargarDatos();
+          }, 
+          icon: const Icon(Icons.replay_outlined),
+          label: const Text('Recargar'),
+        ),
+      ) : SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  width: 1, color: colors.primary
+                ),
+                borderRadius: BorderRadius.circular(5)
+              ),
+              child: DropdownSearch(
+                enabled: _permiteEdicion,
+                dropdownDecoratorProps: const DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(hintText: 'Seleccione una tarea')
+              ),
+                items: tareas,
+                popupProps: const PopupProps.menu(showSearchBox: true, searchDelay: Duration.zero),
+                onChanged: (value) {
+                  if (!_permiteEdicion) return;
+                  setState(() {
+                    selectedTarea = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 20,),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CustomButton(
+                  onPressed: !agregandoTarea && _permiteEdicion ? () async {
+                    agregandoTarea = true;
+                    setState(() {});
+                    if(!_permiteEdicion){
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('No se pueden modificar datos en modo de revisión.'),
+                      ));
+                      agregandoTarea = false;
+                      return Future.value(false);
+                    }
+                    bool agregarTarea = true;
+                    if (revisionTareasList.isNotEmpty) {
+                      agregarTarea = !revisionTareasList.any((tarea) => tarea.tareaId == selectedTarea.tareaId);
+                    }
+                    if (agregarTarea) {
+                      await posteoRevisionTarea(context);
+                      agregandoTarea = false;
+                      setState(() {});
+                    }else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Seleccione una tarea'),
+                      ));
+                      agregandoTarea = false;
+                      return Future.value(false);
+                    }
+                    agregandoTarea = false;
+                    setState(() {});
+                  } : null,
+                  disabled: agregandoTarea || !_permiteEdicion,
+                  text: 'Agregar +',
+                  tamano: 20,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20,),
+            Container(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: revisionTareasList.length,
+                itemBuilder: (context, i) {
+                  final item = revisionTareasList[i];
+                  return Dismissible(
+                    key: Key(item.toString()),
+                    direction: sedel ? DismissDirection.endToStart : track ? DismissDirection.startToEnd : DismissDirection.horizontal,
+                    confirmDismiss: (DismissDirection direction) {
+                      if(!_permiteEdicion){
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('No se pueden modificar datos en modo de revisión.'),
+                        ));
+                        return Future.value(false);
+                      }
+                      return showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            surfaceTintColor: Colors.white,
+                            title: const Text("Confirmar"),
+                            content: const Text(
+                              "¿Estas seguro de querer borrar la tarea?"
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text("CANCELAR"),
+                              ),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  await _revisionServices.deleteRevisionTarea(context, orden, revisionTareasList[i], token);
+                                  statusCodeTareas = await _revisionServices.getStatusCode();
+                                  await _revisionServices.resetStatusCode();
+                                  if(statusCodeTareas == 1){
+                                    Navigator.of(context).pop(true);
+                                  }
+                                },
+                                child: const Text("BORRAR")
+                              ),
+                            ],
+                          );
+                        }
+                      );
+                    },
+                    onDismissed: (direction) async {
+                      if(statusCodeTareas == 1){
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('La tarea $item ha sido borrada'),
+                        ));
+                        setState(() {
+                          revisionTareasList.removeAt(i);
+                        });
+                      }
+                      statusCodeTareas = null;
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: const BoxDecoration(border: Border(bottom: BorderSide())),
+                      child: ListTile(
+                        title: Text(revisionTareasList[i].descripcion),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if(parabrisas)...[
+                              IconButton(
+                                onPressed: _permiteEdicion ? () async {
+                                  if(!_permiteEdicion){
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                      content: Text('No se pueden modificar datos en modo de revisión.'),
+                                    ));
+                                    return Future.value(false);
+                                  }
+                                  comenzarTarea(context, i);
+                                } : null,
+                                icon: const Icon(Icons.play_arrow)
+                              ),
+                            ],
+                            IconButton(
+                              onPressed: _permiteEdicion ? () async {
+                                if(!_permiteEdicion){
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                    content: Text('No se pueden modificar datos en modo de revisión.'),
+                                  ));
+                                  return Future.value(false);
+                                }
+                                popUpBorrarTarea(context, i);
+                              } : null,
+                              icon: const Icon(Icons.delete)
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Si viene del menú de revisión, NO mostrar Scaffold con AppBar
+    if (widget.fromRevisionMenu) {
+      return contenido;
+    }
+
+    // Si es acceso directo, mostrar el Scaffold completo
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.primary,
@@ -88,209 +312,20 @@ class _TareasPageState extends State<TareasPage> {
           style: const TextStyle(color: Colors.white),
         ),
       ),
-      body: cargando ? const Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            Text('Cargando, por favor espere...')
-          ],
-        ),
-        ) : !cargoDatosCorrectamente ? 
-        Center(
-          child: TextButton.icon(
-            onPressed: () async {
-              await cargarDatos();
-            }, 
-            icon: const Icon(Icons.replay_outlined),
-            label: const Text('Recargar'),
-          ),
-        ) : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    width: 1, color: colors.primary
-                  ),
-                  borderRadius: BorderRadius.circular(5)
-                ),
-                child: DropdownSearch(
-                  dropdownDecoratorProps: const DropDownDecoratorProps(
-                  dropdownSearchDecoration: InputDecoration(hintText: 'Seleccione una tarea')
-                ),
-                  items: tareas,
-                  popupProps: const PopupProps.menu(showSearchBox: true, searchDelay: Duration.zero),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedTarea = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 20,),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CustomButton(
-                    onPressed: !agregandoTarea ? () async {
-                      agregandoTarea = true;
-                      setState(() {});
-                      if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('No puede de ingresar o editar datos.'),
-                        ));
-                        agregandoTarea = false;
-                        return Future.value(false);
-                      }
-                      bool agregarTarea = true;
-                      if (revisionTareasList.isNotEmpty) {
-                        agregarTarea = !revisionTareasList.any((tarea) => tarea.tareaId == selectedTarea.tareaId);
-                      }
-                      if (agregarTarea) {
-                        await posteoRevisionTarea(context);
-                        agregandoTarea = false;
-                        setState(() {});
-                      }else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('Seleccione una tarea'),
-                        ));
-                        agregandoTarea = false;
-                        return Future.value(false);
-                      }
-                      agregandoTarea = false;
-                      setState(() {});
-                    } : null ,
-                    disabled: agregandoTarea,
-                    text: 'Agregar +',
-                    tamano: 20,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20,),
-              Container(
-                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: revisionTareasList.length,
-                  itemBuilder: (context, i) {
-                    final item = revisionTareasList[i];
-                    return Dismissible(
-                      key: Key(item.toString()),
-                      direction: sedel ? DismissDirection.endToStart : track ? DismissDirection.startToEnd : DismissDirection.horizontal,
-                      confirmDismiss: (DismissDirection direction) {
-                        if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('No puede de ingresar o editar datos.'),
-                          ));
-                          return Future.value(false);
-                        }
-                        return showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              surfaceTintColor: Colors.white,
-                              title: const Text("Confirmar"),
-                              content: const Text(
-                                "¿Estas seguro de querer borrar la tarea?"
-                              ),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: const Text("CANCELAR"),
-                                ),
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                  ),
-                                  onPressed: () async {
-                                    await _revisionServices.deleteRevisionTarea(context, orden, revisionTareasList[i], token);
-                                    statusCodeTareas = await _revisionServices.getStatusCode();
-                                    await _revisionServices.resetStatusCode();
-                                    if(statusCodeTareas == 1){
-                                      Navigator.of(context).pop(true);
-                                    }
-                                  },
-                                  child: const Text("BORRAR")
-                                ),
-                              ],
-                            );
-                          }
-                        );
-                      },
-                      onDismissed: (direction) async {
-                        if(statusCodeTareas == 1){
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('La tarea $item ha sido borrada'),
-                          ));
-                          setState(() {
-                            revisionTareasList.removeAt(i);
-                          });
-                        }
-                        statusCodeTareas = null;
-                      },
-                      background: Container(
-                        color: Colors.red,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: const BoxDecoration(border: Border(bottom: BorderSide())),
-                        child: ListTile(
-                          title: Text(revisionTareasList[i].descripcion),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if(parabrisas)...[
-                                IconButton(
-                                  onPressed: () async {
-                                    if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                        content: Text('No puede de ingresar o editar datos.'),
-                                      ));
-                                      return Future.value(false);
-                                    }
-                                    comenzarTarea(context, i);
-                                  },
-                                  icon: const Icon(Icons.play_arrow)
-                                ),
-                              ],
-                              IconButton(
-                                onPressed: () async {
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                      content: Text('No puede de ingresar o editar datos.'),
-                                    ));
-                                    return Future.value(false);
-                                  }
-                                  popUpBorrarTarea(context, i);
-                                },
-                                icon: const Icon(Icons.delete)
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: contenido,
     );
   }
 
   void comenzarTarea(BuildContext context, int i) {
-    // final colors = Theme.of(context).colorScheme;
+    if (!_permiteEdicion) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pueden modificar datos en modo de revisión.'),
+        ),
+      );
+      return;
+    }
+
     pinController.text = '';
     showDialog(
       context: context,
@@ -341,14 +376,9 @@ class _TareasPageState extends State<TareasPage> {
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.red,
                 ),
-                onPressed: () {
+                onPressed: _permiteEdicion ? () {
                   MenuServices.showDialogs2(context, 'Tarea comenzada', true, true, true, true);
-                }, 
-                // !comenzando ? () async {
-                  // comenzando = true;
-                  // setState(() {});
-                 // comenzarTarea()
-                // } : null,
+                } : null,
                 child: const Text("COMENZAR")
               ),
             ],
@@ -359,6 +389,15 @@ class _TareasPageState extends State<TareasPage> {
   }
 
   void popUpBorrarTarea(BuildContext context, int i) {
+    if (!_permiteEdicion) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pueden modificar datos en modo de revisión.'),
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -375,7 +414,7 @@ class _TareasPageState extends State<TareasPage> {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
-              onPressed: !borrando ? () async {
+              onPressed: !borrando && _permiteEdicion ? () async {
                 borrando = true;
                 setState(() {});
                 await borrarTarea(context, i);
@@ -389,6 +428,8 @@ class _TareasPageState extends State<TareasPage> {
   }
 
   Future<void> borrarTarea(BuildContext context, int i) async {
+    if (!_permiteEdicion) return;
+    
     await _revisionServices.deleteRevisionTarea(context, orden, revisionTareasList[i], token);
     statusCodeTareas = await _revisionServices.getStatusCode();
     await _revisionServices.resetStatusCode();
@@ -407,6 +448,8 @@ class _TareasPageState extends State<TareasPage> {
   }
 
   Future<void> posteoRevisionTarea(BuildContext context) async {
+    if (!_permiteEdicion) return;
+    
     var nuevaTarea = RevisionTarea(
       otTareaId: 0,
       ordenTrabajoId: orden.ordenTrabajoId!,

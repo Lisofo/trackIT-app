@@ -2,10 +2,12 @@
 
 import 'package:app_tec_sedel/config/config.dart';
 import 'package:app_tec_sedel/config/router/router.dart';
+import 'package:app_tec_sedel/models/condicion_ot.dart';
 import 'package:app_tec_sedel/models/control.dart';
 import 'package:app_tec_sedel/models/orden.dart';
 import 'package:app_tec_sedel/models/reporte.dart';
 import 'package:app_tec_sedel/models/tarifa.dart';
+import 'package:app_tec_sedel/models/tipo_ot.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
@@ -59,6 +61,52 @@ class OrdenServices {
       
       statusCode = 1;
       return Orden.fromJson(resp.data);
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      rethrow; // Importante: relanzar la excepción para que se maneje en el llamador
+    }
+  }
+
+  Future<List<CondicionOt>> getCondiciones(BuildContext context, String token) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/condicionesOT';
+    
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      
+      statusCode = 1;
+      return List<CondicionOt>.from(resp.data.map((x) => CondicionOt.fromJson(x)));
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      rethrow; // Importante: relanzar la excepción para que se maneje en el llamador
+    }
+  }
+
+  Future<List<TipoOt>> getTiposOT(BuildContext context, String token) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/ordenes/tiposOT';
+    
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      
+      statusCode = 1;
+      return List<TipoOt>.from(resp.data.map((x) => TipoOt.fromJson(x)));
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);

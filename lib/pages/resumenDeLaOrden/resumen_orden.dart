@@ -32,6 +32,7 @@ class ResumenOrden extends StatefulWidget {
 
 class _ResumenOrdenState extends State<ResumenOrden> {
   late Orden orden;
+  late Orden ordenConGarantia = Orden.empty();
   late int marcaId = 0;
   late String _currentPosition = '';
   late Ubicacion ubicacion = Ubicacion.empty();
@@ -56,6 +57,13 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   late String siguienteEstado = '';
   final ordenServices = OrdenServices();
   final _revisionServices = RevisionServices();
+  bool get puedeFinalizar {
+    if (ordenConGarantia.sinGarantia == 'N' || ordenConGarantia.sinGarantia == null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
   
   @override
   void initState() {
@@ -64,9 +72,10 @@ class _ResumenOrdenState extends State<ResumenOrden> {
   }
 
   cargarDatos() async {
-    orden = context.read<OrdenProvider>().orden;
-    marcaId = context.read<OrdenProvider>().marcaId;
     token = context.read<AuthProvider>().token;
+    orden = context.read<OrdenProvider>().orden;
+    ordenConGarantia = await OrdenServices().getOrdenPorId(context, orden.ordenTrabajoId, token);
+    marcaId = context.read<OrdenProvider>().marcaId;
     if(orden.tipoOrden?.codTipoOrden == 'N'){
       ptosInspeccion = await PtosInspeccionServices().getPtosInspeccion(context, orden, token);
       faltanCompletarPtos = ptosInspeccion.any((pto)=> pto.otPuntoInspeccionId == 0);
@@ -210,10 +219,10 @@ class _ResumenOrdenState extends State<ResumenOrden> {
               ),
               CustomButton(
                 clip: Clip.antiAlias,
-                onPressed: (orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO') ? () => _mostrarDialogoConfirmacion('finalizar') : null,
+                onPressed: ((orden.estado == 'EN PROCESO' || orden.estado == 'RECIBIDO') && puedeFinalizar) ? () => _mostrarDialogoConfirmacion('finalizar') : null,
                 text: 'Finalizar',
                 tamano: 18,
-                disabled: !yaCargo,
+                disabled: !yaCargo && !puedeFinalizar,
               ),
             ],
           ),
@@ -275,10 +284,10 @@ class _ResumenOrdenState extends State<ResumenOrden> {
             // await _revisionServices.postRevision(context, uId, orden, token);
             statusCode = await _revisionServices.getStatusCode();
             await _revisionServices.resetStatusCode();
-            if (statusCode == 1) {
+            // if (statusCode == 1) {
               orden.estado == siguienteEstado;
               await Carteles.showDialogs(context, 'Estado cambiado correctamente', true, false, false);
-            }
+            // }
           }
         }
       }

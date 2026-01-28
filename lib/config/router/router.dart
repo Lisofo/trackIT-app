@@ -1,4 +1,5 @@
 import 'package:app_tec_sedel/models/lote.dart';
+import 'package:app_tec_sedel/pages/informes/informes.dart';
 import 'package:app_tec_sedel/pages/monitorOrdenes/busqueda_lotes_screen.dart';
 import 'package:app_tec_sedel/pages/revisiones/revision_page.dart';
 import 'package:app_tec_sedel/pages/usuarios/add_usuarios_page.dart';
@@ -37,12 +38,42 @@ final router = GoRouter(
     GoRoute(path: '/ptosInspeccionActividad', builder: (context, state) => const PtosInspeccionActividad()),
     GoRoute(path: '/ptosInspeccionRevision', builder: (context, state) => const PtosInspeccionRevisionPage()),
     GoRoute(path: '/cuestionario', builder: (context, state) => const CuestionarioPage()),
-    GoRoute(path: '/firmas', builder: (context, state) => const Firma()),
+    GoRoute(
+      path: '/firmas',
+      name: 'firmas',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return Firma(
+          fromRevisionMenu: extra['fromRevisionMenu'] ?? false,
+          isReadOnly: extra['isReadOnly'] ?? false,
+        );
+      },
+    ),
     GoRoute(path: '/materialesDiagnostico', builder: (context, state) => const MaterialesDiagnosticoPage()),
-    GoRoute(path: '/materiales', builder: (context, state) => const MaterialesPage()),
+    GoRoute(
+      path: '/materiales',
+      name: 'materiales',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return MaterialesPage(
+          fromRevisionMenu: extra['fromRevisionMenu'] ?? false,
+          isReadOnly: extra['isReadOnly'] ?? false,
+        );
+      },
+    ),
     GoRoute(path: '/observaciones', builder: (context, state) => const ObservacionesPage()),
     GoRoute(path: '/plagas', builder: (context, state) => const PlagasPage()),
-    GoRoute(path: '/tareas', builder: (context, state) => const TareasPage()),
+    GoRoute(
+      path: '/tareas',
+      name: 'tareas',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return TareasPage(
+          fromRevisionMenu: extra['fromRevisionMenu'] ?? false,
+          isReadOnly: extra['isReadOnly'] ?? false,
+        );
+      },
+    ),
     GoRoute(path: '/validacion', builder: (context, state) => const ValidacionPage()),
     GoRoute(path: '/resumenOrden', builder: (context, state) => const ResumenOrden()),
     GoRoute(path: '/admin', builder: (context, state) => const AdmingPage(),),
@@ -54,7 +85,17 @@ final router = GoRouter(
     GoRoute(path: '/monitorTecnicos', builder: (context, state) => const MonitorTecnicos(),),
     GoRoute(path: '/Dashboard', builder: (context, state) => const DashboardPage(),),
     GoRoute(path: '/mapa', builder: (context, state) => const MapaPage(),),
-    GoRoute(path: '/camera', builder: (context, state) => const CameraGalleryScreen(),),
+    GoRoute(
+      path: '/camera',
+      name: 'camera',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return CameraGalleryScreen(
+          fromRevisionMenu: extra['fromRevisionMenu'] ?? false,
+          isReadOnly: extra['isReadOnly'] ?? false,
+        );
+      },
+    ),
     
     GoRoute(
       path: '/planilla',
@@ -74,6 +115,7 @@ final router = GoRouter(
     GoRoute(path: '/editPassword', builder: (context, state) => const EditPassword(),),
     GoRoute(path: '/establecerPerfiles', builder: (context, state) => const EstablecerPerfiles(),),
     GoRoute(path: '/revisionOrden', builder: (context, state) => const RevisionOrdenMain(),),
+    GoRoute(path: '/informes', builder: (context, state) => const InformesPage(),),
   ],
   errorBuilder: (context, state) => const ErrorPage(),
 );

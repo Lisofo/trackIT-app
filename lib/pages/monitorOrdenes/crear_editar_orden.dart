@@ -1,5 +1,7 @@
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/models/tecnico.dart';
+import 'package:app_tec_sedel/models/tipo_ot.dart';
+import 'package:app_tec_sedel/models/condicion_ot.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
@@ -44,11 +46,15 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   List<Cliente> clientesLocales = [];
   List<Unidad> unidades = [];
   List<Tecnico> tecnicos = []; // Nueva lista de técnicos
+  List<TipoOt> tiposOT = []; // Nueva lista para tipos OT
+  List<CondicionOt> condicionesOT = []; // Nueva lista para condiciones OT
   DateTime fecha = DateTime.now();
   bool condIva = true;
   Cliente? clienteSeleccionado;
   Unidad? unidadSeleccionada;
   Tecnico? tecnicoSeleccionado; // Nuevo técnico seleccionado
+  TipoOt? tipoOTSeleccionado; // Nuevo tipo OT seleccionado
+  CondicionOt? condicionOTSeleccionado; // Nueva condición OT seleccionada
   final TextEditingController _numOrdenController = TextEditingController();
   final TextEditingController _comentClienteController = TextEditingController();
   final TextEditingController _comentTrabajoController = TextEditingController();
@@ -144,6 +150,30 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
+  // Método para cargar la lista de tipos OT
+  Future<void> _cargarTiposOT() async {
+    try {
+      final listaTiposOT = await ordenServices.getTiposOT(context, token);
+      setState(() {
+        tiposOT = listaTiposOT;
+      });
+        } catch (e) {
+      print('Error cargando tipos OT: $e');
+    }
+  }
+
+  // Método para cargar la lista de condiciones OT
+  Future<void> _cargarCondicionesOT() async {
+    try {
+      final listaCondicionesOT = await ordenServices.getCondiciones(context, token);
+      setState(() {
+        condicionesOT = listaCondicionesOT;
+      });
+        } catch (e) {
+      print('Error cargando condiciones OT: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -159,6 +189,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarOrdenExistente();
       _cargarTecnicos(); // Cargar técnicos al inicializar
+      // Cargar tipos y condiciones OT si es parabrisasejido
+      if (flavor == 'parabrisasejido') {
+        _cargarTiposOT();
+        _cargarCondicionesOT();
+      }
     });
   }
 
@@ -187,6 +222,38 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       try {
         // Cargar la lista de técnicos primero
         await _cargarTecnicos();
+        
+        // Cargar tipos y condiciones OT si es parabrisasejido
+        if (flavor == 'parabrisasejido') {
+          await _cargarTiposOT();
+          await _cargarCondicionesOT();
+          
+          // Establecer el tipo OT seleccionado si existe
+          if (ordenExistente.tipoOTId != null) {
+            final tipoOTEncontrado = tiposOT.firstWhere(
+              (t) => t.tipoOtId == ordenExistente.tipoOTId,
+              orElse: () => TipoOt.empty(),
+            );
+            if (tipoOTEncontrado.tipoOtId != null) {
+              setState(() {
+                tipoOTSeleccionado = tipoOTEncontrado;
+              });
+            }
+          }
+          
+          // Establecer la condición OT seleccionada si existe
+          if (ordenExistente.condOTId != null) {
+            final condOTEncontrada = condicionesOT.firstWhere(
+              (c) => c.condOtId == ordenExistente.condOTId,
+              orElse: () => CondicionOt.empty(),
+            );
+            if (condOTEncontrada.condOtId != null) {
+              setState(() {
+                condicionOTSeleccionado = condOTEncontrada;
+              });
+            }
+          }
+        }
         
         // Establecer el técnico seleccionado si existe
         if (ordenExistente.tecnico != null && ordenExistente.tecnico!.tecnicoId > 0) {
@@ -477,7 +544,15 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
 
   Orden _crearOrdenEnMemoria() {
     final authProvider = context.read<AuthProvider>();
-    Unidad unidadResysol = unidadSeleccionada ?? Unidad.empty();
+    Unidad unidadResysol;
+    
+    if (flavor == 'parabrisasejido' && tipoOTSeleccionado?.reqUnidad == "N") {
+      // Crear una unidad vacía cuando no se requiere unidad
+      unidadResysol = Unidad.empty();
+    } else {
+      unidadResysol = unidadSeleccionada ?? Unidad.empty();
+    }
+    
     int? totalTamboresInt;
     
     double? calculatedTotal = double.tryParse(_totTambController.text.replaceAll(',', '.'));
@@ -537,6 +612,8 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       totalkgs: 0.0,
       mermaKgs: 0.0,
       mermaPorcentual: 0.0,
+      tipoOTId: tipoOTSeleccionado?.tipoOtId,
+      condOTId: condicionOTSeleccionado?.condOtId,
       numBatches: int.tryParse(_numBatchesController.text),
       iniciadaEn: _iniciadaEnController.text.isNotEmpty 
           ? DateFormat('dd/MM/yyyy').parse(_iniciadaEnController.text) 
@@ -1063,6 +1140,64 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             const SizedBox(height: 16),
           ],
           
+          // AÑADIDO: Dropdowns para TipoOT y CondicionOT - SOLO PARA PARABRISASEJIDO
+          if (flavor == 'parabrisasejido') ...[
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<TipoOt>(
+                    value: tipoOTSeleccionado,
+                    decoration: InputDecoration(
+                      labelText: 'Tipo OT',
+                      border: const OutlineInputBorder(),
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
+                    ),
+                    items: tiposOT.map((TipoOt tipoOT) {
+                      return DropdownMenuItem<TipoOt>(
+                        value: tipoOT,
+                        child: Text(tipoOT.descripcion ?? ''),
+                      );
+                    }).toList(),
+                    onChanged: _isReadOnly ? null : (TipoOt? nuevoTipoOT) {
+                      setState(() {
+                        tipoOTSeleccionado = nuevoTipoOT;
+                        // Si reqUnidad es "N", limpiar la unidad seleccionada
+                        if (nuevoTipoOT?.reqUnidad == "N") {
+                          unidadSeleccionada = null;
+                        }
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<CondicionOt>(
+                    value: condicionOTSeleccionado,
+                    decoration: InputDecoration(
+                      labelText: 'Condición OT',
+                      border: const OutlineInputBorder(),
+                      filled: _isReadOnly,
+                      fillColor: _isReadOnly ? Colors.grey[200] : null,
+                    ),
+                    items: condicionesOT.map((CondicionOt condicionOT) {
+                      return DropdownMenuItem<CondicionOt>(
+                        value: condicionOT,
+                        child: Text(condicionOT.descripcion ?? ''),
+                      );
+                    }).toList(),
+                    onChanged: _isReadOnly ? null : (CondicionOt? nuevaCondicionOT) {
+                      setState(() {
+                        condicionOTSeleccionado = nuevaCondicionOT;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          
           TextFormField(
             controller: _descripcionController,
             decoration: InputDecoration(
@@ -1180,125 +1315,127 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
           ],
           
-          const SizedBox(height: 24),
-          
-          const Text(
-            'Datos del Vehículo',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onDoubleTap: _isReadOnly ? null : (unidadSeleccionada != null ? _editarUnidadSeleccionada : null),
-                  child: DropdownButtonFormField<Unidad>(
-                    value: unidadSeleccionada,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: 'Seleccione un vehículo',
-                      filled: _isReadOnly,
-                      fillColor: _isReadOnly ? Colors.grey[200] : null,
-                    ),
-                    items: unidades.map((Unidad unidad) {
-                      return DropdownMenuItem<Unidad>(
-                        value: unidad,
-                        child: Text(unidad.displayInfo),
-                      );
-                    }).toList(),
-                    onChanged: _isReadOnly ? null : (Unidad? nuevaUnidad) {
-                      setState(() {
-                        unidadSeleccionada = nuevaUnidad;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _isReadOnly ? null : () {
-                  _mostrarDialogoNuevaUnidad(context);
-                },
-              ),
-            ],
-          ),
-          
-          if (unidadSeleccionada != null) ...[
-            const SizedBox(height: 12),
+          // Mostrar sección de vehículo solo si reqUnidad != "N" o si no es parabrisasejido
+          if (flavor != 'parabrisasejido' || (tipoOTSeleccionado?.reqUnidad != "N")) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Datos del Vehículo',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    controller: TextEditingController(text: unidadSeleccionada!.marca),
-                    decoration: InputDecoration(
-                      labelText: 'Marca',
-                      border: const OutlineInputBorder(),
-                      filled: _isReadOnly,
-                      fillColor: _isReadOnly ? Colors.grey[200] : null,
+                  child: GestureDetector(
+                    onDoubleTap: _isReadOnly ? null : (unidadSeleccionada != null ? _editarUnidadSeleccionada : null),
+                    child: DropdownButtonFormField<Unidad>(
+                      value: unidadSeleccionada,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: 'Seleccione un vehículo',
+                        filled: _isReadOnly,
+                        fillColor: _isReadOnly ? Colors.grey[200] : null,
+                      ),
+                      items: unidades.map((Unidad unidad) {
+                        return DropdownMenuItem<Unidad>(
+                          value: unidad,
+                          child: Text(unidad.displayInfo),
+                        );
+                      }).toList(),
+                      onChanged: _isReadOnly ? null : (Unidad? nuevaUnidad) {
+                        setState(() {
+                          unidadSeleccionada = nuevaUnidad;
+                        });
+                      },
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    controller: TextEditingController(text: unidadSeleccionada!.modelo),
-                    decoration: InputDecoration(
-                      labelText: 'Modelo',
-                      border: const OutlineInputBorder(),
-                      filled: _isReadOnly,
-                      fillColor: _isReadOnly ? Colors.grey[200] : null,
-                    ),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _isReadOnly ? null : () {
+                    _mostrarDialogoNuevaUnidad(context);
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(text: unidadSeleccionada!.matricula),
-              decoration: InputDecoration(
-                labelText: 'Matrícula',
-                border: const OutlineInputBorder(),
-                filled: _isReadOnly,
-                fillColor: _isReadOnly ? Colors.grey[200] : null,
+            
+            if (unidadSeleccionada != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: TextEditingController(text: unidadSeleccionada!.marca),
+                      decoration: InputDecoration(
+                        labelText: 'Marca',
+                        border: const OutlineInputBorder(),
+                        filled: _isReadOnly,
+                        fillColor: _isReadOnly ? Colors.grey[200] : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: TextEditingController(text: unidadSeleccionada!.modelo),
+                      decoration: InputDecoration(
+                        labelText: 'Modelo',
+                        border: const OutlineInputBorder(),
+                        filled: _isReadOnly,
+                        fillColor: _isReadOnly ? Colors.grey[200] : null,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(text: unidadSeleccionada!.motor),
-              decoration: InputDecoration(
-                labelText: 'Número de Motor',
-                border: const OutlineInputBorder(),
-                filled: _isReadOnly,
-                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: unidadSeleccionada!.matricula),
+                decoration: InputDecoration(
+                  labelText: 'Matrícula',
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(text: unidadSeleccionada!.chasis),
-              decoration: InputDecoration(
-                labelText: 'Número de Chasis',
-                border: const OutlineInputBorder(),
-                filled: _isReadOnly,
-                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: unidadSeleccionada!.motor),
+                decoration: InputDecoration(
+                  labelText: 'Número de Motor',
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(text: unidadSeleccionada!.anio.toString()),
-              decoration: InputDecoration(
-                labelText: 'Año',
-                border: const OutlineInputBorder(),
-                filled: _isReadOnly,
-                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: unidadSeleccionada!.chasis),
+                decoration: InputDecoration(
+                  labelText: 'Número de Chasis',
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: unidadSeleccionada!.anio.toString()),
+                decoration: InputDecoration(
+                  labelText: 'Año',
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
+                ),
+              ),
+            ],
           ],
           const SizedBox(height: 24),
           Column(
@@ -1347,11 +1484,35 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 ],
                 ElevatedButton(
                   onPressed: _isReadOnly ? null : () async {
-                    if (clienteSeleccionado == null || unidadSeleccionada == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
-                      );
-                      return;
+                    // Validaciones específicas para parabrisasejido
+                    if (flavor == 'parabrisasejido') {
+                      if (tipoOTSeleccionado == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar un Tipo OT')),
+                        );
+                        return;
+                      }
+                      if (condicionOTSeleccionado == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar una Condición OT')),
+                        );
+                        return;
+                      }
+                      // Solo requerir unidad si reqUnidad != "N"
+                      if (tipoOTSeleccionado!.reqUnidad != "N" && (clienteSeleccionado == null || unidadSeleccionada == null)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
+                        );
+                        return;
+                      }
+                    } else {
+                      // Validación original para otros flavors
+                      if (clienteSeleccionado == null || unidadSeleccionada == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
+                        );
+                        return;
+                      }
                     }
                     
                     final ordenCreada = _crearOrdenEnMemoria();

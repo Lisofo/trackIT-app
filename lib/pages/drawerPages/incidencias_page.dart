@@ -16,7 +16,14 @@ import 'package:provider/provider.dart';
 import 'package:crypto/crypto.dart';
 
 class CameraGalleryScreen extends StatefulWidget {
-  const CameraGalleryScreen({super.key});
+  final bool fromRevisionMenu;
+  final bool isReadOnly;
+  
+  const CameraGalleryScreen({
+    super.key, 
+    this.fromRevisionMenu = false,
+    this.isReadOnly = false,
+  });
 
   @override
   CameraGalleryScreenState createState() => CameraGalleryScreenState();
@@ -50,13 +57,16 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   // VALIDACIÓN DE ESTADO
   // =========================
   bool get _ordenPermiteEdicion {
+    if (widget.fromRevisionMenu || widget.isReadOnly) {
+      return false;
+    }
     return orden.estado != 'PENDIENTE' && orden.estado != 'FINALIZADO';
   }
 
   void _mostrarErrorNoEdicion(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('No puede ingresar o editar datos.'),
+        content: Text('No se pueden modificar datos en modo de revisión.'),
         backgroundColor: Colors.red,
       ),
     );
@@ -455,7 +465,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
         children: [
           FloatingActionButton(
             heroTag: "camera_btn_modal",
-            onPressed: _takePicture,
+            onPressed: _ordenPermiteEdicion ? _takePicture : null,
             tooltip: 'Tomar foto',
             child: _isTakingPicture
                 ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
@@ -474,6 +484,11 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
   }
 
   Future<void> _takePicture() async {
+    if (!_ordenPermiteEdicion) {
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     if (_controller == null || !_controller!.value.isInitialized || _isTakingPicture) return;
 
     try {
@@ -730,6 +745,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
       MaterialPageRoute(
         builder: (context) => ImageCarouselScreen(
           items: items,
+          allowDelete: _ordenPermiteEdicion,
           onDeleteLocalImage: (index) {
             if (index < nuevasImagenes.length) {
               setState(() {
@@ -929,8 +945,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
                                 ),
                                 if (item.codIncidencia.isNotEmpty)
                                   Text(
-                                    'Código: ${item.codIncidencia}',
-                                    style: TextStyle(
+                                    'Código: ${item.codIncidencia}',                                    style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
@@ -1277,24 +1292,95 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
     final colors = Theme.of(context).colorScheme;
     
     if (_cargandoDatos) {
+      Widget contenido = const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando datos...'),
+          ],
+        ),
+      );
+
+      // Si viene del menú de revisión, NO mostrar Scaffold con AppBar
+      if (widget.fromRevisionMenu) {
+        return contenido;
+      }
+
       return Scaffold(
         appBar: AppBar(
           foregroundColor: colors.onPrimary,
           title: const Text('Cámara e Incidencias'),
         ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Cargando datos...'),
-            ],
-          ),
-        ),
+        body: contenido,
       );
     }
 
+    // Construir el contenido principal
+    Widget contenido = SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildObservationsDropdown(),
+          _buildCommentField(),
+          _buildCarouselButton(),
+          
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Galería de Imágenes',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Chip(
+                  avatar: CircleAvatar(
+                    backgroundColor: Colors.orange,
+                    child: Text('${nuevasImagenes.length}', style: const TextStyle(fontSize: 12)),
+                  ),
+                  label: const Text('Nuevas'),
+                ),
+                Chip(
+                  avatar: CircleAvatar(
+                    backgroundColor: Colors.green,
+                    child: Text('${adjuntosExistentes.length}', style: const TextStyle(fontSize: 12)),
+                  ),
+                  label: const Text('Subidas'),
+                ),
+                Chip(
+                  avatar: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Text('${selectedObservations.length}', style: const TextStyle(fontSize: 12)),
+                  ),
+                  label: const Text('Incidencias'),
+                ),
+              ],
+            ),
+          ),
+          
+          _buildImageGrid(),
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+
+    // Si viene del menú de revisión, NO mostrar Scaffold con AppBar
+    if (widget.fromRevisionMenu) {
+      return SafeArea(
+        child: contenido,
+      );
+    }
+
+    // Si es acceso directo, mostrar el Scaffold completo
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -1308,60 +1394,7 @@ class CameraGalleryScreenState extends State<CameraGalleryScreen> {
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildObservationsDropdown(),
-              _buildCommentField(),
-              _buildCarouselButton(),
-              
-              const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Galería de Imágenes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Chip(
-                      avatar: CircleAvatar(
-                        backgroundColor: Colors.orange,
-                        child: Text('${nuevasImagenes.length}', style: const TextStyle(fontSize: 12)),
-                      ),
-                      label: const Text('Nuevas'),
-                    ),
-                    Chip(
-                      avatar: CircleAvatar(
-                        backgroundColor: Colors.green,
-                        child: Text('${adjuntosExistentes.length}', style: const TextStyle(fontSize: 12)),
-                      ),
-                      label: const Text('Subidas'),
-                    ),
-                    Chip(
-                      avatar: CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: Text('${selectedObservations.length}', style: const TextStyle(fontSize: 12)),
-                      ),
-                      label: const Text('Incidencias'),
-                    ),
-                  ],
-                ),
-              ),
-              
-              _buildImageGrid(),
-              const SizedBox(height: 100),
-            ],
-          ),
-        ),
+        body: contenido,
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -1402,12 +1435,14 @@ class CarouselImageItem {
 
 class ImageCarouselScreen extends StatefulWidget {
   final List<CarouselImageItem> items;
+  final bool allowDelete;
   final Function(int)? onDeleteLocalImage;
   final Future<bool> Function(IncidenciaAdjunto adjunto)? onDeleteRemoteImage;
 
   const ImageCarouselScreen({
     super.key,
     required this.items,
+    required this.allowDelete,
     this.onDeleteLocalImage,
     this.onDeleteRemoteImage,
   });
@@ -1441,6 +1476,17 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
   }
 
   void _showDeleteConfirmation(BuildContext context, int index) {
+    // Validar si se permite eliminar
+    if (!widget.allowDelete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pueden modificar datos en modo de revisión.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // Usamos el contexto pasado por parámetro que es el del builder del FloatingActionButton
     final screenContext = context;
     final item = widget.items[index];
@@ -1474,6 +1520,11 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
   }
 
   void _deleteImage(int index) {
+    // Validar si se permite eliminar
+    if (!widget.allowDelete) {
+      return;
+    }
+
     final item = widget.items[index];
     final screenContext = context; // Contexto de ImageCarouselScreen
     
@@ -1491,6 +1542,7 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
               ),
               TextButton(
                 onPressed: () async {
+                  // Cerramos el diálogo de confirmación
                   Navigator.of(dialogContext).pop();
                   
                   // Mostrar indicador de progreso
@@ -1726,7 +1778,7 @@ class _ImageCarouselScreenState extends State<ImageCarouselScreen> {
           ],
         ),
       ),
-      floatingActionButton: widget.items.isNotEmpty
+      floatingActionButton: widget.items.isNotEmpty && widget.allowDelete
           ? Builder(
               builder: (buttonContext) => FloatingActionButton(
                 onPressed: () {

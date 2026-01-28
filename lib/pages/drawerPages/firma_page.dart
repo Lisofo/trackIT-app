@@ -17,7 +17,14 @@ import '../../services/revision_services.dart';
 import '../../widgets/custom_button.dart';
 
 class Firma extends StatefulWidget {
-  const Firma({super.key});
+  final bool fromRevisionMenu;
+  final bool isReadOnly;
+  
+  const Firma({
+    super.key, 
+    this.fromRevisionMenu = false,
+    this.isReadOnly = false,
+  });
 
   @override
   State<Firma> createState() => _FirmaState();
@@ -48,12 +55,30 @@ class _FirmaState extends State<Firma> {
   bool estoyBorrando = false;
   bool tieneGarantia = false;
 
-
   SignatureController controller = SignatureController(
     penStrokeWidth: 3,
     penColor: Colors.black,
     exportBackgroundColor: Colors.transparent,
   );
+
+  // =========================
+  // VALIDACIÓN DE ESTADO
+  // =========================
+  bool get _ordenPermiteEdicion {
+    if (widget.fromRevisionMenu || widget.isReadOnly) {
+      return false;
+    }
+    return orden.estado != 'PENDIENTE' && orden.estado != 'FINALIZADO';
+  }
+
+  void _mostrarErrorNoEdicion(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No se pueden modificar datos en modo de revisión.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -96,6 +121,344 @@ class _FirmaState extends State<Firma> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    
+    // Construir el contenido principal
+    Widget contenido = cargando ? const Center(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CircularProgressIndicator(),
+        Text('Cargando, por favor espere...')
+      ],
+    ),
+  ) : !cargoDatosCorrectamente ? 
+  Center(
+    child: TextButton.icon(
+      onPressed: () async {
+        await cargarDatos();
+      }, 
+      icon: const Icon(Icons.replay_outlined),
+      label: const Text('Recargar'),
+    ),
+  ) : SingleChildScrollView(
+      child: Column(
+        children: [ 
+          const SizedBox(height: 20,),
+          if (ordenConGarantia.sinGarantia != null)
+            Container(
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(5)
+              ),
+              height: 30,
+              child: Center(
+                child: Text(
+                  tieneGarantia ? 'Orden con garantía' : 'Orden sin garantía',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          const SizedBox(height: 10,),
+          Container(
+            width: MediaQuery.of(context).size.width,
+            padding: const EdgeInsets.only(left: 5, right: 5),
+            child: Form(
+              key: _formKey1,
+              child: Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colors.primary,
+                        width: 2
+                      ),
+                      borderRadius: BorderRadius.circular(5)
+                    ),
+                    child: TextFormField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(5)
+                        ),
+                        fillColor: !clienteNoDisponible ? Colors.white : Colors.grey,
+                        filled: true,
+                        hintText: 'Nombre'
+                      ),
+                      enabled: !clienteNoDisponible && _ordenPermiteEdicion,
+                    ),
+                  ),
+                  const SizedBox(height: 8,),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colors.primary,
+                        width: 2
+                      ),
+                      borderRadius: BorderRadius.circular(5)
+                    ),
+                    child: TextFormField(
+                      controller: areaController,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(5)
+                        ),
+                        fillColor: !clienteNoDisponible ? Colors.white : Colors.grey,
+                        filled: true,
+                        hintText: 'Area'
+                      ),
+                      enabled: !clienteNoDisponible && _ordenPermiteEdicion,
+                    ),
+                  )
+                ],
+              )
+            ),
+          ),
+          const SizedBox(height: 8,),
+          Padding(
+            padding: const EdgeInsets.only(left: 5, right: 5),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: colors.primary,
+                  width: 2
+                ),
+                borderRadius: BorderRadius.circular(5)
+              ),
+              child: Signature(
+                controller: controller,
+                width: MediaQuery.of(context).size.width,
+                height: 200,
+                backgroundColor: !clienteNoDisponible ? Colors.white : Colors.grey,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if(!clienteNoDisponible)...[
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: CustomButton(
+                    onPressed: !guardandoFirma && _ordenPermiteEdicion ? () async {
+                      guardandoFirma = true;
+                      if(!_ordenPermiteEdicion){
+                        _mostrarErrorNoEdicion(context);
+                        guardandoFirma = false;
+                        return;
+                      }
+                      if (nameController.text.isNotEmpty && areaController.text.isNotEmpty) {
+                        await guardarFirma(context, null);
+                        guardandoFirma = false;
+                      } else {
+                        completeDatosPopUp(context);
+                        guardandoFirma = false;
+                      }
+                      guardandoFirma = false;
+                      setState(() {});
+                    } : null,
+                    text: 'Guardar',
+                    tamano: 20,
+                    disabled: guardandoFirma || !_ordenPermiteEdicion,
+                  ),
+                  
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: ElevatedButton(
+                    onPressed: _ordenPermiteEdicion ? () {
+                      controller.clear();
+                    } : null,
+                    style: ButtonStyle(
+                      backgroundColor: !_ordenPermiteEdicion ? const WidgetStatePropertyAll(Colors.grey) : const WidgetStatePropertyAll(Colors.white),
+                      elevation: const WidgetStatePropertyAll(10),
+                      shape: const WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.horizontal(
+                            left: Radius.circular(50),
+                            right: Radius.circular(50)
+                          )
+                        )
+                      )
+                    ),
+                    child: Icon(
+                      Icons.delete,
+                      color: colors.primary,
+                    )
+                  ),
+                ),
+              ],
+              if(client.isEmpty)...[
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      activeColor: colors.primary,
+                      value: filtro,
+                      onChanged: _ordenPermiteEdicion ? (value) async {
+                        if(!_ordenPermiteEdicion){
+                          _mostrarErrorNoEdicion(context);
+                          return;
+                        }
+                        if(value){
+                          await _revisionServices.patchFirma(context, orden, 'N', token);
+                        } else{
+                          await _revisionServices.patchFirma(context, orden, null, token);
+                        }
+                        statusCode = await _revisionServices.getStatusCode();
+                        await _revisionServices.resetStatusCode(); 
+
+                        if(statusCode == 1){
+                          setState(() {
+                            filtro = value;
+                            clienteNoDisponible = filtro;
+                            controller.disabled = !controller.disabled;
+                            controller.clear();
+                            nameController.clear();
+                            areaController.clear();
+                          });
+                        }
+                        statusCode = null;
+
+                        
+                      } : null
+                    ),
+                    const Text('Cliente no disponible')
+                  ],
+                ),
+              ]
+            ],
+          ),
+          // if (exportedImage != null) Image.memory(exportedImage!),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              itemCount: client.length,
+              itemBuilder: (context, index) {
+                final item = client[index];
+                return Dismissible(
+                  key: Key(item.toString()),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: _ordenPermiteEdicion ? (DismissDirection direction) async {
+                    if(!_ordenPermiteEdicion){
+                      _mostrarErrorNoEdicion(context);
+                      return false;
+                    }
+                    return showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return borrarDesdeDismiss(context, index);
+                      }
+                    );
+                  } : null,
+                  onDismissed: (direction) async {
+                    if(statusCode == 1){
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('La firma de $item ha sido borrada'),
+                      ));
+                      setState(() {
+                        client.removeAt(index);
+                      });
+                    }
+                    statusCode = null;
+                  },
+                  background: Container(
+                    color: Colors.red,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                  ),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide()
+                      )
+                    ),
+                    child: ListTile(
+                      tileColor: Colors.white,
+                      title: Text(client[index].nombre),
+                      subtitle: Text(client[index].area),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                          onPressed: () async {
+                            await showDialog(
+                              context: context, 
+                              builder: (context) {
+                                return AlertDialog(
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      item.firmaPath != '' ? Image.network('${item.firmaPath}?authorization=$token', width: 600, height: 450) : item.firma != null ? Image.memory(item.firma!, width: 600, height: 450) :const Center(child: Text('No hay firma registrada'),),
+                                    ],
+                                  ) 
+                                );
+                              },
+                            );
+                          }, 
+                          child: const Text('Ver firma')
+                        ),
+                          IconButton(
+                            splashColor: Colors.transparent,
+                            splashRadius: 25,
+                            icon: const Icon(Icons.edit),
+                            onPressed: !estoyEditando && _ordenPermiteEdicion ? () async {
+                              estoyEditando = true;
+                              if(!_ordenPermiteEdicion){
+                                _mostrarErrorNoEdicion(context);
+                                estoyEditando = false;
+                                return;
+                              }
+                              await _editarCliente(client[index]);
+                              estoyEditando = false;
+                              setState(() {});
+                            } : null,
+                          ),
+                          IconButton(
+                            splashColor: Colors.transparent,
+                            splashRadius: 25,
+                            icon: const Icon(Icons.delete),
+                            onPressed: !estoyBorrando && _ordenPermiteEdicion ? () async {
+                              estoyBorrando = true;
+                              if(!_ordenPermiteEdicion){
+                                _mostrarErrorNoEdicion(context);
+                                estoyBorrando = false;
+                                return;
+                              }
+                              await _borrarCliente(client[index], index);
+                              estoyBorrando = false;
+                            } : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        ],
+      ),
+    );
+
+    // Si viene del menú de revisión, NO mostrar Scaffold con AppBar
+    if (widget.fromRevisionMenu) {
+      return contenido;
+    }
+
+    // Si es acceso directo, mostrar el Scaffold completo
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.grey.shade200,
@@ -106,345 +469,7 @@ class _FirmaState extends State<Firma> {
             style: const TextStyle(color: Colors.white),
           ),
         ),
-        body: cargando ? const Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            Text('Cargando, por favor espere...')
-          ],
-        ),
-      ) : !cargoDatosCorrectamente ? 
-      Center(
-        child: TextButton.icon(
-          onPressed: () async {
-            await cargarDatos();
-          }, 
-          icon: const Icon(Icons.replay_outlined),
-          label: const Text('Recargar'),
-        ),
-      ) : SingleChildScrollView(
-          child: Column(
-            children: [ 
-              const SizedBox(height: 20,),
-              if (ordenConGarantia.sinGarantia != null)
-                Container(
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(5)
-                  ),
-                  height: 30,
-                  child: Center(
-                    child: Text(
-                      tieneGarantia ? 'Orden con garantía' : 'Orden sin garantía',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 10,),
-              Container(
-                width: MediaQuery.of(context).size.width,
-                padding: const EdgeInsets.only(left: 5, right: 5),
-                child: Form(
-                  key: _formKey1,
-                  child: Column(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: colors.primary,
-                            width: 2
-                          ),
-                          borderRadius: BorderRadius.circular(5)
-                        ),
-                        child: TextFormField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(5)
-                            ),
-                            fillColor: !clienteNoDisponible ? Colors.white : Colors.grey,
-                            filled: true,
-                            hintText: 'Nombre'
-                          ),
-                          enabled: !clienteNoDisponible,
-                        ),
-                      ),
-                      const SizedBox(height: 8,),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: colors.primary,
-                            width: 2
-                          ),
-                          borderRadius: BorderRadius.circular(5)
-                        ),
-                        child: TextFormField(
-                          controller: areaController,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(5)
-                            ),
-                            fillColor: !clienteNoDisponible ? Colors.white : Colors.grey,
-                            filled: true,
-                            hintText: 'Area'
-                          ),
-                          enabled: !clienteNoDisponible,
-                        ),
-                      )
-                    ],
-                  )
-                ),
-              ),
-              const SizedBox(height: 8,),
-              Padding(
-                padding: const EdgeInsets.only(left: 5, right: 5),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: colors.primary,
-                      width: 2
-                    ),
-                    borderRadius: BorderRadius.circular(5)
-                  ),
-                  child: Signature(
-                    controller: controller,
-                    width: MediaQuery.of(context).size.width,
-                    height: 200,
-                    backgroundColor: !clienteNoDisponible ? Colors.white : Colors.grey,
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if(!clienteNoDisponible)...[
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: CustomButton(
-                        onPressed: !guardandoFirma ? () async {
-                          guardandoFirma = true;
-                          if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) || clienteNoDisponible){
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(clienteNoDisponible ? 'Cliente no disponible' : 'No puede de ingresar o editar datos.'),
-                            ));
-                            guardandoFirma = false;
-                            return Future.value(false);
-                          }
-                          if (nameController.text.isNotEmpty && areaController.text.isNotEmpty) {
-                            await guardarFirma(context, null);
-                            guardandoFirma = false;
-                          } else {
-                            completeDatosPopUp(context);
-                            guardandoFirma = false;
-                          }
-                          guardandoFirma = false;
-                          setState(() {});
-                        } : null,
-                        text: 'Guardar',
-                        tamano: 20,
-                        disabled: guardandoFirma,
-                      ),
-                      
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          controller.clear();
-                        },
-                        style: const ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(Colors.white),
-                          elevation: WidgetStatePropertyAll(10),
-                          shape: WidgetStatePropertyAll(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.horizontal(
-                                left: Radius.circular(50),
-                                right: Radius.circular(50)
-                              )
-                            )
-                          )
-                        ),
-                        child: Icon(
-                          Icons.delete,
-                          color: colors.primary,
-                        )
-                      ),
-                    ),
-                  ],
-                  if(client.isEmpty)...[
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Switch(
-                          activeColor: colors.primary,
-                          value: filtro,
-                          onChanged: (value) async {
-                            if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                content: Text('No puede de ingresar o editar datos.'),
-                              ));
-                              return Future.value(false);
-                            }
-                            if(value){
-                              await _revisionServices.patchFirma(context, orden, 'N', token);
-                            } else{
-                              await _revisionServices.patchFirma(context, orden, null, token);
-                            }
-                            statusCode = await _revisionServices.getStatusCode();
-                            await _revisionServices.resetStatusCode(); 
-
-                            if(statusCode == 1){
-                              setState(() {
-                                filtro = value;
-                                clienteNoDisponible = filtro;
-                                controller.disabled = !controller.disabled;
-                                controller.clear();
-                                nameController.clear();
-                                areaController.clear();
-                              });
-                            }
-                            statusCode = null;
-
-                            
-                          }
-                        ),
-                        const Text('Cliente no disponible')
-                      ],
-                    ),
-                  ]
-                ],
-              ),
-              // if (exportedImage != null) Image.memory(exportedImage!),
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  itemCount: client.length,
-                  itemBuilder: (context, index) {
-                    final item = client[index];
-                    return Dismissible(
-                      key: Key(item.toString()),
-                      direction: DismissDirection.endToStart,
-                      confirmDismiss: (DismissDirection direction) async {
-                        if(((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')) || clienteNoDisponible){
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('No puede de ingresar o editar datos.'),
-                          ));
-                          return Future.value(false);
-                        }
-                        return showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return borrarDesdeDismiss(context, index);
-                          }
-                        );
-                      },
-                      onDismissed: (direction) async {
-                        if(statusCode == 1){
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('La firma de $item ha sido borrada'),
-                          ));
-                          setState(() {
-                            client.removeAt(index);
-                          });
-                        }
-                        statusCode = null;
-                      },
-                      background: Container(
-                        color: Colors.red,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide()
-                          )
-                        ),
-                        child: ListTile(
-                          tileColor: Colors.white,
-                          title: Text(client[index].nombre),
-                          subtitle: Text(client[index].area),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextButton(
-                              onPressed: () async {
-                                await showDialog(
-                                  context: context, 
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          item.firmaPath != '' ? Image.network('${item.firmaPath}?authorization=$token', width: 600, height: 450) : item.firma != null ? Image.memory(item.firma!, width: 600, height: 450) :const Center(child: Text('No hay firma registrada'),),
-                                        ],
-                                      ) 
-                                    );
-                                  },
-                                );
-                              }, 
-                              child: const Text('Ver firma')
-                            ),
-                              IconButton(
-                                splashColor: Colors.transparent,
-                                splashRadius: 25,
-                                icon: const Icon(Icons.edit),
-                                onPressed: !estoyEditando ? () async {
-                                  estoyEditando = true;
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                      content: Text('No puede de ingresar o editar datos.'),
-                                    ));
-                                    estoyEditando = false;
-                                    return Future.value(false);
-                                  }
-                                  await _editarCliente(client[index]);
-                                  estoyEditando = false;
-                                  setState(() {});
-                                } : null,
-                              ),
-                              IconButton(
-                                splashColor: Colors.transparent,
-                                splashRadius: 25,
-                                icon: const Icon(Icons.delete),
-                                onPressed: !estoyBorrando ? () async {
-                                  estoyBorrando = true;
-                                  if((orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO')){
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                      content: Text('No puede de ingresar o editar datos.'),
-                                    ));
-                                    estoyBorrando = false;
-                                    return Future.value(false);
-                                  }
-                                  await _borrarCliente(client[index], index);
-                                  estoyBorrando = false;
-                                } : null,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              )
-            ],
-          ),
-        ),
+        body: contenido,
       ),
     );
   }
@@ -464,6 +489,11 @@ class _FirmaState extends State<Firma> {
             foregroundColor: Colors.red,
           ),
           onPressed: () async {
+            if(!_ordenPermiteEdicion){
+              _mostrarErrorNoEdicion(context);
+              Navigator.of(context).pop(false);
+              return;
+            }
             await _revisionServices.deleteRevisionFirma(context, orden, client[index], token);
             statusCode = await _revisionServices.getStatusCode();
             await _revisionServices.resetStatusCode();
@@ -478,6 +508,11 @@ class _FirmaState extends State<Firma> {
   }
 
   Future<void> guardarFirma(BuildContext context, Uint8List? firma) async {
+    if(!_ordenPermiteEdicion){
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     exportedImage = firma ?? await controller.toPngBytes();
     firmaBytes = exportedImage as List<int>;
     md5Hash = calculateMD5(firmaBytes);
@@ -566,6 +601,11 @@ class _FirmaState extends State<Firma> {
                 foregroundColor: Colors.red,
               ),
               onPressed: () async {
+                if(!_ordenPermiteEdicion){
+                  _mostrarErrorNoEdicion(context);
+                  Navigator.of(context).pop(false);
+                  return;
+                }
                 await _revisionServices.deleteRevisionFirma(context, orden, cliente, token);
                 statusCode = await _revisionServices.getStatusCode();
                 await _revisionServices.resetStatusCode();
@@ -592,6 +632,11 @@ class _FirmaState extends State<Firma> {
   }
 
   Future<void> _editarCliente(ClienteFirma firma) async {
+    if(!_ordenPermiteEdicion){
+      _mostrarErrorNoEdicion(context);
+      return;
+    }
+
     String nuevoNombre = firma.nombre;
     String nuevoArea = firma.area;
 

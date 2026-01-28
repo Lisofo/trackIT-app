@@ -100,7 +100,7 @@ class Cliente {
         "ruc": ruc,
         "estado": estado,
         "coordenadas": coordenadas,
-        "tecnicoId": 1,
+        "tecnicoId": tecnicoId == 0 ? tecnico.tecnicoId : tecnicoId,
         "departamentoId": departamentoId,
         "tipoClienteId": tipoClienteId,
         "notas": notas,

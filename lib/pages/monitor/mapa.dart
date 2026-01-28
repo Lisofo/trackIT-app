@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, prefer_final_fields, unused_field
 
 import 'package:app_tec_sedel/config/router/router.dart';
 import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
@@ -52,7 +52,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
 
   // Variables para el diseño mejorado
   bool _isExpanded = false;
-  double _sidebarWidth = 350;
+  double _sidebarWidth = 500;
   final double _minSidebarWidth = 350;
   final double _maxSidebarWidth = 500;
 
@@ -360,7 +360,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                                     ),
                                   ),
                                   subtitle: Text(
-                                    '#${ubicacion.ordenTrabajoId} • ${DateFormat('HH:mm', 'es').format(ubicacion.fechaDate)}',
+                                    '${ubicacion.ordenTrabajoId} • ${DateFormat('HH:mm', 'es').format(ubicacion.fechaDate)}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: colors.onSurface.withOpacity(0.6),
@@ -762,19 +762,19 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    _isExpanded ? Icons.chevron_left : Icons.chevron_right,
-                    color: colors.onPrimary,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isExpanded = !_isExpanded;
-                      _sidebarWidth = _isExpanded ? _maxSidebarWidth : _minSidebarWidth;
-                    });
-                  },
-                  tooltip: _isExpanded ? 'Contraer' : 'Expandir',
-                ),
+                // IconButton(
+                //   icon: Icon(
+                //     _isExpanded ? Icons.chevron_left : Icons.chevron_right,
+                //     color: colors.onPrimary,
+                //   ),
+                //   onPressed: () {
+                //     setState(() {
+                //       _isExpanded = !_isExpanded;
+                //       _sidebarWidth = _isExpanded ? _maxSidebarWidth : _minSidebarWidth;
+                //     });
+                //   },
+                //   tooltip: _isExpanded ? 'Contraer' : 'Expandir',
+                // ),
               ],
             ),
           ),
@@ -994,13 +994,6 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                                 color: colors.primary,
                               ),
                             ),
-                            Text(
-                              'Seleccionadas: ${ubicacionesFiltradas.where((u) => u.seleccionado).length}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colors.primary,
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -1069,7 +1062,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
                                           ),
                                           child: Center(
                                             child: Text(
-                                              '#${ubicacion.ordenTrabajoId}',
+                                              '${ubicacion.ordenTrabajoId}',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: ubicacion.seleccionado 
@@ -1258,7 +1251,7 @@ class _MapaPageState extends State<MapaPage> with SingleTickerProviderStateMixin
             ubicacion.logId.toString(),
             LatLng(double.parse(coord[0]), double.parse(coord[1])),
             ubicacion.cliente.nombre,
-            'Orden: #${ubicacion.ordenTrabajoId} • ${DateFormat('HH:mm', 'es').format(ubicacion.fechaDate)} • ${ubicacion.estado}'
+            'Orden: ${ubicacion.ordenTrabajoId} • ${DateFormat('HH:mm', 'es').format(ubicacion.fechaDate)} • ${ubicacion.estado}'
           );
         } else {
           print('Error: Coordenadas no formateadas correctamente');

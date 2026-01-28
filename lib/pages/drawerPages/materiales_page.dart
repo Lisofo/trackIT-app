@@ -15,7 +15,14 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MaterialesPage extends StatefulWidget {
-  const MaterialesPage({super.key});
+  final bool fromRevisionMenu;
+  final bool isReadOnly;
+  
+  const MaterialesPage({
+    super.key, 
+    this.fromRevisionMenu = false,
+    this.isReadOnly = false,
+  });
 
   @override
   State<MaterialesPage> createState() => _MaterialesPageState();
@@ -48,6 +55,14 @@ class _MaterialesPageState extends State<MaterialesPage> {
   bool cargando = true;
 
   int? statusCodeRevision;
+
+  // =========================
+  // FUNCIÓN AUXILIAR
+  // =========================
+
+  bool get _permiteEdicion {
+    return !widget.isReadOnly && !widget.fromRevisionMenu;
+  }
 
   // =========================
   // CICLO DE VIDA
@@ -100,6 +115,15 @@ class _MaterialesPageState extends State<MaterialesPage> {
     Materiales? materialParaAgregar,
     RevisionMaterial? materialParaEditar,
   }) async {
+    if (!_permiteEdicion) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pueden modificar datos en modo de revisión.'),
+        ),
+      );
+      return false;
+    }
+
     final bool esEdicion = materialParaEditar != null;
 
     final RevisionMaterial materialActual = materialParaEditar ??
@@ -327,6 +351,350 @@ class _MaterialesPageState extends State<MaterialesPage> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
+    // Construir el contenido principal
+    Widget contenido = cargando
+        ? const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                Text('Cargando, por favor espere...')
+              ],
+            ),
+          )
+        : !cargoDatosCorrectamente
+            ? Center(
+                child: TextButton.icon(
+                  onPressed: cargarDatos,
+                  icon: const Icon(Icons.replay_outlined),
+                  label: const Text('Recargar'),
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          width: 2,
+                          color: colors.primary,
+                        ),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: DropdownSearch<Materiales>(
+                        enabled: !estaBuscando && _permiteEdicion,
+                        dropdownDecoratorProps:
+                            const DropDownDecoratorProps(
+                          textAlignVertical:
+                              TextAlignVertical.center,
+                          dropdownSearchDecoration:
+                              InputDecoration(
+                            hintText: 'Seleccione un material',
+                          ),
+                        ),
+                        items: materiales,
+                        popupProps: const PopupProps.menu(
+                          showSearchBox: true,
+                          searchDelay: Duration.zero,
+                        ),
+                        onChanged: (newValue) async {
+                          if (!_permiteEdicion) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No se pueden modificar datos en modo de revisión.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setState(() {
+                            selectedMaterial = newValue!;
+                            estaBuscando = true;
+                          });
+
+                          try {
+                            lotes = await _materialesServices.getLotes(
+                              context,
+                              selectedMaterial.materialId,
+                              token,
+                            );
+                            metodosAplicacion = await _materialesServices.getMetodosAplicacion(
+                              context,
+                              token,
+                            );
+                          } catch (e) {
+                            lotes = [];
+                            metodosAplicacion = [];
+                          }
+
+                          if (mounted) {
+                            setState(() {
+                              estaBuscando = false;
+                            });
+                          }
+
+                          if (metodosAplicacion.isNotEmpty) {
+                            final resultado = await _showMaterialDialog(
+                              context,
+                              materialParaAgregar: selectedMaterial,
+                            );
+                            if (mounted) {
+                              setState(() {
+                                estaBuscando = false;
+                              });
+                            }
+                          } else {
+                            if (mounted) {
+                              setState(() {
+                                estaBuscando = false;
+                              });
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Materiales Utilizados:',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Expanded(
+                            child: ListView.separated(
+                              controller: _scrollController,
+                              itemCount: revisionMaterialesList.length,
+                              separatorBuilder: (_, __) => const Divider(
+                                thickness: 2,
+                                color: Colors.green,
+                              ),
+                              itemBuilder: (context, i) {
+                                final item = revisionMaterialesList[i];
+                                return Dismissible(
+                                  key: Key(item.otMaterialId.toString()),
+                                  direction: DismissDirection.endToStart,
+                                  confirmDismiss: (DismissDirection direction) async {
+                                    if (!_permiteEdicion) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'No se pueden modificar datos en modo de revisión.',
+                                          ),
+                                        ),
+                                      );
+                                      return false;
+                                    }
+
+                                    return await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          surfaceTintColor:Colors.white,
+                                          title: const Text("Confirmar"),
+                                          content: const Text(
+                                            "¿Estas seguro de querer borrar el material?",
+                                          ),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              onPressed: () => Navigator.of(context).pop(false),
+                                              child: const Text("CANCELAR"),
+                                            ),
+                                            TextButton(
+                                              style: TextButton.styleFrom(
+                                                foregroundColor:Colors.red,
+                                              ),
+                                              onPressed: () async {
+                                                await _materialesServices.deleteRevisionMaterial(
+                                                  context,
+                                                  orden,
+                                                  revisionMaterialesList[i],
+                                                  token,
+                                                );
+
+                                                statusCodeRevision = await _materialesServices.getStatusCode();
+                                                await _materialesServices.resetStatusCode();
+
+                                                if (statusCodeRevision == 1) {
+                                                  Navigator.of(context).pop(true);
+                                                }
+                                              },
+                                              child: const Text("BORRAR"),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  onDismissed: (_) {
+                                    if (statusCodeRevision == 1) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'El material ${item.material.descripcion} ha sido borrado',
+                                          ),
+                                        ),
+                                      );
+
+                                      setState(() {
+                                        revisionMaterialesList.removeAt(i);
+                                      });
+                                    }
+                                    statusCodeRevision = null;
+                                  },
+                                  background: Container(
+                                    color: Colors.red,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  child: Card(
+                                    surfaceTintColor:Colors.white,
+                                    child: ListTile(
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            onPressed: !estaBuscando && _permiteEdicion ? () async {
+                                              if (!_permiteEdicion) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text('No se pueden modificar datos en modo de revisión.',),
+                                                  ),
+                                                );
+                                                return;
+                                              }
+
+                                              setState(() {
+                                                estaBuscando = true;
+                                              });
+
+                                              try {
+                                                lotes = await _materialesServices.getLotes(
+                                                  context,
+                                                  item.material.materialId,
+                                                  token,
+                                                );
+                                                metodosAplicacion = await _materialesServices.getMetodosAplicacion(
+                                                  context,
+                                                  token,
+                                                );
+                                              } catch (e) {
+                                                lotes = [];
+                                                metodosAplicacion = [];
+                                              }
+
+                                              if (mounted) {
+                                                setState(() {
+                                                  estaBuscando = false;
+                                                });
+                                              }
+
+                                              if (lotes.isNotEmpty && metodosAplicacion.isNotEmpty) {
+                                                final resultado = await _showMaterialDialog(context, materialParaEditar: item,);
+                                                if (mounted) {
+                                                  setState(() {
+                                                    estaBuscando = false;
+                                                  });
+                                                }
+                                              } else {
+                                                if (mounted) {
+                                                  setState(() {
+                                                    estaBuscando = false;
+                                                  });
+                                                }
+                                              }
+                                            } : null,
+                                            icon: const Icon(Icons.edit),
+                                          ),
+                                          IconButton(
+                                            onPressed: _permiteEdicion ? () {
+                                              if (!_permiteEdicion) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'No se pueden modificar datos en modo de revisión.',
+                                                    ),
+                                                  ),
+                                                );
+                                                return;
+                                              }
+                                              deleteMaterial(context, i);
+                                            } : null,
+                                            icon: const Icon(Icons.delete),
+                                          ),
+                                        ],
+                                      ),
+                                      title: Column(
+                                        crossAxisAlignment:CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Material: ${item.material.descripcion}',
+                                          ),
+                                          Text(
+                                            'Unidad: ${item.material.unidad}',
+                                          ),
+                                          Text(
+                                            'Cantidad: ${item.cantidad}',
+                                          ),
+                                          Text(
+                                            'Lote: ${item.lote?.lote ?? "Sin lote"}',
+                                          ),
+                                          Text(
+                                            'Método de aplicación: ${item.metodoAplicacion.descripcion}',
+                                          ),
+                                          Text(
+                                            'Comentario: ${item.comentario}',
+                                          ),
+                                        ],
+                                      ),
+                                      onLongPress: () async {
+                                        await verManual(
+                                          context,
+                                          material: item.material,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+    // Si viene del menú de revisión, NO mostrar Scaffold con AppBar
+    if (widget.fromRevisionMenu) {
+      return contenido;
+    }
+
+    // Si es acceso directo, mostrar el Scaffold completo
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -337,342 +705,7 @@ class _MaterialesPageState extends State<MaterialesPage> {
           backgroundColor: colors.primary,
         ),
         backgroundColor: Colors.grey.shade200,
-        body: cargando
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    Text('Cargando, por favor espere...')
-                  ],
-                ),
-              )
-            : !cargoDatosCorrectamente
-                ? Center(
-                    child: TextButton.icon(
-                      onPressed: cargarDatos,
-                      icon: const Icon(Icons.replay_outlined),
-                      label: const Text('Recargar'),
-                    ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              width: 2,
-                              color: colors.primary,
-                            ),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: DropdownSearch<Materiales>(
-                            enabled: !estaBuscando,
-                            dropdownDecoratorProps:
-                                const DropDownDecoratorProps(
-                              textAlignVertical:
-                                  TextAlignVertical.center,
-                              dropdownSearchDecoration:
-                                  InputDecoration(
-                                hintText: 'Seleccione un material',
-                              ),
-                            ),
-                            items: materiales,
-                            popupProps: const PopupProps.menu(
-                              showSearchBox: true,
-                              searchDelay: Duration.zero,
-                            ),
-                            onChanged: (newValue) async {
-                              if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'No puede de ingresar o editar datos.',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              setState(() {
-                                selectedMaterial = newValue!;
-                                estaBuscando = true;
-                              });
-
-                              try {
-                                lotes = await _materialesServices.getLotes(
-                                  context,
-                                  selectedMaterial.materialId,
-                                  token,
-                                );
-                                metodosAplicacion = await _materialesServices.getMetodosAplicacion(
-                                  context,
-                                  token,
-                                );
-                              } catch (e) {
-                                lotes = [];
-                                metodosAplicacion = [];
-                              }
-
-                              if (mounted) {
-                                setState(() {
-                                  estaBuscando = false;
-                                });
-                              }
-
-                              if (metodosAplicacion.isNotEmpty) {
-                                final resultado = await _showMaterialDialog(
-                                  context,
-                                  materialParaAgregar: selectedMaterial,
-                                );
-                                if (mounted) {
-                                  setState(() {
-                                    estaBuscando = false;
-                                  });
-                                }
-                              } else {
-                                if (mounted) {
-                                  setState(() {
-                                    estaBuscando = false;
-                                  });
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: colors.primary,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Materiales Utilizados:',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Expanded(
-                                child: ListView.separated(
-                                  controller: _scrollController,
-                                  itemCount: revisionMaterialesList.length,
-                                  separatorBuilder: (_, __) => const Divider(
-                                    thickness: 2,
-                                    color: Colors.green,
-                                  ),
-                                  itemBuilder: (context, i) {
-                                    final item = revisionMaterialesList[i];
-                                    return Dismissible(
-                                      key: Key(item.otMaterialId.toString()),
-                                      direction: DismissDirection.endToStart,
-                                      confirmDismiss: (DismissDirection direction) async {
-                                        if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'No puede de ingresar o editar datos.',
-                                              ),
-                                            ),
-                                          );
-                                          return false;
-                                        }
-
-                                        return await showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              surfaceTintColor:Colors.white,
-                                              title: const Text("Confirmar"),
-                                              content: const Text(
-                                                "¿Estas seguro de querer borrar el material?",
-                                              ),
-                                              actions: <Widget>[
-                                                TextButton(
-                                                  onPressed: () => Navigator.of(context).pop(false),
-                                                  child: const Text("CANCELAR"),
-                                                ),
-                                                TextButton(
-                                                  style: TextButton.styleFrom(
-                                                    foregroundColor:Colors.red,
-                                                  ),
-                                                  onPressed: () async {
-                                                    await _materialesServices.deleteRevisionMaterial(
-                                                      context,
-                                                      orden,
-                                                      revisionMaterialesList[i],
-                                                      token,
-                                                    );
-
-                                                    statusCodeRevision = await _materialesServices.getStatusCode();
-                                                    await _materialesServices.resetStatusCode();
-
-                                                    if (statusCodeRevision == 1) {
-                                                      Navigator.of(context).pop(true);
-                                                    }
-                                                  },
-                                                  child: const Text("BORRAR"),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                      onDismissed: (_) {
-                                        if (statusCodeRevision == 1) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'El material ${item.material.descripcion} ha sido borrado',
-                                              ),
-                                            ),
-                                          );
-
-                                          setState(() {
-                                            revisionMaterialesList.removeAt(i);
-                                          });
-                                        }
-                                        statusCodeRevision = null;
-                                      },
-                                      background: Container(
-                                        color: Colors.red,
-                                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                                        alignment: AlignmentDirectional.centerEnd,
-                                        child: const Icon(
-                                          Icons.delete,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      child: Card(
-                                        surfaceTintColor:Colors.white,
-                                        child: ListTile(
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              IconButton(
-                                                onPressed: !estaBuscando ? () async {
-                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('No puede ingresar o editar datos.',),
-                                                      ),
-                                                    );
-                                                    return;
-                                                  }
-
-                                                  setState(() {
-                                                    estaBuscando = true;
-                                                  });
-
-                                                  try {
-                                                    lotes = await _materialesServices.getLotes(
-                                                      context,
-                                                      item.material.materialId,
-                                                      token,
-                                                    );
-                                                    metodosAplicacion = await _materialesServices.getMetodosAplicacion(
-                                                      context,
-                                                      token,
-                                                    );
-                                                  } catch (e) {
-                                                    lotes = [];
-                                                    metodosAplicacion = [];
-                                                  }
-
-                                                  if (mounted) {
-                                                    setState(() {
-                                                      estaBuscando = false;
-                                                    });
-                                                  }
-
-                                                  if (lotes.isNotEmpty && metodosAplicacion.isNotEmpty) {
-                                                    final resultado = await _showMaterialDialog(context, materialParaEditar: item,);
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        estaBuscando = false;
-                                                      });
-                                                    }
-                                                  } else {
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        estaBuscando = false;
-                                                      });
-                                                    }
-                                                  }
-                                                } : null,
-                                                icon: const Icon(Icons.edit),
-                                              ),
-                                              IconButton(
-                                                onPressed: () {
-                                                  if (orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO') {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          'No puede de ingresar o editar datos.',
-                                                        ),
-                                                      ),
-                                                    );
-                                                    return;
-                                                  }
-                                                  deleteMaterial(context, i);
-                                                },
-                                                icon: const Icon(Icons.delete),
-                                              ),
-                                            ],
-                                          ),
-                                          title: Column(
-                                            crossAxisAlignment:CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Material: ${item.material.descripcion}',
-                                              ),
-                                              Text(
-                                                'Unidad: ${item.material.unidad}',
-                                              ),
-                                              Text(
-                                                'Cantidad: ${item.cantidad}',
-                                              ),
-                                              Text(
-                                                'Lote: ${item.lote?.lote ?? "Sin lote"}',
-                                              ),
-                                              Text(
-                                                'Método de aplicación: ${item.metodoAplicacion.descripcion}',
-                                              ),
-                                              Text(
-                                                'Comentario: ${item.comentario}',
-                                              ),
-                                            ],
-                                          ),
-                                          onLongPress: () async {
-                                            await verManual(
-                                              context,
-                                              material: item.material,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+        body: contenido,
       ),
     );
   }
@@ -682,6 +715,15 @@ class _MaterialesPageState extends State<MaterialesPage> {
   // =========================
 
   void deleteMaterial(BuildContext context, int i) {
+    if (!_permiteEdicion) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pueden modificar datos en modo de revisión.'),
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {

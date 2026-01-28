@@ -423,7 +423,46 @@ class _OrdenInternaVerticalState extends State<OrdenInternaVertical> {
                   color: colors.secondary,
                 ),
                 onTap: () {
-                  router.push(ruta.ruta);
+                  final orden = context.read<OrdenProvider>().orden;
+                  final isReadOnly = orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO';
+                  
+                  // Para rutas que necesitan parámetros
+                  if (ruta.ruta == '/tareas') {
+                    context.pushNamed(
+                      'tareas',
+                      extra: {
+                        'fromRevisionMenu': false,
+                        'isReadOnly': isReadOnly,
+                      },
+                    );
+                  } else if (ruta.ruta == '/materiales') {
+                    context.pushNamed(
+                      'materiales',
+                      extra: {
+                        'fromRevisionMenu': false,
+                        'isReadOnly': isReadOnly,
+                      },
+                    );
+                  } else if (ruta.ruta == '/firmas') {
+                    context.pushNamed(
+                      'firmas',
+                      extra: {
+                        'fromRevisionMenu': false,
+                        'isReadOnly': isReadOnly,
+                      },
+                    );
+                  } else if (ruta.ruta == '/camera') {
+                    context.pushNamed(
+                      'camera',
+                      extra: {
+                        'fromRevisionMenu': false,
+                        'isReadOnly': isReadOnly,
+                      },
+                    );
+                  } else {
+                    // Para otras rutas que no necesitan parámetros
+                    router.push(ruta.ruta);
+                  }
                 } 
               );
             }, 

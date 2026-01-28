@@ -17,13 +17,15 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
   final IncidenciaServices _services = IncidenciaServices();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
-  final TextEditingController _sinGarantiaController = TextEditingController();
   
   List<Incidencia> _incidencias = [];
   List<Incidencia> _filteredIncidencias = [];
   bool _isLoading = true;
   bool _isSearching = false;
   late String token = context.read<AuthProvider>().token;
+  
+  // Variable para el switch de "Sin Garantía"
+  bool _sinGarantiaValue = false;
   
   @override
   void initState() {
@@ -88,148 +90,158 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
   
   Future<void> _createIncidencia() async {
     _descripcionController.clear();
+    _sinGarantiaValue = false; // Resetear valor por defecto
     
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva Incidencia'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _descripcionController,
-              decoration: const InputDecoration(
-                labelText: 'Descripción',
-                hintText: 'Ingrese la descripción de la incidencia',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Nueva Incidencia'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _descripcionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    hintText: 'Ingrese la descripción de la incidencia',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Sin Garantía'),
+                  value: _sinGarantiaValue,
+                  onChanged: (value) {
+                    setState(() {
+                      _sinGarantiaValue = value;
+                    });
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 10,),
-            TextField(
-              controller: _sinGarantiaController,
-              decoration: const InputDecoration(
-                labelText: 'Sin Garantía',
-                hintText: 'Ingrese si la incidencia tiene o no garantía (S/N)',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
               ),
-              maxLines: 1,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_descripcionController.text.trim().isNotEmpty) {
-                final nuevaIncidencia = Incidencia(
-                  incidenciaId: 0,
-                  codIncidencia: '', // Se generará automáticamente
-                  descripcion: _descripcionController.text.trim(),
-                  sinGarantia: _sinGarantiaController.text.trim(),
-                );
-                
-                final creada = await _services.createIncidencia(
-                  context,
-                  token,
-                  nuevaIncidencia,
-                );
-                
-                if (creada != null) {
-                  await _loadIncidencias();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Incidencia creada exitosamente'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-                
-                if (mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Crear'),
-          ),
-        ],
+              ElevatedButton(
+                onPressed: () async {
+                  if (_descripcionController.text.trim().isNotEmpty) {
+                    final nuevaIncidencia = Incidencia(
+                      incidenciaId: 0,
+                      codIncidencia: '', // Se generará automáticamente
+                      descripcion: _descripcionController.text.trim(),
+                      sinGarantia: _sinGarantiaValue ? 'S' : 'N', // Convertir boolean a S/N
+                    );
+                    
+                    final creada = await _services.createIncidencia(
+                      context,
+                      token,
+                      nuevaIncidencia,
+                    );
+                    
+                    if (creada != null) {
+                      await _loadIncidencias();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Incidencia creada exitosamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                    
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                child: const Text('Crear'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
   
   Future<void> _editIncidencia(Incidencia incidencia) async {
     _descripcionController.text = incidencia.descripcion;
-    _sinGarantiaController.text = incidencia.sinGarantia;
+    // Convertir 'S'/'N' a boolean para el Switch
+    _sinGarantiaValue = incidencia.sinGarantia == 'S';
     
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar Incidencia'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Código: ${incidencia.codIncidencia}'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descripcionController,
-              decoration: const InputDecoration(
-                labelText: 'Descripción',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Editar Incidencia'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Código: ${incidencia.codIncidencia}'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _descripcionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Sin Garantía'),
+                  value: _sinGarantiaValue,
+                  onChanged: (value) {
+                    setState(() {
+                      _sinGarantiaValue = value;
+                    });
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 16,),
-            TextField(
-              controller: _sinGarantiaController,
-              decoration: const InputDecoration(
-                labelText: 'Sin Garantía',
-                hintText: 'Ingrese si la incidencia tiene o no garantía (S/N)',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
               ),
-              maxLines: 1,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_descripcionController.text.trim().isNotEmpty) {
-                final incidenciaEditada = Incidencia(
-                  incidenciaId: incidencia.incidenciaId,
-                  codIncidencia: incidencia.codIncidencia,
-                  descripcion: _descripcionController.text.trim(),
-                  sinGarantia: _sinGarantiaController.text.trim(),
-                );
-                
-                final actualizada = await _services.updateIncidencia(
-                  context,
-                  token,
-                  incidencia.incidenciaId,
-                  incidenciaEditada,
-                );
-                
-                if (actualizada != null) {
-                  await _loadIncidencias();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Incidencia actualizada exitosamente'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-                
-                if (mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
+              ElevatedButton(
+                onPressed: () async {
+                  if (_descripcionController.text.trim().isNotEmpty) {
+                    final incidenciaEditada = Incidencia(
+                      incidenciaId: incidencia.incidenciaId,
+                      codIncidencia: incidencia.codIncidencia,
+                      descripcion: _descripcionController.text.trim(),
+                      sinGarantia: _sinGarantiaValue ? 'S' : 'N', // Convertir boolean a S/N
+                    );
+                    
+                    final actualizada = await _services.updateIncidencia(
+                      context,
+                      token,
+                      incidencia.incidenciaId,
+                      incidenciaEditada,
+                    );
+                    
+                    if (actualizada != null) {
+                      await _loadIncidencias();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Incidencia actualizada exitosamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                    
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -412,9 +424,16 @@ class IncidenciaScreenState extends State<IncidenciaScreen> {
                                   ),
                                 ),
                                 title: Text(incidencia.descripcion),
-                                subtitle: Text(
-                                  'Código: ${incidencia.codIncidencia}',
-                                  style: const TextStyle(fontSize: 12),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Código: ${incidencia.codIncidencia}'),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Sin Garantía: ${incidencia.sinGarantia}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
                                 ),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.more_vert),

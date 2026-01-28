@@ -1,11 +1,13 @@
 import 'package:app_tec_sedel/delegates/cliente_search_delegate.dart';
 import 'package:app_tec_sedel/delegates/unidad_search_delegate.dart';
+import 'package:app_tec_sedel/providers/auth_provider.dart';
 import 'package:app_tec_sedel/services/unidades_services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:app_tec_sedel/models/cliente.dart';
 import 'package:app_tec_sedel/models/unidad.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
+import 'package:provider/provider.dart';
 
 class FiltrosOrdenes extends StatefulWidget {
   final Function(
@@ -74,7 +76,7 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    
+    final flavor = context.read<AuthProvider>().flavor;
     return Card(
       margin: const EdgeInsets.all(10),
       child: Column(
@@ -221,41 +223,42 @@ class _FiltrosOrdenesState extends State<FiltrosOrdenes> {
                         ),
                         const SizedBox(height: 15),
                         // Selector de Unidad
-                        InkWell(
-                          onTap: _mostrarBusquedaUnidad,
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Unidad',
-                              border: OutlineInputBorder(),
-                              suffixIcon: Icon(Icons.search),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _selectedUnidad != null 
-                                      ? _selectedUnidad!.matricula
-                                      : 'Buscar unidad...',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: _selectedUnidad != null ? Colors.blue : null,
-                                      fontWeight: _selectedUnidad != null ? FontWeight.bold : null,
+                        if (flavor != 'resysol')
+                          InkWell(
+                            onTap: _mostrarBusquedaUnidad,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Unidad',
+                                border: OutlineInputBorder(),
+                                suffixIcon: Icon(Icons.search),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _selectedUnidad != null 
+                                        ? _selectedUnidad!.matricula
+                                        : 'Buscar unidad...',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _selectedUnidad != null ? Colors.blue : null,
+                                        fontWeight: _selectedUnidad != null ? FontWeight.bold : null,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (_selectedUnidad != null)
-                                  IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () {
-                                      setState(() => _selectedUnidad = null);
-                                      _handleSearch();
-                                    },
-                                  ),
-                              ],
+                                  if (_selectedUnidad != null)
+                                    IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        setState(() => _selectedUnidad = null);
+                                        _handleSearch();
+                                      },
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                         const SizedBox(height: 15),
                         // Selectores de Fecha
                         Row(

@@ -150,7 +150,16 @@ class _RevisionOrdenMainState extends State<RevisionOrdenMain> with SingleTicker
   Widget _buildMobileLayout() {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text('Revisión orden ${orden.ordenTrabajoId}'), foregroundColor: colors.onPrimary,),
+      appBar: AppBar(
+        title: Text('Revisión orden ${orden.ordenTrabajoId}'), 
+        foregroundColor: colors.onPrimary,
+        actions:[
+          IconButton(
+            onPressed: () {router.pop();},
+            icon: const Icon(Icons.arrow_back)
+          )
+        ]
+      ),
       drawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.85,
         child: Column(
@@ -168,15 +177,30 @@ class _RevisionOrdenMainState extends State<RevisionOrdenMain> with SingleTicker
       return const Center(child: Text('Seleccione una opción del menú'));
     }
 
+    // ignore: unused_local_variable
+    final isReadOnly = orden.estado == 'PENDIENTE' || orden.estado == 'FINALIZADO';
+
     switch (menu) {
       case 'Tareas Realizadas':
-        return const TareasPage();
+        return const TareasPage(
+          fromRevisionMenu: true,
+          isReadOnly: true,
+        );
       case 'Materiales utilizados':
-        return const MaterialesPage();
+        return const MaterialesPage(
+          fromRevisionMenu: true,
+          isReadOnly: true,
+        );
       case 'Firmas':
-        return const Firma(); 
+        return const Firma(
+          fromRevisionMenu: true,
+          isReadOnly: true,
+        );
       case 'Incidencias':
-        return const CameraGalleryScreen();
+        return const CameraGalleryScreen(
+          fromRevisionMenu: true,
+          isReadOnly: true,
+        );
       default:
         return Center(child: Text('Contenido para: $menu'));
     }

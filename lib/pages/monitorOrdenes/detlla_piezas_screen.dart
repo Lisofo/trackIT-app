@@ -937,10 +937,6 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'MEZCLA DE MATERIALES',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange),
-            ),
             const Divider(color: Colors.orange),
             const SizedBox(height: 10),
             const Text(
