@@ -83,6 +83,7 @@ class _FirmaState extends State<Firma> {
   @override
   void initState() {
     super.initState();
+    controller.disabled = !_ordenPermiteEdicion;
     cargarDatos();
   }
 
@@ -102,7 +103,7 @@ class _FirmaState extends State<Firma> {
       if(firmaDisponible == 'N'){
         clienteNoDisponible = true;
         filtro = true;
-        controller.disabled = !controller.disabled;
+        controller.disabled = true;
       }
       if (contadorDeVeces > 1 && client.isNotEmpty){ //toDo && firmaDisponible != ''
         cargoDatosCorrectamente = true;
@@ -346,7 +347,7 @@ class _FirmaState extends State<Firma> {
                 final item = client[index];
                 return Dismissible(
                   key: Key(item.toString()),
-                  direction: DismissDirection.endToStart,
+                  direction: _ordenPermiteEdicion ? DismissDirection.endToStart : DismissDirection.none,
                   confirmDismiss: _ordenPermiteEdicion ? (DismissDirection direction) async {
                     if(!_ordenPermiteEdicion){
                       _mostrarErrorNoEdicion(context);
@@ -414,7 +415,7 @@ class _FirmaState extends State<Firma> {
                             splashColor: Colors.transparent,
                             splashRadius: 25,
                             icon: const Icon(Icons.edit),
-                            onPressed: !estoyEditando && _ordenPermiteEdicion ? () async {
+                            onPressed: _ordenPermiteEdicion ? () async {
                               estoyEditando = true;
                               if(!_ordenPermiteEdicion){
                                 _mostrarErrorNoEdicion(context);
@@ -430,7 +431,7 @@ class _FirmaState extends State<Firma> {
                             splashColor: Colors.transparent,
                             splashRadius: 25,
                             icon: const Icon(Icons.delete),
-                            onPressed: !estoyBorrando && _ordenPermiteEdicion ? () async {
+                            onPressed: _ordenPermiteEdicion ? () async {
                               estoyBorrando = true;
                               if(!_ordenPermiteEdicion){
                                 _mostrarErrorNoEdicion(context);

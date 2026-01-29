@@ -6,7 +6,7 @@ import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/services/client_services.dart';
 import 'package:app_tec_sedel/services/codigueras_services.dart';
 import 'package:app_tec_sedel/services/orden_services.dart';
-import 'package:app_tec_sedel/services/tecnico_services.dart'; // Importar servicio de técnicos
+import 'package:app_tec_sedel/services/tecnico_services.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:app_tec_sedel/widgets/custom_button.dart';
 import 'package:app_tec_sedel/widgets/dialogo_cliente.dart';
@@ -25,6 +25,7 @@ import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:app_tec_sedel/models/reporte.dart';
+import 'package:app_tec_sedel/models/moneda.dart';
 
 class MonitorOrdenes extends StatefulWidget {
   const MonitorOrdenes({super.key});
@@ -34,37 +35,40 @@ class MonitorOrdenes extends StatefulWidget {
 }
 
 class _MonitorOrdenesState extends State<MonitorOrdenes> {
-  // Variables compartidas
   String token = '';
   final ClientServices clientServices = ClientServices();
   final UnidadesServices unidadesServices = UnidadesServices();
   final CodiguerasServices codiguerasServices = CodiguerasServices();
   final OrdenServices ordenServices = OrdenServices();
-  final TecnicoServices tecnicoServices = TecnicoServices(); // Nuevo servicio de técnicos
+  final TecnicoServices tecnicoServices = TecnicoServices();
   
-  // Variables para ambos flavors
   List<Cliente> clientesLocales = [];
   List<Unidad> unidades = [];
-  List<Tecnico> tecnicos = []; // Nueva lista de técnicos
-  List<TipoOt> tiposOT = []; // Nueva lista para tipos OT
-  List<CondicionOt> condicionesOT = []; // Nueva lista para condiciones OT
+  List<Tecnico> tecnicos = [];
+  List<TipoOt> tiposOT = [];
+  List<CondicionOt> condicionesOT = [];
+  List<Moneda> monedas = [];
   DateTime fecha = DateTime.now();
   bool condIva = true;
   Cliente? clienteSeleccionado;
   Unidad? unidadSeleccionada;
-  Tecnico? tecnicoSeleccionado; // Nuevo técnico seleccionado
-  TipoOt? tipoOTSeleccionado; // Nuevo tipo OT seleccionado
-  CondicionOt? condicionOTSeleccionado; // Nueva condición OT seleccionada
+  Tecnico? tecnicoSeleccionado;
+  TipoOt? tipoOTSeleccionado;
+  CondicionOt? condicionOTSeleccionado;
+  Moneda? monedaSeleccionada;
   final TextEditingController _numOrdenController = TextEditingController();
   final TextEditingController _comentClienteController = TextEditingController();
   final TextEditingController _comentTrabajoController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   late Orden ordenExistente = Orden.empty();
   bool _isEditMode = false;
-  bool _isReadOnly = false; // Nueva variable para controlar modo solo lectura
+  bool _isReadOnly = false;
   Orden? _ordenExistente;
+  bool esCredito = false;
+  final TextEditingController _ordenCompraController = TextEditingController();
+  final TextEditingController _siniestroController = TextEditingController();
+  final TextEditingController _kmController = TextEditingController();
 
-  // Variables específicas para resysol (producción química)
   final TextEditingController _fechaEmisionController = TextEditingController();
   final TextEditingController _numeroController = TextEditingController();
   final TextEditingController _productoController = TextEditingController();
@@ -75,7 +79,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   final TextEditingController _batchesController = TextEditingController();
   final TextEditingController _observacionesController = TextEditingController();
   
-  // Nuevos campos para Resysol (Ahora Datos Adicionales integrados)
   final TextEditingController _numBatchesController = TextEditingController();
   final TextEditingController _iniciadaEnController = TextEditingController();
   final TextEditingController _produccionController = TextEditingController();
@@ -88,7 +91,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
   bool ejecutando = false;
   int? statusCode;
 
-  // Variables para impresión
   late bool generandoInforme = false;
   late bool informeGeneradoEsS = false;
   late Reporte reporte = Reporte.empty();
@@ -130,12 +132,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  // Método para cargar la lista de técnicos
   Future<void> _cargarTecnicos() async {
     try {
       final listaTecnicos = await tecnicoServices.getAllTecnicos(context, token);
       if (listaTecnicos != null && listaTecnicos is List<Tecnico>) {
-        // Filtrar duplicados por ID
         final Map<int, Tecnico> tecnicoMap = {};
         for (var tecnico in listaTecnicos) {
           tecnicoMap[tecnico.tecnicoId] = tecnico;
@@ -150,7 +150,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  // Método para cargar la lista de tipos OT
   Future<void> _cargarTiposOT() async {
     try {
       final listaTiposOT = await ordenServices.getTiposOT(context, token);
@@ -162,7 +161,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  // Método para cargar la lista de condiciones OT
   Future<void> _cargarCondicionesOT() async {
     try {
       final listaCondicionesOT = await ordenServices.getCondiciones(context, token);
@@ -171,6 +169,17 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       });
         } catch (e) {
       print('Error cargando condiciones OT: $e');
+    }
+  }
+
+  Future<void> _cargarMonedas() async {
+    try {
+      final listaMonedas = await ordenServices.getMonedas(context, token);
+      setState(() {
+        monedas = listaMonedas;
+      });
+    } catch (e) {
+      print('Error cargando monedas: $e');
     }
   }
 
@@ -188,11 +197,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarOrdenExistente();
-      _cargarTecnicos(); // Cargar técnicos al inicializar
-      // Cargar tipos y condiciones OT si es parabrisasejido
+      _cargarTecnicos();
       if (flavor == 'parabrisasejido') {
         _cargarTiposOT();
         _cargarCondicionesOT();
+        _cargarMonedas();
       }
     });
   }
@@ -205,7 +214,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       setState(() {
         _isEditMode = true;
         _ordenExistente = ordenExistente;
-        // Determinar si la orden es de solo lectura basado en el estado
         _isReadOnly = ordenExistente.estado == 'EN PROCESO' || ordenExistente.estado == 'FINALIZADO' || ordenExistente.estado == 'DESCARTADO';
       });
 
@@ -220,15 +228,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       );
 
       try {
-        // Cargar la lista de técnicos primero
         await _cargarTecnicos();
         
-        // Cargar tipos y condiciones OT si es parabrisasejido
         if (flavor == 'parabrisasejido') {
           await _cargarTiposOT();
           await _cargarCondicionesOT();
+          await _cargarMonedas();
           
-          // Establecer el tipo OT seleccionado si existe
           if (ordenExistente.tipoOTId != null) {
             final tipoOTEncontrado = tiposOT.firstWhere(
               (t) => t.tipoOtId == ordenExistente.tipoOTId,
@@ -241,7 +247,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             }
           }
           
-          // Establecer la condición OT seleccionada si existe
           if (ordenExistente.condOTId != null) {
             final condOTEncontrada = condicionesOT.firstWhere(
               (c) => c.condOtId == ordenExistente.condOTId,
@@ -253,17 +258,33 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               });
             }
           }
+
+          if (ordenExistente.monedaId != null) {
+            final monedaEncontrada = monedas.firstWhere(
+              (m) => m.monedaId == ordenExistente.monedaId,
+              orElse: () => Moneda.empty(),
+            );
+            if (monedaEncontrada.monedaId != null) {
+              setState(() {
+                monedaSeleccionada = monedaEncontrada;
+              });
+            }
+          }
+
+          setState(() {
+            esCredito = ordenExistente.credito ?? false;
+            _ordenCompraController.text = ordenExistente.ordenCompra ?? '';
+            _siniestroController.text = ordenExistente.siniestro ?? '';
+            _kmController.text = ordenExistente.km?.toString() ?? '';
+          });
         }
         
-        // Establecer el técnico seleccionado si existe
         if (ordenExistente.tecnico != null && ordenExistente.tecnico!.tecnicoId > 0) {
-          // Buscar el técnico en la lista cargada
           final tecnicoEncontrado = tecnicos.firstWhere(
             (t) => t.tecnicoId == ordenExistente.tecnico!.tecnicoId,
             orElse: () => Tecnico.empty(),
           );
           
-          // Solo asignar si es un técnico válido (ID > 0)
           if (tecnicoEncontrado.tecnicoId > 0) {
             setState(() {
               tecnicoSeleccionado = tecnicoEncontrado;
@@ -379,6 +400,13 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       if (_ordenExistente!.fechaOrdenTrabajo != null) {
         fecha = _ordenExistente!.fechaOrdenTrabajo!;
       }
+
+      if (flavor == 'parabrisasejido') {
+        _ordenCompraController.text = _ordenExistente!.ordenCompra ?? '';
+        _siniestroController.text = _ordenExistente!.siniestro ?? '';
+        _kmController.text = _ordenExistente!.km?.toString() ?? '';
+        esCredito = _ordenExistente!.credito ?? false;
+      }
     });
   }
 
@@ -425,33 +453,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('¿Estás seguro que deseas pasar la OT al estado $siguienteEstado?'),
-                  // if(pedirConfirmacion)...[
-                  //   const SizedBox(height: 5,),
-                  //   CustomTextFormField(
-                  //     preffixIcon: const Icon(Icons.lock),
-                  //     keyboard: const TextInputType.numberWithOptions(),
-                  //     controller: pinController,
-                  //     hint: 'Ingrese PIN',
-                  //     maxLines: 1,
-                  //     obscure: isObscured,
-                  //     suffixIcon: IconButton(
-                  //       icon: isObscured
-                  //           ? const Icon(
-                  //               Icons.visibility_off,
-                  //               color: Colors.black,
-                  //             )
-                  //           : const Icon(
-                  //               Icons.visibility,
-                  //               color: Colors.black,
-                  //             ),
-                  //       onPressed: () {
-                  //         setStateBd(() {
-                  //           isObscured = !isObscured;
-                  //         });
-                  //       },
-                  //     ),
-                  //   )
-                  // ]
                 ],
               ),
               actions: [
@@ -547,7 +548,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     Unidad unidadResysol;
     
     if (flavor == 'parabrisasejido' && tipoOTSeleccionado?.reqUnidad == "N") {
-      // Crear una unidad vacía cuando no se requiere unidad
       unidadResysol = Unidad.empty();
     } else {
       unidadResysol = unidadSeleccionada ?? Unidad.empty();
@@ -574,10 +574,10 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       fechaDesde: _isEditMode ? _ordenExistente!.fechaDesde : fecha,
       fechaHasta: _isEditMode ? _ordenExistente!.fechaHasta : fecha,
       ruc: clienteSeleccionado?.ruc ?? '',
-      monedaId: 1,
-      codMoneda: 'UYU',
-      descMoneda: 'Peso Uruguayo',
-      signo: '\$',
+      monedaId: flavor == 'parabrisasejido' ? monedaSeleccionada?.monedaId : 1,
+      codMoneda: flavor == 'parabrisasejido' ? monedaSeleccionada?.codMoneda : 'UYU',
+      descMoneda: flavor == 'parabrisasejido' ? monedaSeleccionada?.descripcion : 'Peso Uruguayo',
+      signo: flavor == 'parabrisasejido' ? monedaSeleccionada?.signo : '\$',
       totalOrdenTrabajo: _isEditMode ? _ordenExistente!.totalOrdenTrabajo : 0.0,
       comentarioCliente: flavor == 'resysol' ? _observacionesController.text : _comentClienteController.text,
       comentarios: _isEditMode ? _ordenExistente!.comentarios : '',
@@ -590,18 +590,20 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       plantilla: _isEditMode ? _ordenExistente!.plantilla : false,
       unidadId: unidadResysol.unidadId,
       matricula: unidadResysol.matricula,
-      km: _isEditMode ? _ordenExistente!.km ?? unidadSeleccionada?.km : 0,
+      km: flavor == 'parabrisasejido' ? int.tryParse(_kmController.text) : 
+          (_isEditMode ? _ordenExistente!.km ?? unidadSeleccionada?.km : 0),
       regHs: _isEditMode ? _ordenExistente!.regHs ?? false : false,
       instrucciones: _isEditMode ? _ordenExistente!.instrucciones : '',
       tipoOrden: _isEditMode ? _ordenExistente!.tipoOrden : TipoOrden.empty(),
       cliente: clienteSeleccionado ?? Cliente.empty(),
-      tecnico: tecnicoSeleccionado ?? Tecnico.empty(), // Usar el técnico seleccionado
+      tecnico: tecnicoSeleccionado ?? Tecnico.empty(),
       unidad: unidadResysol,
       servicio: _isEditMode ? _ordenExistente!.servicio : [],
       otRevisionId: _isEditMode ? _ordenExistente!.otRevisionId : 0,
       planoId: _isEditMode ? _ordenExistente!.planoId : 0,
       alerta: _isEditMode ? _ordenExistente!.alerta : false,
-      tecnicoId: tecnicoSeleccionado?.tecnicoId ?? authProvider.tecnicoId, // Usar ID del técnico seleccionado o el del auth
+      tecnicoId: flavor == 'parabrisasejido' ? tecnicoSeleccionado?.tecnicoId : 
+          (tecnicoSeleccionado?.tecnicoId ?? authProvider.tecnicoId),
       clienteId: clienteSeleccionado?.clienteId ?? 0,
       tipoOrdenId: getTipoOrden(),
       producto: _productoController.text,
@@ -614,6 +616,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
       mermaPorcentual: 0.0,
       tipoOTId: tipoOTSeleccionado?.tipoOtId,
       condOTId: condicionOTSeleccionado?.condOtId,
+      credito: flavor == 'parabrisasejido' ? esCredito : null,
+      ordenCompra: flavor == 'parabrisasejido' ? _ordenCompraController.text : null,
+      siniestro: flavor == 'parabrisasejido' ? _siniestroController.text : null,
       numBatches: int.tryParse(_numBatchesController.text),
       iniciadaEn: _iniciadaEnController.text.isNotEmpty 
           ? DateFormat('dd/MM/yyyy').parse(_iniciadaEnController.text) 
@@ -922,17 +927,14 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  // NUEVO MÉTODO: Actualizar lista de órdenes en el provider
   Future<void> _actualizarListaOrdenes(BuildContext context) async {
     try {
       final ordenProvider = Provider.of<OrdenProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      // Obtener parámetros actuales de filtro
       Map<String, dynamic> queryParams = {};
       queryParams['sort'] = 'fechaDesde DESC';
       
-      // Obtener órdenes actualizadas
       final ordenesActualizadas = await ordenServices.getOrden(
         context,
         authProvider.tecnicoId.toString(),
@@ -940,7 +942,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         queryParams: queryParams,
       );
       
-      // Actualizar el provider
       ordenProvider.setOrdenes(ordenesActualizadas);
     } catch (e) {
       print('Error actualizando lista de órdenes: $e');
@@ -1104,7 +1105,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ],
           ),
           
-          // AÑADIDO: Dropdown para seleccionar técnico - AHORA SIEMPRE VISIBLE
           const SizedBox(height: 16),
           if (tecnicos.isNotEmpty) ...[
             DropdownButtonFormField<int>(
@@ -1115,12 +1115,18 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                 filled: _isReadOnly,
                 fillColor: _isReadOnly ? Colors.grey[200] : null,
               ),
-              items: tecnicos.map((Tecnico tecnico) {
-                return DropdownMenuItem<int>(
-                  value: tecnico.tecnicoId,
-                  child: Text(tecnico.nombre.trim()),
-                );
-              }).toList(),
+              items: [
+                const DropdownMenuItem<int>(
+                  value: null,
+                  child: Text('Sin técnico asignado'),
+                ),
+                ...tecnicos.map((Tecnico tecnico) {
+                  return DropdownMenuItem<int>(
+                    value: tecnico.tecnicoId,
+                    child: Text(tecnico.nombre.trim()),
+                  );
+                }).toList(),
+              ],
               onChanged: _isReadOnly ? null : (int? nuevoTecnicoId) {
                 if (nuevoTecnicoId != null) {
                   Tecnico? nuevoTecnico = tecnicos.firstWhere(
@@ -1140,7 +1146,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             const SizedBox(height: 16),
           ],
           
-          // AÑADIDO: Dropdowns para TipoOT y CondicionOT - SOLO PARA PARABRISASEJIDO
           if (flavor == 'parabrisasejido') ...[
             Row(
               children: [
@@ -1162,7 +1167,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     onChanged: _isReadOnly ? null : (TipoOt? nuevoTipoOT) {
                       setState(() {
                         tipoOTSeleccionado = nuevoTipoOT;
-                        // Si reqUnidad es "N", limpiar la unidad seleccionada
                         if (nuevoTipoOT?.reqUnidad == "N") {
                           unidadSeleccionada = null;
                         }
@@ -1194,6 +1198,81 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          if (flavor == 'parabrisasejido') ...[
+            if (monedas.isNotEmpty) ...[
+              DropdownButtonFormField<Moneda>(
+                value: monedaSeleccionada,
+                decoration: InputDecoration(
+                  labelText: 'Moneda',
+                  border: const OutlineInputBorder(),
+                  filled: _isReadOnly,
+                  fillColor: _isReadOnly ? Colors.grey[200] : null,
+                ),
+                items: monedas.map((Moneda moneda) {
+                  return DropdownMenuItem<Moneda>(
+                    value: moneda,
+                    child: Text('${moneda.descripcion} (${moneda.signo})'),
+                  );
+                }).toList(),
+                onChanged: _isReadOnly ? null : (Moneda? nuevaMoneda) {
+                  setState(() {
+                    monedaSeleccionada = nuevaMoneda;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            CheckboxListTile(
+              title: const Text('¿Es Crédito?'),
+              value: esCredito,
+              onChanged: _isReadOnly ? null : (bool? value) {
+                setState(() {
+                  esCredito = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _ordenCompraController,
+              decoration: InputDecoration(
+                labelText: 'Número de Orden de Compra',
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              ),
+              readOnly: _isReadOnly,
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _siniestroController,
+              decoration: InputDecoration(
+                labelText: 'Número de Siniestro',
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              ),
+              readOnly: _isReadOnly,
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _kmController,
+              decoration: InputDecoration(
+                labelText: 'Kilometraje (KM)',
+                border: const OutlineInputBorder(),
+                filled: _isReadOnly,
+                fillColor: _isReadOnly ? Colors.grey[200] : null,
+              ),
+              keyboardType: TextInputType.number,
+              readOnly: _isReadOnly,
             ),
             const SizedBox(height: 16),
           ],
@@ -1315,7 +1394,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
             ),
           ],
           
-          // Mostrar sección de vehículo solo si reqUnidad != "N" o si no es parabrisasejido
           if (flavor != 'parabrisasejido' || (tipoOTSeleccionado?.reqUnidad != "N")) ...[
             const SizedBox(height: 24),
             const Text(
@@ -1482,9 +1560,9 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                   ),
                   const SizedBox(width: 16),
                 ],
+                // CAMBIO IMPORTANTE AQUÍ: Botón de crear/actualizar orden
                 ElevatedButton(
                   onPressed: _isReadOnly ? null : () async {
-                    // Validaciones específicas para parabrisasejido
                     if (flavor == 'parabrisasejido') {
                       if (tipoOTSeleccionado == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -1498,15 +1576,19 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                         );
                         return;
                       }
-                      // Solo requerir unidad si reqUnidad != "N"
                       if (tipoOTSeleccionado!.reqUnidad != "N" && (clienteSeleccionado == null || unidadSeleccionada == null)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
                         );
                         return;
                       }
+                      if (clienteSeleccionado == null || unidadSeleccionada == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
+                        );
+                        return;
+                      }
                     } else {
-                      // Validación original para otros flavors
                       if (clienteSeleccionado == null || unidadSeleccionada == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Debe seleccionar un cliente y un vehículo')),
@@ -1519,7 +1601,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     
                     showDialog(
                       context: context,
-                      barrierDismissible: true,
+                      barrierDismissible: false,
                       builder: (context) => const Center(
                         child: CircularProgressIndicator(),
                       ),
@@ -1527,57 +1609,55 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
                     
                     try {
                       final ordenServices = OrdenServices();
-                      final ordenGuardada = _isEditMode 
+                      // CAMBIO AQUÍ: Usamos la tupla (ordenGuardada, success)
+                      final (ordenGuardada, success) = _isEditMode 
                           ? await ordenServices.actualizarOrden(context, token, ordenCreada)
                           : await ordenServices.postOrden(context, token, ordenCreada);
                       
+                      // SIEMPRE cerrar el diálogo primero
                       if (mounted && Navigator.of(context).canPop()) {
                         Navigator.of(context).pop();
                       }
                       
-                      if (ordenGuardada != null) {
-                        // APLICADO: Actualizar el estado local inmediatamente
+                      // Verificar si fue exitoso
+                      if (success && ordenGuardada != null) {
                         setState(() {
                           _isEditMode = true;
                           ordenExistente = ordenGuardada;
                           _ordenExistente = ordenGuardada;
                         });
 
-                        // APLICADO: Actualizar el provider para la siguiente pantalla
                         context.read<OrdenProvider>().setOrden(ordenGuardada);
                         
-                        // NUEVO: Actualizar la lista de órdenes en el provider
                         await _actualizarListaOrdenes(context);
                         
-                        // final result = await Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => DetallePiezasScreen(
-                        //       cliente: clienteSeleccionado!,
-                        //       vehiculo: unidadSeleccionada!,
-                        //       fecha: fecha,
-                        //       condIva: condIva,
-                        //       ordenPrevia: ordenGuardada,
-                        //     ),
-                        //   ),
-                        // );
-
-                        // if (result != null && result is Orden) {
-                        //   setState(() {
-                        //     ordenExistente = result;
-                        //     _isEditMode = true;
-                        //     _ordenExistente = result;
-                        //   });
-                          
-                        //   await _cargarClienteDesdeAPI(result.cliente?.clienteId ?? 0);
-                        //   await _cargarUnidadesYSeleccionar(result.cliente?.clienteId ?? 0, result.unidad?.unidadId ?? 0);
-                        //   _cargarDatosComunesDesdeOrden();
-                        // }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(_isEditMode ? 'Orden actualizada correctamente' : 'Orden creada correctamente'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        // Si success es false, mostrar mensaje de error
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Error al guardar la orden'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
                     } catch (e) {
+                      // Este catch solo se ejecutará si hay una excepción no manejada en el bloque try
                       if (mounted && Navigator.of(context).canPop()) {
                         Navigator.of(context).pop();
                       }
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error inesperado: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   },
                   child: Text(_isEditMode ? 'Actualizar Orden' : 'Crear orden'),
@@ -1621,7 +1701,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               ],
             ),
             
-            // AÑADIDO: Dropdown para técnico - AHORA SIEMPRE VISIBLE (no solo en modo edición)
             if (tecnicos.isNotEmpty) ...[
               const SizedBox(height: 16),
               _buildLabeledDropdownTecnico(
@@ -1771,7 +1850,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     );
   }
 
-  // Widget para construir dropdown de técnicos
   Widget _buildLabeledDropdownTecnico({
     required String label,
     required List<Tecnico> tecnicos,
@@ -1805,18 +1883,30 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
               value: tecnicoSeleccionado?.tecnicoId,
               isExpanded: true,
               underline: const SizedBox(),
-              items: tecnicos.map((Tecnico tecnico) {
-                return DropdownMenuItem<int>(
-                  value: tecnico.tecnicoId,
+              items: [
+                const DropdownMenuItem<int>(
+                  value: null,
                   child: Text(
-                    tecnico.nombre.trim(),
+                    'Sin técnico asignado',
                     style: TextStyle(
                       fontSize: 14,
-                      color: isReadOnly ? Colors.grey[600] : Colors.black,
+                      color: Colors.grey,
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+                ...tecnicos.map((Tecnico tecnico) {
+                  return DropdownMenuItem<int>(
+                    value: tecnico.tecnicoId,
+                    child: Text(
+                      tecnico.nombre.trim(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isReadOnly ? Colors.grey[600] : Colors.black,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
               onChanged: isReadOnly ? null : (int? nuevoTecnicoId) {
                 if (nuevoTecnicoId != null) {
                   final nuevoTecnico = tecnicos.firstWhere(
@@ -1962,7 +2052,7 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _ordenExistente = nuevaOrden;
           ordenExistente = nuevaOrden;
           _isEditMode = true;
-          _isReadOnly = false; // La nueva copia estará en estado PENDIENTE, por lo tanto editable
+          _isReadOnly = false;
         });
 
         if (nuevaOrden.cliente?.clienteId != null) {
@@ -1979,7 +2069,6 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
           _cargarDatosResysolDesdeOrden();
         }
 
-        // NUEVO: Actualizar lista de órdenes después de crear la copia
         await _actualizarListaOrdenes(context);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2120,8 +2209,86 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
+            // CAMBIO IMPORTANTE AQUÍ: Botón de crear/actualizar orden para Resysol
             ElevatedButton(
-              onPressed: _isReadOnly ? null : _crearOrdenResysol,
+              onPressed: _isReadOnly ? null : () async {
+                if (_isReadOnly) return;
+                
+                if (clienteSeleccionado == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Debe seleccionar un cliente')),
+                  );
+                  return;
+                }
+
+                final ordenCreada = _crearOrdenEnMemoria();
+                
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+
+                try {
+                  final ordenServices = OrdenServices();
+                  // CAMBIO AQUÍ: Usamos la tupla (ordenGuardada, success)
+                  final (ordenGuardada, success) = _isEditMode 
+                      ? await ordenServices.actualizarOrden(context, token, ordenCreada)
+                      : await ordenServices.postOrden(context, token, ordenCreada);
+                  
+                  // SIEMPRE cerrar el diálogo primero
+                  if (mounted && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                  
+                  // Verificar si fue exitoso
+                  if (success && ordenGuardada != null) {
+                    setState(() {
+                      _isEditMode = true;
+                      ordenExistente = ordenGuardada;
+                      _ordenExistente = ordenGuardada;
+                      _isReadOnly = ordenGuardada.estado == 'EN PROCESO' || 
+                                   ordenGuardada.estado == 'FINALIZADO';
+                    });
+
+                    context.read<OrdenProvider>().setOrden(ordenGuardada);
+
+                    await _actualizarListaOrdenes(context);
+
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetallePiezasScreen(
+                          datosProduccion: _crearDatosProduccion(),
+                          ordenPrevia: ordenGuardada,
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Si success es false, mostrar mensaje de error
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error al guardar la orden'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  // Este catch solo se ejecutará si hay una excepción no manejada en el bloque try
+                  if (mounted && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error inesperado: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isReadOnly ? Colors.grey : Colors.blue[700],
                 foregroundColor: Colors.white,
@@ -2368,79 +2535,11 @@ class _MonitorOrdenesState extends State<MonitorOrdenes> {
     }
   }
 
-  Future<void> _crearOrdenResysol() async {
-    if (_isReadOnly) return;
-    
-    if (clienteSeleccionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar un cliente')),
-      );
-      return;
-    }
-
-    final ordenCreada = _crearOrdenEnMemoria();
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      final ordenServices = OrdenServices();
-      final ordenGuardada = _isEditMode 
-          ? await ordenServices.actualizarOrden(context, token, ordenCreada)
-          : await ordenServices.postOrden(context, token, ordenCreada);
-      
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      if (ordenGuardada != null) {
-        // APLICADO: Actualizar el estado local antes de navegar
-        setState(() {
-          _isEditMode = true;
-          ordenExistente = ordenGuardada;
-          _ordenExistente = ordenGuardada;
-          // Determinar si la nueva orden es de solo lectura
-          _isReadOnly = ordenGuardada.estado == 'EN PROCESO' || 
-                       ordenGuardada.estado == 'FINALIZADO';
-        });
-
-        // APLICADO: Actualizar el provider
-        context.read<OrdenProvider>().setOrden(ordenGuardada);
-
-        // NUEVO: Actualizar la lista de órdenes en el provider
-        await _actualizarListaOrdenes(context);
-
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetallePiezasScreen(
-              datosProduccion: _crearDatosProduccion(),
-              ordenPrevia: ordenGuardada,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al ${_isEditMode ? 'actualizar' : 'crear'} la orden: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
+    _ordenCompraController.dispose();
+    _siniestroController.dispose();
+    _kmController.dispose();
     _pedidoController.removeListener(_calcularTotalTambores);
     _envaseController.removeListener(_calcularTotalTambores);
     _numBatchesController.dispose();

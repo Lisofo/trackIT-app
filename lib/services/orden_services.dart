@@ -9,6 +9,7 @@ import 'package:app_tec_sedel/models/reporte.dart';
 import 'package:app_tec_sedel/models/tarifa.dart';
 import 'package:app_tec_sedel/models/tipo_ot.dart';
 import 'package:app_tec_sedel/models/ultima_tarea.dart';
+import 'package:app_tec_sedel/models/moneda.dart';
 import 'package:app_tec_sedel/providers/orden_provider.dart';
 import 'package:app_tec_sedel/widgets/carteles.dart';
 import 'package:dio/dio.dart';
@@ -68,6 +69,29 @@ class OrdenServices {
     }
   }
 
+  Future<List<Moneda>> getMonedas(BuildContext context, String token) async {
+    String link = apiLink;
+    String linkFiltrado = '${link}api/v1/caja/monedas';
+    
+    try {
+      var headers = {'Authorization': token};
+      var resp = await _dio.request(
+        linkFiltrado,
+        options: Options(
+          method: 'GET',
+          headers: headers,
+        ),
+      );
+      
+      statusCode = 1;
+      return List<Moneda>.from(resp.data.map((x) => Moneda.fromJson(x)));
+    } catch (e) {
+      statusCode = 0;
+      Carteles().errorManagment(e, context);
+      rethrow; // Importante: relanzar la excepción para que se maneje en el llamador
+    }
+  }
+
   Future<List<CondicionOt>> getCondiciones(BuildContext context, String token) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/condicionesOT';
@@ -114,7 +138,8 @@ class OrdenServices {
     }
   }
 
-  Future postOrden(BuildContext context, String token, Orden orden) async {
+  // En orden_services.dart
+  Future<(Orden?, bool)> postOrden(BuildContext context, String token, Orden orden) async {
     String link = apiLink;
     String linkFiltrado = '${link}api/v1/ordenes/';
     var data = orden.toMapCyP();
@@ -132,19 +157,19 @@ class OrdenServices {
       );
       statusCode = 1;
       
-      // print(resp.data);
       var retorno = Orden.fromJson(resp.data);
-      return retorno;
+      return (retorno, true); // Retorna la orden y true (éxito)
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
+      return (null, false); // Retorna null y false (error)
     }
   }
 
-  // Agregar este método en la clase OrdenServices
-  Future actualizarOrden(BuildContext context, String token, Orden orden) async {
+  // También modifica el método actualizarOrden para consistencia
+  Future<(Orden?, bool)> actualizarOrden(BuildContext context, String token, Orden orden) async {
     String link = apiLink;
-    String linkFiltrado = '${link}api/v1/ordenes/${orden.ordenTrabajoId}'; // Usar PUT para actualizar
+    String linkFiltrado = '${link}api/v1/ordenes/${orden.ordenTrabajoId}';
     print(orden.toMapCyP());
 
     try {
@@ -164,11 +189,11 @@ class OrdenServices {
       
       print(resp.data);
       var retorno = Orden.fromJson(resp.data);
-      return retorno;
+      return (retorno, true);
     } catch (e) {
       statusCode = 0;
       Carteles().errorManagment(e, context);
-      rethrow;
+      return (null, false);
     }
   }
 

@@ -576,7 +576,7 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       
       _actualizarOrdenConLineas();
       
-      final ordenActualizada = await ordenServices.actualizarOrden(
+      final (ordenActualizada, exito) = await ordenServices.actualizarOrden(
         context, 
         token, 
         widget.ordenPrevia!
@@ -584,11 +584,18 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
               
       Navigator.of(context).pop();
       
-      if (ordenActualizada != null) {
+      if (exito && ordenActualizada != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Orden #${ordenActualizada.numeroOrdenTrabajo} actualizada correctamente'),
             backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al actualizar la orden'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -1660,11 +1667,17 @@ class _DetallePiezasScreenState extends State<DetallePiezasScreen> {
       
       widget.ordenPrevia!.comentarioTrabajo = _observacionesEnvasadoController.text;
 
-      return await ordenServices.actualizarOrden(
+      final (ordenActualizada, exito) = await ordenServices.actualizarOrden(
         context, 
         token, 
         widget.ordenPrevia!
       );
+      
+      if (exito) {
+        return ordenActualizada;
+      } else {
+        return null;
+      }
     } catch (e) {
       print('Error actualizando orden: $e');
       return null;

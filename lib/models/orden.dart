@@ -78,6 +78,10 @@ class Orden {
   late String? ccNvporc;   // ← NUEVO CAMPO
   late String? sinGarantia;
 
+  // Campos faltantes del JSON
+  late String? ordenCompra;
+  late String? siniestro;
+
   Orden({
     this.ordenTrabajoId,
     this.numeroOrdenTrabajo,
@@ -142,6 +146,9 @@ class Orden {
     this.ccVisc,     // ← NUEVO
     this.ccNvporc,   // ← NUEVO
     this.sinGarantia,
+    // Campos faltantes del JSON
+    this.ordenCompra,
+    this.siniestro,
   });
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
@@ -208,6 +215,9 @@ class Orden {
     ccVisc: json["ccVisc"] as String?,     // ← NUEVO
     ccNvporc: json["ccNvporc"] as String?, // ← NUEVO
     sinGarantia: json['sinGarantia'] as String?,
+    // Campos faltantes del JSON
+    ordenCompra: json["ordenCompra"] as String?,
+    siniestro: json["siniestro"] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -272,13 +282,16 @@ class Orden {
     "visc": visc,
     "ccVisc": ccVisc,     // ← NUEVO
     "ccNvporc": ccNvporc, // ← NUEVO
-    "sinGarantia": sinGarantia
+    "sinGarantia": sinGarantia,
+    // Campos faltantes del JSON
+    "ordenCompra": ordenCompra,
+    "siniestro": siniestro,
   };
 
   Map<String, dynamic> toMapCyP() => {
     "tipoOrdenId": tipoOrdenId,
     "clienteId": cliente?.clienteId,
-    "tecnicoId": tecnicoId ?? tecnico?.tecnicoId,
+    "tecnicoId": tecnicoId == null ? null : tecnicoId ?? tecnico?.tecnicoId,
     "unidadId": unidad?.unidadId,
     "numeroOrdenTrabajo": numeroOrdenTrabajo,
     "descripcion": descripcion,
@@ -293,10 +306,10 @@ class Orden {
     "km": km,
     "instrucciones": instrucciones,
     "plantilla": plantilla ?? false,
-    // Campos existentes y nuevos
-    "condOTId": condOTId,          // Existente
-    "tipoOTId": tipoOTId,          // NUEVO
-    // Campos específicos para producción química
+    "condOTId": condOTId,
+    "tipoOTId": tipoOTId,
+    "ordenCompra": ordenCompra,
+    "siniestro": siniestro,  
     "producto": producto,
     "pedido": pedido,
     "envase": envase,
@@ -305,7 +318,6 @@ class Orden {
     "totalkgs": totalkgs,
     "mermaKgs": mermaKgs,
     "mermaPorcentual": mermaPorcentual,
-    // Campos adicionales para producción química
     "numBatches": numBatches,
     "iniciadaEn": iniciadaEn?.toIso8601String(),
     "produccion": produccion,
@@ -392,6 +404,9 @@ class Orden {
     ccVisc: null,     // ← NUEVO
     ccNvporc: null,   // ← NUEVO
     sinGarantia: null,
+    // Campos faltantes del JSON
+    ordenCompra: null,
+    siniestro: null,
   );
 }
 
